@@ -46,9 +46,10 @@ class PlayerUpdate(SQLModel):
 
 
 @router.get("/")
-async def list_players():
+async def list_players(session: SessionDep):
     """List all players"""
-    return {"message": "List of players"}
+    players = session.query(Player).all()
+    return players
 
 
 @router.get("/{player_id}")
