@@ -40,6 +40,7 @@ class PlayerUpdate(SQLModel):
     nickname: str | None = None
     name: str | None = None
     team_name: str | None = None
+    birth_date: date | None = None
     country_code: str | None = None
     city: str | None = None
     profile_picture_url: str | None = None
@@ -71,11 +72,18 @@ async def create_player(player: PlayerCreate, session: SessionDep):
     return db_player
 
 
-@router.put("/{player_id}", response_model=PlayerPublic)
+@router.patch("/{player_id}", response_model=PlayerPublic)
 async def update_player(player_id: uuid.UUID, player: PlayerUpdate, session: SessionDep):
     """Update a player"""
-    updated_player = Player(id=player_id, **player.dict(exclude_unset=True))
-    return updated_player
+    db_player = session.get(Player, player_id)
+    if not db_player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    player_data = player.model_dump(exclude_unset=True)
+    db_player.sqlmodel_update(player_data)
+    session.add(db_player)
+    session.commit()
+    session.refresh(db_player)
+    return db_player
 
 
 @router.delete("/{player_id}")
