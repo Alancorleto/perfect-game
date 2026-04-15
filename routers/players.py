@@ -2,7 +2,7 @@ from datetime import date
 import uuid
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import Column, String
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, select
 from database import SessionDep
 
 router = APIRouter(
@@ -47,9 +47,9 @@ class PlayerUpdate(SQLModel):
 
 
 @router.get("/")
-async def list_players(session: SessionDep):
+async def list_players(session: SessionDep, response_model=list[PlayerPublic]):
     """List all players"""
-    players = session.query(Player).all()
+    players = session.exec(select(Player)).all()
     return players
 
 
