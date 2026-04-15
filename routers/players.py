@@ -1,6 +1,6 @@
 from datetime import date
 import uuid
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import Column, String
 from sqlmodel import Field, SQLModel
 from database import SessionDep
@@ -52,9 +52,12 @@ async def list_players():
 
 
 @router.get("/{player_id}")
-async def get_player(player_id: int):
+async def get_player(player_id: uuid.UUID, session: SessionDep):
     """Get a specific player"""
-    return {"player_id": player_id}
+    db_player = session.get(Player, player_id)
+    if not db_player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    return db_player
 
 
 @router.post("/", response_model=PlayerPublic)
@@ -68,13 +71,13 @@ async def create_player(player: PlayerCreate, session: SessionDep):
 
 
 @router.put("/{player_id}", response_model=PlayerPublic)
-async def update_player(player_id: int, player: PlayerUpdate, session: SessionDep):
+async def update_player(player_id: uuid.UUID, player: PlayerUpdate, session: SessionDep):
     """Update a player"""
     updated_player = Player(id=player_id, **player.dict(exclude_unset=True))
     return updated_player
 
 
 @router.delete("/{player_id}")
-async def delete_player(player_id: int):
+async def delete_player(player_id: uuid.UUID, session: SessionDep):
     """Delete a player"""
     return {"player_id": player_id, "message": "Player deleted"}
