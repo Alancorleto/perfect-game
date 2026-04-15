@@ -1,24 +1,25 @@
-from fastapi import FastAPI
-from sqlmodel import Field, Session, SQLModel, create_engine, select
-import os
-from routers import api_router
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+from fastapi import FastAPI
+from sqlmodel import SQLModel
+from routers import api_router
+from database import engine
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 app.include_router(api_router)
 
-# The database URL is automatically injected as an environment variable
-engine = create_engine(os.getenv("DATABASE_URL", "sqlite:///local_test_database.db"))
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine, checkfirst=True)
 
 
 @app.get("/")
 def main():
     return {"message": "Hello World"}
-
-
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
-
-
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
