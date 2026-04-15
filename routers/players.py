@@ -46,14 +46,14 @@ class PlayerUpdate(SQLModel):
     profile_picture_url: str | None = None
 
 
-@router.get("/")
-async def list_players(session: SessionDep, response_model=list[PlayerPublic]):
+@router.get("/", response_model=list[PlayerPublic])
+async def list_players(session: SessionDep):
     """List all players"""
     players = session.exec(select(Player)).all()
     return players
 
 
-@router.get("/{player_id}")
+@router.get("/{player_id}", response_model=PlayerPublic)
 async def get_player(player_id: uuid.UUID, session: SessionDep):
     """Get a specific player"""
     db_player = session.get(Player, player_id)
@@ -89,4 +89,9 @@ async def update_player(player_id: uuid.UUID, player: PlayerUpdate, session: Ses
 @router.delete("/{player_id}")
 async def delete_player(player_id: uuid.UUID, session: SessionDep):
     """Delete a player"""
-    return {"player_id": player_id, "message": "Player deleted"}
+    db_player = session.get(Player, player_id)
+    if not db_player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    session.delete(db_player)
+    session.commit()
+    return {"detail": "Player deleted"}
