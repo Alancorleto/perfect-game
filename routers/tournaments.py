@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 from fastapi import APIRouter
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, select
 
 from database import SessionDep
 
@@ -39,9 +39,10 @@ class TournamentUpdate(SQLModel):
 
 
 @router.get("/")
-async def list_tournaments():
+async def list_tournaments(session: SessionDep):
     """List all tournaments"""
-    return {"message": "List of tournaments"}
+    tournaments = session.exec(select(Tournament)).all()
+    return tournaments
 
 
 @router.get("/{tournament_id}")
