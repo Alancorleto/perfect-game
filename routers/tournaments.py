@@ -79,6 +79,11 @@ async def update_tournament(tournament_id: uuid.UUID, tournament: TournamentUpda
 
 
 @router.delete("/{tournament_id}")
-async def delete_tournament(tournament_id: int):
+async def delete_tournament(tournament_id: uuid.UUID, session: SessionDep):
     """Delete a tournament"""
-    return {"tournament_id": tournament_id, "message": "Tournament deleted"}
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    session.delete(db_tournament)
+    session.commit()
+    return {"detail": "Tournament deleted"}
