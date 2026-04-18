@@ -1,6 +1,6 @@
 import uuid
 from datetime import date
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from sqlmodel import Field, SQLModel, select
 
 from database import SessionDep
@@ -46,9 +46,12 @@ async def list_tournaments(session: SessionDep):
 
 
 @router.get("/{tournament_id}")
-async def get_tournament(tournament_id: int):
+async def get_tournament(tournament_id: uuid.UUID, session: SessionDep):
     """Get a specific tournament"""
-    return {"tournament_id": tournament_id}
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    return db_tournament
 
 
 @router.post("/")
