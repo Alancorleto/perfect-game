@@ -64,10 +64,18 @@ async def create_tournament(tournament: TournamentCreate, session: SessionDep):
     return db_tournament
 
 
-@router.put("/{tournament_id}")
-async def update_tournament(tournament_id: int):
+@router.patch("/{tournament_id}")
+async def update_tournament(tournament_id: uuid.UUID, tournament: TournamentUpdate, session: SessionDep):
     """Update a tournament"""
-    return {"tournament_id": tournament_id, "message": "Tournament updated"}
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    tournament_data = tournament.model_dump(exclude_unset=True)
+    db_tournament.sqlmodel_update(tournament_data)
+    session.add(db_tournament)
+    session.commit()
+    session.refresh(db_tournament)
+    return db_tournament
 
 
 @router.delete("/{tournament_id}")
