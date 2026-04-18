@@ -3,6 +3,8 @@ from datetime import date
 from fastapi import APIRouter
 from sqlmodel import Field, SQLModel
 
+from database import SessionDep
+
 router = APIRouter(
     prefix="/tournaments",
     tags=["tournaments"]
@@ -49,9 +51,13 @@ async def get_tournament(tournament_id: int):
 
 
 @router.post("/")
-async def create_tournament():
+async def create_tournament(tournament: TournamentCreate, session: SessionDep):
     """Create a new tournament"""
-    return {"message": "Tournament created"}
+    db_tournament = Tournament.model_validate(tournament)
+    session.add(db_tournament)
+    session.commit()
+    session.refresh(db_tournament)
+    return db_tournament
 
 
 @router.put("/{tournament_id}")
