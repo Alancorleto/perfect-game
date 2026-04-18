@@ -2,7 +2,6 @@ import uuid
 from datetime import date
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Field, SQLModel, select
-
 from database import SessionDep
 
 router = APIRouter(
