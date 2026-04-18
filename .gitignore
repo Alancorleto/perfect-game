@@ -41,6 +41,7 @@ env/
 *.sqlite
 *.sqlite3
 local_test_database.db
+local_test_database_project.sqbpro
 database.db
 
 # OS
