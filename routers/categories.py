@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from sqlmodel import Field, SQLModel, select, Relationship
 from database import SessionDep
 from routers.players import Player
+from routers.tournaments import Tournament
 
 router = APIRouter(
     prefix="/categories",
@@ -18,7 +19,6 @@ class CategoryPlayerLink(SQLModel, table=True):
 
 class CategoryBase(SQLModel):
     name: str
-    tournament_id: uuid.UUID
 
 
 class Category(CategoryBase, table=True):
@@ -27,15 +27,19 @@ class Category(CategoryBase, table=True):
         primary_key=True,
         foreign_key="tournament.id"
     )
+    tournament_id: uuid.UUID = Field(foreign_key="tournament.id")
+    
     players: list[Player] = Relationship(link_model=CategoryPlayerLink)
+    tournament: Tournament = Relationship(back_populates="categories")
 
 
 class CategoryCreate(CategoryBase):
-    pass
+    tournament_id: uuid.UUID
 
 
 class CategoryPublic(CategoryBase):
     id: uuid.UUID
+    tournament_id: uuid.UUID
 
 
 class CategoryUpdate(SQLModel):

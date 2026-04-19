@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 from fastapi import APIRouter, HTTPException
-from sqlmodel import Field, SQLModel, select
+from sqlmodel import Field, Relationship, SQLModel, select
 from database import SessionDep
 
 router = APIRouter(
@@ -21,6 +21,7 @@ class Tournament(TournamentBase, table=True):
         default_factory=uuid.uuid4,
         primary_key=True,
     )
+    categories: list["Category"] = Relationship(back_populates="tournament")
 
 
 class TournamentCreate(TournamentBase):
