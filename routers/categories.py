@@ -108,3 +108,11 @@ async def bulk_add_players_to_category(category_id: uuid.UUID, player_ids: list[
     session.commit()
     session.refresh(db_category)
     return db_category
+
+@router.get("/{category_id}/players")
+async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
+    """List all players in a category"""
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return db_category.players
