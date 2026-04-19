@@ -46,7 +46,10 @@ async def list_categories(session: SessionDep):
 @router.get("/{category_id}")
 async def get_category(category_id: uuid.UUID, session: SessionDep):
     """Get a specific category"""
-    return {"category_id": category_id}
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return db_category
 
 
 @router.post("/")
