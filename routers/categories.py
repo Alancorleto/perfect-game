@@ -116,3 +116,20 @@ async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
     if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
     return db_category.players
+
+
+@router.delete("/{category_id}/players/{player_id}")
+async def remove_player_from_category(category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep):
+    """Remove a player from a category"""
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    db_player = session.get(Player, player_id)
+    if not db_player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    if db_player in db_category.players:
+        db_category.players.remove(db_player)
+        session.add(db_category)
+        session.commit()
+        session.refresh(db_category)
+    return {"detail": "Player removed from category"}
