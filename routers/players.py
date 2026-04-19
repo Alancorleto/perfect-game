@@ -2,7 +2,7 @@ from datetime import date
 import uuid
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import Column, String
-from sqlmodel import Field, SQLModel, select
+from sqlmodel import Field, SQLModel, select, Relationship
 from database import SessionDep
 
 router = APIRouter(

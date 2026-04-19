@@ -1,13 +1,19 @@
 import uuid
 from datetime import date
 from fastapi import APIRouter, HTTPException
-from sqlmodel import Field, SQLModel, select
+from sqlmodel import Field, SQLModel, select, Relationship
 from database import SessionDep
+from routers.players import Player
 
 router = APIRouter(
     prefix="/categories",
     tags=["categories"]
 )
+
+
+class CategoryPlayerLink(SQLModel, table=True):
+    category_id: uuid.UUID = Field(foreign_key="category.id", primary_key=True)
+    player_id: uuid.UUID = Field(foreign_key="player.id", primary_key=True)
 
 
 class CategoryBase(SQLModel):
@@ -19,7 +25,9 @@ class Category(CategoryBase, table=True):
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
+        foreign_key="tournament.id"
     )
+    players: list[Player] = Relationship(link_model=CategoryPlayerLink)
 
 
 class CategoryCreate(CategoryBase):
@@ -32,7 +40,6 @@ class CategoryPublic(CategoryBase):
 
 class CategoryUpdate(SQLModel):
     name: str | None = None
-    
 
 
 @router.get("/")
@@ -84,3 +91,20 @@ async def delete_category(category_id: uuid.UUID, session: SessionDep):
     session.delete(db_category)
     session.commit()
     return {"detail": "Category deleted"}
+
+
+@router.post("/{category_id}/players/bulk")
+async def bulk_add_players_to_category(category_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep):
+    """Bulk add players to a category"""
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    for player_id in player_ids:
+        db_player = session.get(Player, player_id)
+        if not db_player:
+            raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
+        db_category.players.append(db_player)
+    session.add(db_category)
+    session.commit()
+    session.refresh(db_category)
+    return db_category
