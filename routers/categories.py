@@ -78,4 +78,9 @@ async def update_category(category_id: uuid.UUID, category: CategoryUpdate, sess
 @router.delete("/{category_id}")
 async def delete_category(category_id: uuid.UUID, session: SessionDep):
     """Delete a category"""
-    return {"category_id": category_id, "message": "Category deleted"}
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    session.delete(db_category)
+    session.commit()
+    return {"detail": "Category deleted"}
