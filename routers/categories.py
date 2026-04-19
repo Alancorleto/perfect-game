@@ -51,7 +51,11 @@ async def get_category(category_id: uuid.UUID, session: SessionDep):
 @router.post("/")
 async def create_category(category: CategoryCreate, session: SessionDep):
     """Create a new category"""
-    return {"message": "Category created"}
+    db_category = Category.model_validate(category)
+    session.add(db_category)
+    session.commit()
+    session.refresh(db_category)
+    return db_category
 
 
 @router.put("/{category_id}")
