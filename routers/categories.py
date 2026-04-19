@@ -32,7 +32,6 @@ class CategoryPublic(CategoryBase):
 
 class CategoryUpdate(SQLModel):
     name: str | None = None
-    tournament_id: uuid.UUID | None = None
     
 
 
@@ -62,10 +61,18 @@ async def create_category(category: CategoryCreate, session: SessionDep):
     return db_category
 
 
-@router.put("/{category_id}")
+@router.patch("/{category_id}")
 async def update_category(category_id: uuid.UUID, category: CategoryUpdate, session: SessionDep):
     """Update a category"""
-    return {"category_id": category_id, "message": "Category updated"}
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    category_data = category.model_dump(exclude_unset=True)
+    db_category.sqlmodel_update(category_data)
+    session.add(db_category)
+    session.commit()
+    session.refresh(db_category)
+    return db_category
 
 
 @router.delete("/{category_id}")
