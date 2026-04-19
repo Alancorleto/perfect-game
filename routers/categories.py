@@ -39,7 +39,8 @@ class CategoryUpdate(SQLModel):
 @router.get("/")
 async def list_categories(session: SessionDep):
     """List all categories"""
-    return {"message": "List of categories"}
+    categories = session.exec(select(Category)).all()
+    return categories
 
 
 @router.get("/{category_id}")
