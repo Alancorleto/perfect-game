@@ -52,6 +52,11 @@ async def update_song(song_id: uuid.UUID, song: SongUpdate, session: SessionDep)
 
 
 @router.delete("/{song_id}")
-async def delete_song(song_id: int):
+async def delete_song(song_id: uuid.UUID, session: SessionDep):
     """Delete a song"""
-    return {"song_id": song_id, "message": "Song deleted"}
+    db_song = session.get(Song, song_id)
+    if not db_song:
+        raise HTTPException(status_code=404, detail="Song not found")
+    session.delete(db_song)
+    session.commit()
+    return {"detail": "Song deleted"}
