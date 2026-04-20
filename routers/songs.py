@@ -12,9 +12,10 @@ router = APIRouter(
 
 
 @router.get("/")
-async def list_songs():
+async def list_songs(session: SessionDep):
     """List all songs"""
-    return {"message": "List of songs"}
+    songs = session.exec(select(Song)).all()
+    return songs
 
 
 @router.get("/{song_id}")
