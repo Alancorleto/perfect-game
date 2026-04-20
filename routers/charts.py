@@ -11,9 +11,10 @@ router = APIRouter(
 
 
 @router.get("/")
-async def list_charts():
+async def list_charts(session: SessionDep):
     """List all charts"""
-    return {"message": "List of charts"}
+    charts = session.exec(select(Chart)).all()
+    return charts
 
 
 @router.get("/{chart_id}")

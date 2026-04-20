@@ -15,9 +15,9 @@ class Mode(Enum):
 
 
 class ChartBase(SQLModel):
-    mode: Mode
-    level: int
-    player_count: int
+    mode: Mode = Field(default=Mode.SINGLE)
+    level: int = Field(ge=1, default=1)
+    player_count: int = Field(ge=1, default=1)
 
 
 class Chart(ChartBase, table=True):
