@@ -52,6 +52,11 @@ async def update_chart(chart_id: uuid.UUID, chart: ChartUpdate, session: Session
 
 
 @router.delete("/{chart_id}")
-async def delete_chart(chart_id: int):
+async def delete_chart(chart_id: uuid.UUID, session: SessionDep):
     """Delete a chart"""
-    return {"chart_id": chart_id, "message": "Chart deleted"}
+    db_chart = session.get(Chart, chart_id)
+    if not db_chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    session.delete(db_chart)
+    session.commit()
+    return {"detail": "Chart deleted"}
