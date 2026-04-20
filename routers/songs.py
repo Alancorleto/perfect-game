@@ -1,4 +1,9 @@
-from fastapi import APIRouter
+import uuid
+from fastapi import APIRouter, HTTPException
+from models.song import Song, SongCreate, SongUpdate
+from sqlmodel import Field, SQLModel, select, Relationship
+from database import SessionDep
+
 
 router = APIRouter(
     prefix="/songs",
@@ -19,9 +24,13 @@ async def get_song(song_id: int):
 
 
 @router.post("/")
-async def create_song():
+async def create_song(song: SongCreate, session: SessionDep):
     """Create a new song"""
-    return {"message": "Song created"}
+    db_song = Song.model_validate(song)
+    session.add(db_song)
+    session.commit()
+    session.refresh(db_song)
+    return db_song
 
 
 @router.put("/{song_id}")
