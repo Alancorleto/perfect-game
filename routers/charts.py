@@ -1,6 +1,7 @@
+import uuid
 from models.chart import Chart, ChartCreate, ChartUpdate
 from database import SessionDep
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from sqlmodel import Field, SQLModel, select, Relationship
 
 
@@ -18,9 +19,12 @@ async def list_charts(session: SessionDep):
 
 
 @router.get("/{chart_id}")
-async def get_chart(chart_id: int):
+async def get_chart(chart_id: uuid.UUID, session: SessionDep):
     """Get a specific chart"""
-    return {"chart_id": chart_id}
+    chart = session.get(Chart, chart_id)
+    if not chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    return chart
 
 
 @router.post("/")
