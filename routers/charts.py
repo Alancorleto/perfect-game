@@ -1,4 +1,8 @@
+from models.chart import Chart, ChartCreate, ChartUpdate
+from database import SessionDep
 from fastapi import APIRouter
+from sqlmodel import Field, SQLModel, select, Relationship
+
 
 router = APIRouter(
     prefix="/charts",
@@ -19,9 +23,13 @@ async def get_chart(chart_id: int):
 
 
 @router.post("/")
-async def create_chart():
+async def create_chart(chart: ChartCreate, session: SessionDep):
     """Create a new chart"""
-    return {"message": "Chart created"}
+    db_chart = Chart.model_validate(chart)
+    session.add(db_chart)
+    session.commit()
+    session.refresh(db_chart)
+    return db_chart
 
 
 @router.put("/{chart_id}")
