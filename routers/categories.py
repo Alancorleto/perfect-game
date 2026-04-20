@@ -80,6 +80,7 @@ async def bulk_add_players_to_category(category_id: uuid.UUID, player_ids: list[
     session.refresh(db_category)
     return db_category
 
+
 @router.get("/{category_id}/players")
 async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
     """List all players in a category"""
