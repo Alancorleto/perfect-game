@@ -37,10 +37,18 @@ async def create_song(song: SongCreate, session: SessionDep):
     return db_song
 
 
-@router.put("/{song_id}")
-async def update_song(song_id: int):
+@router.patch("/{song_id}")
+async def update_song(song_id: uuid.UUID, song: SongUpdate, session: SessionDep):
     """Update a song"""
-    return {"song_id": song_id, "message": "Song updated"}
+    db_song = session.get(Song, song_id)
+    if not db_song:
+        raise HTTPException(status_code=404, detail="Song not found")
+    song_data = song.model_dump(exclude_unset=True)
+    db_song.sqlmodel_update(song_data)
+    session.add(db_song)
+    session.commit()
+    session.refresh(db_song)
+    return db_song
 
 
 @router.delete("/{song_id}")
