@@ -53,4 +53,9 @@ async def update_round(round_id: uuid.UUID, round: RoundUpdate, session: Session
 @router.delete("/{round_id}")
 async def delete_round(round_id: uuid.UUID, session: SessionDep):
     """Delete a round"""
-    return {"round_id": round_id, "message": "Round deleted"}
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    session.delete(db_round)
+    session.commit()
+    return {"detail": "Round deleted"}
