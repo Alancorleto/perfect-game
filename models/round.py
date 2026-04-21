@@ -44,3 +44,11 @@ class RoundCreate(RoundBase):
 class RoundPublic(RoundBase):
     id: uuid.UUID
     category_id: uuid.UUID
+
+
+class RoundUpdate(SQLModel):
+    name: str | None = None
+    format: RoundFormat | None = None
+    levels: str | None = None
+    qualifiers_count: int | None = None
+    state: RoundState | None = None
