@@ -36,10 +36,18 @@ async def create_round(round: RoundCreate, session: SessionDep):
     return db_round
 
 
-@router.put("/{round_id}")
+@router.patch("/{round_id}")
 async def update_round(round_id: uuid.UUID, round: RoundUpdate, session: SessionDep):
     """Update a round"""
-    return {"round_id": round_id, "message": "Round updated"}
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    round_data = round.model_dump(exclude_unset=True)
+    db_round.sqlmodel_update(round_data)
+    session.add(db_round)
+    session.commit()
+    session.refresh(db_round)
+    return db_round
 
 
 @router.delete("/{round_id}")
