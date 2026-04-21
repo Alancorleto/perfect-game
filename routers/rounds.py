@@ -69,10 +69,20 @@ async def bulk_add_players_to_round(round_id: uuid.UUID, player_ids: list[uuid.U
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(status_code=404, detail="Round not found")
-    for order_index, player_id in enumerate(player_ids):
+    
+    # Filter out player IDs that are already in the round
+    player_ids = filter(
+        lambda pid: not any(link.player_id == pid for link in db_round.player_links),
+        player_ids
+    )
+
+    previous_player_count = len(db_round.player_links)
+
+    for i, player_id in enumerate(player_ids):
         db_player = session.get(Player, player_id)
         if not db_player:
             raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
+        order_index = previous_player_count + i
         db_round_player_link = RoundPlayerLink(round=db_round, player=db_player, order_index=order_index)
         db_round.player_links.append(db_round_player_link)
     session.add(db_round)
@@ -97,25 +107,54 @@ async def update_player_order_in_round(round_id: uuid.UUID, player_ids: list[uui
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(status_code=404, detail="Round not found")
+    
     if len(player_ids) != len(db_round.player_links):
         raise HTTPException(status_code=400, detail="Player IDs count does not match the number of players in the round")
+    
     for order_index, player_id in enumerate(player_ids):
         # Validate player exists
         db_player = session.get(Player, player_id)
         if not db_player:
             raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
+
         # Validate player is in the round
-        db_round_player_link = session.exec(
-            select(RoundPlayerLink).where(
-                RoundPlayerLink.round_id == round_id,
-                RoundPlayerLink.player_id == player_id
-            )
-        ).first()
+        db_round_player_link = next((link for link in db_round.player_links if link.player_id == player_id), None)
         if not db_round_player_link:
             raise HTTPException(status_code=404, detail=f"Player with ID {player_id} is not in the round")
+    
         # Update the order index
         db_round_player_link.order_index = order_index
         session.add(db_round_player_link)
+
     session.commit()
     session.refresh(db_round)
+    return db_round
+
+
+@router.delete("/{round_id}/players/{player_id}")
+async def remove_player_from_round(round_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep):
+    """Remove a player from a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    
+    db_player = session.get(Player, player_id)
+    if not db_player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    db_round_player_link = next((link for link in db_round.player_links if link.player_id == player_id), None)
+    if not db_round_player_link:
+        raise HTTPException(status_code=404, detail="Player is not in the round")
+    
+    session.delete(db_round_player_link)
+    
+    # Update order indices of remaining players
+    for link in db_round.player_links:
+        if link.order_index > db_round_player_link.order_index:
+            link.order_index -= 1
+            session.add(link)
+    
+    session.commit()
+    session.refresh(db_round)
+    
     return db_round
