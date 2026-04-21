@@ -89,3 +89,33 @@ async def list_players_in_round(round_id: uuid.UUID, session: SessionDep):
         raise HTTPException(status_code=404, detail="Round not found")
     sorted_players = sorted(db_round.player_links, key=lambda link: link.order_index)
     return [link.player for link in sorted_players]
+
+
+@router.put("/{round_id}/players/order")
+async def update_player_order_in_round(round_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep):
+    """Update the order of players in a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    if len(player_ids) != len(db_round.player_links):
+        raise HTTPException(status_code=400, detail="Player IDs count does not match the number of players in the round")
+    for order_index, player_id in enumerate(player_ids):
+        # Validate player exists
+        db_player = session.get(Player, player_id)
+        if not db_player:
+            raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
+        # Validate player is in the round
+        db_round_player_link = session.exec(
+            select(RoundPlayerLink).where(
+                RoundPlayerLink.round_id == round_id,
+                RoundPlayerLink.player_id == player_id
+            )
+        ).first()
+        if not db_round_player_link:
+            raise HTTPException(status_code=404, detail=f"Player with ID {player_id} is not in the round")
+        # Update the order index
+        db_round_player_link.order_index = order_index
+        session.add(db_round_player_link)
+    session.commit()
+    session.refresh(db_round)
+    return db_round
