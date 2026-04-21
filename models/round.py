@@ -38,7 +38,7 @@ class Round(RoundBase, table=True):
 
 
 class RoundCreate(RoundBase):
-    pass
+    category_id: uuid.UUID
 
 
 class RoundPublic(RoundBase):

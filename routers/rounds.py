@@ -1,5 +1,6 @@
 import uuid
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from sqlmodel import Field, SQLModel, select, Relationship
 from models.round import Round, RoundCreate, RoundUpdate, RoundPublic
 from database import SessionDep
 
@@ -24,7 +25,11 @@ async def get_round(round_id: uuid.UUID, session: SessionDep):
 @router.post("/")
 async def create_round(round: RoundCreate, session: SessionDep):
     """Create a new round"""
-    return {"message": "Round created"}
+    db_round = Round.model_validate(round)
+    session.add(db_round)
+    session.commit()
+    session.refresh(db_round)
+    return db_round
 
 
 @router.put("/{round_id}")

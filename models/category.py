@@ -3,6 +3,10 @@ from sqlmodel import Field, SQLModel, Relationship
 from models.player import Player
 from models.tournament import Tournament
 from models.category_player import CategoryPlayerLink
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.round import Round
 
 
 class CategoryBase(SQLModel):
@@ -18,6 +22,7 @@ class Category(CategoryBase, table=True):
     
     players: list[Player] = Relationship(link_model=CategoryPlayerLink)
     tournament: Tournament = Relationship(back_populates="categories")
+    rounds: list["Round"] = Relationship(back_populates="category")
 
 
 class CategoryCreate(CategoryBase):
