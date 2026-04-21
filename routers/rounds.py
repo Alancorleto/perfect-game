@@ -20,7 +20,10 @@ async def list_rounds(session: SessionDep):
 @router.get("/{round_id}")
 async def get_round(round_id: uuid.UUID, session: SessionDep):
     """Get a specific round"""
-    return {"round_id": round_id}
+    round = session.get(Round, round_id)
+    if not round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    return round
 
 
 @router.post("/")
