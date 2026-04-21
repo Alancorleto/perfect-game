@@ -13,7 +13,8 @@ router = APIRouter(
 @router.get("/")
 async def list_rounds(session: SessionDep):
     """List all rounds"""
-    return {"message": "List of rounds"}
+    rounds = session.exec(select(Round)).all()
+    return rounds
 
 
 @router.get("/{round_id}")
