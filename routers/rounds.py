@@ -79,3 +79,13 @@ async def bulk_add_players_to_round(round_id: uuid.UUID, player_ids: list[uuid.U
     session.commit()
     session.refresh(db_round)
     return db_round
+
+
+@router.get("/{round_id}/players")
+async def list_players_in_round(round_id: uuid.UUID, session: SessionDep):
+    """List all players in a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    sorted_players = sorted(db_round.player_links, key=lambda link: link.order_index)
+    return [link.player for link in sorted_players]
