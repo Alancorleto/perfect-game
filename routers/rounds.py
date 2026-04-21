@@ -2,6 +2,8 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Field, SQLModel, select, Relationship
 from models.round import Round, RoundCreate, RoundUpdate, RoundPublic
+from models.player import Player
+from models.round_player import RoundPlayerLink
 from database import SessionDep
 
 router = APIRouter(
@@ -59,3 +61,21 @@ async def delete_round(round_id: uuid.UUID, session: SessionDep):
     session.delete(db_round)
     session.commit()
     return {"detail": "Round deleted"}
+
+
+@router.post("/{category_id}/players/bulk")
+async def bulk_add_players_to_round(round_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep):
+    """Bulk add players to a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    for order_index, player_id in enumerate(player_ids):
+        db_player = session.get(Player, player_id)
+        if not db_player:
+            raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
+        db_round_player_link = RoundPlayerLink(round=db_round, player=db_player, order_index=order_index)
+        db_round.player_links.append(db_round_player_link)
+    session.add(db_round)
+    session.commit()
+    session.refresh(db_round)
+    return db_round

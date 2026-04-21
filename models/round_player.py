@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models.round import Round
+    from models.player import Player
 
 
 class RoundPlayerLink(SQLModel, table=True):
@@ -12,3 +13,4 @@ class RoundPlayerLink(SQLModel, table=True):
     order_index: int = Field(ge=0)
 
     round: "Round" = Relationship(back_populates="player_links")
+    player: "Player" = Relationship()
