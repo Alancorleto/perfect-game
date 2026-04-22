@@ -2,7 +2,7 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Field, SQLModel, select, Relationship
 from models.chart import Chart
-from models.round import Round, RoundCreate, RoundUpdate, RoundPublic
+from models.round import Round, RoundCreate, RoundState, RoundUpdate, RoundPublic
 from models.player import Player
 from models.round_player import RoundPlayerLink
 from models.round_chart import RoundChartLink
@@ -282,6 +282,24 @@ async def remove_chart_from_round(round_id: uuid.UUID, chart_id: uuid.UUID, sess
             link.order_index -= 1
             session.add(link)
     
+    session.commit()
+    session.refresh(db_round)
+    
+    return db_round
+
+
+@router.post("/{round_id}/start")
+async def start_round(round_id: uuid.UUID, session: SessionDep):
+    """Start a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    
+    if db_round.state != RoundState.NOT_STARTED:
+        raise HTTPException(status_code=400, detail="Round has already been started")
+    
+    db_round.state = RoundState.IN_PROGRESS
+    session.add(db_round)
     session.commit()
     session.refresh(db_round)
     
