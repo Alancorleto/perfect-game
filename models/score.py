@@ -67,14 +67,14 @@ class ScorePublic(ScoreBase):
 
 
 class ScoreUpdate(SQLModel):
-    value: int | None = Field(ge=0)
-    perfect: int | None = Field(ge=0)
-    great: int | None = Field(ge=0)
-    good: int | None = Field(ge=0)
-    bad: int | None = Field(ge=0)
-    miss: int | None = Field(ge=0)
-    max_combo: int | None = Field(ge=0)
-    kcal: float | None = Field(ge=0)
+    value: int | None = Field(ge=0, default = None)
+    perfect: int | None = Field(ge=0, default = None)
+    great: int | None = Field(ge=0, default = None)
+    good: int | None = Field(ge=0, default = None)
+    bad: int | None = Field(ge=0, default = None)
+    miss: int | None = Field(ge=0, default = None)
+    max_combo: int | None = Field(ge=0, default = None)
+    kcal: float | None = Field(ge=0, default = None)
     grade: Grade | None = None
     stage_pass: bool | None = None
     video_url: str | None = None

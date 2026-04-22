@@ -60,7 +60,15 @@ async def create_score(score: ScoreCreate, session: SessionDep):
 @router.patch("/{score_id}")
 async def update_score(score_id: uuid.UUID, score: ScoreUpdate, session: SessionDep):
     """Update a score"""
-    return {"score_id": score_id, "message": "Score updated"}
+    db_score = session.get(Score, score_id)
+    if not db_score:
+        raise HTTPException(status_code=404, detail="Score not found")
+    score_data = score.model_dump(exclude_unset=True)
+    db_score.sqlmodel_update(score_data)
+    session.add(db_score)
+    session.commit()
+    session.refresh(db_score)
+    return db_score
 
 
 @router.delete("/{score_id}")
