@@ -1,8 +1,10 @@
+from typing import Annotated
 import uuid
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from models.song import Song, SongCreate, SongUpdate
 from sqlmodel import Field, SQLModel, select, Relationship
 from database import SessionDep
+from image_storage import upload_image
 
 
 router = APIRouter(
@@ -60,3 +62,20 @@ async def delete_song(song_id: uuid.UUID, session: SessionDep):
     session.delete(db_song)
     session.commit()
     return {"detail": "Song deleted"}
+
+
+@router.post("/{song_id}/title")
+async def upload_song_title(song_id: uuid.UUID, title_file: Annotated[bytes, File()], session: SessionDep):
+    """Upload a song title"""
+    db_song = session.get(Song, song_id)
+    if not db_song:
+        raise HTTPException(status_code=404, detail="Song not found")
+
+    file_name = f"{db_song.id}.png"
+    db_song.title_url = await upload_image(title_file, file_name, "titles")
+
+    session.add(db_song)
+    session.commit()
+    session.refresh(db_song)
+    
+    return db_song

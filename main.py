@@ -1,5 +1,11 @@
-from contextlib import asynccontextmanager
+import os
+from dotenv import load_dotenv
 
+# Load environment variables from .env file in development
+if os.getenv("ENVIRONMENT") != "production":
+    load_dotenv()
+
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlmodel import SQLModel
 from routers import api_router
@@ -21,5 +27,5 @@ def create_db_and_tables():
 
 
 @app.get("/health")
-def main():
+def health():
     return {"status": "ok"}
