@@ -186,3 +186,13 @@ async def add_chart_to_round(round_id: uuid.UUID, chart_id: uuid.UUID, session: 
     session.refresh(db_round)
     
     return db_round
+
+
+@router.get("/{round_id}/charts")
+async def list_charts_in_round(round_id: uuid.UUID, session: SessionDep):
+    """List all charts in a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    sorted_charts = sorted(db_round.chart_links, key=lambda link: link.order_index)
+    return [link.chart for link in sorted_charts]
