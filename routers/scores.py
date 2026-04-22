@@ -23,7 +23,10 @@ async def list_scores(session: SessionDep):
 @router.get("/{score_id}")
 async def get_score(score_id: uuid.UUID, session: SessionDep):
     """Get a specific score"""
-    return {"score_id": score_id}
+    score = session.get(Score, score_id)
+    if not score:
+        raise HTTPException(status_code=404, detail="Score not found")
+    return score
 
 
 @router.post("/")
