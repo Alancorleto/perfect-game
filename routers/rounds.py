@@ -376,3 +376,21 @@ async def finish_round(round_id: uuid.UUID, session: SessionDep):
     session.refresh(db_round)
 
     return db_round
+
+
+@router.post("/{round_id}/cancel-finish")
+async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep):
+    """Cancel the finish of a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+
+    if db_round.state != RoundState.FINISHED:
+        raise HTTPException(status_code=400, detail="Round is not finished")
+
+    db_round.state = RoundState.IN_PROGRESS
+    session.add(db_round)
+    session.commit()
+    session.refresh(db_round)
+
+    return db_round
