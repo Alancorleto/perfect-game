@@ -1,9 +1,11 @@
 import uuid
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Field, SQLModel, select, Relationship
+from models.chart import Chart
 from models.round import Round, RoundCreate, RoundUpdate, RoundPublic
 from models.player import Player
 from models.round_player import RoundPlayerLink
+from models.round_chart import RoundChartLink
 from database import SessionDep
 
 router = APIRouter(
@@ -154,6 +156,32 @@ async def remove_player_from_round(round_id: uuid.UUID, player_id: uuid.UUID, se
             link.order_index -= 1
             session.add(link)
     
+    session.commit()
+    session.refresh(db_round)
+    
+    return db_round
+
+
+@router.post("/{round_id}/charts")
+async def add_chart_to_round(round_id: uuid.UUID, chart_id: uuid.UUID, session: SessionDep):
+    """Add a chart to a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    
+    db_chart = session.get(Chart, chart_id)
+    if not db_chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    
+    # Check if chart is already in the round
+    if any(link.chart_id == chart_id for link in db_round.chart_links):
+        raise HTTPException(status_code=400, detail="Chart is already in the round")
+    
+    order_index = len(db_round.chart_links)
+    db_round_chart_link = RoundChartLink(round=db_round, chart=db_chart, order_index=order_index)
+    db_round.chart_links.append(db_round_chart_link)
+    
+    session.add(db_round)
     session.commit()
     session.refresh(db_round)
     
