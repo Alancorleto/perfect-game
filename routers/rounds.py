@@ -257,3 +257,32 @@ async def update_chart_order_in_round(round_id: uuid.UUID, chart_ids: list[uuid.
     session.commit()
     session.refresh(db_round)
     return db_round
+
+
+@router.delete("/{round_id}/charts/{chart_id}")
+async def remove_chart_from_round(round_id: uuid.UUID, chart_id: uuid.UUID, session: SessionDep):
+    """Remove a chart from a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    
+    db_chart = session.get(Chart, chart_id)
+    if not db_chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    
+    db_round_chart_link = next((link for link in db_round.chart_links if link.chart_id == chart_id), None)
+    if not db_round_chart_link:
+        raise HTTPException(status_code=404, detail="Chart is not in the round")
+    
+    session.delete(db_round_chart_link)
+    
+    # Update order indices of remaining charts
+    for link in db_round.chart_links:
+        if link.order_index > db_round_chart_link.order_index:
+            link.order_index -= 1
+            session.add(link)
+    
+    session.commit()
+    session.refresh(db_round)
+    
+    return db_round
