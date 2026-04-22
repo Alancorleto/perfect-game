@@ -74,4 +74,9 @@ async def update_score(score_id: uuid.UUID, score: ScoreUpdate, session: Session
 @router.delete("/{score_id}")
 async def delete_score(score_id: uuid.UUID, session: SessionDep):
     """Delete a score"""
-    return {"score_id": score_id, "message": "Score deleted"}
+    db_score = session.get(Score, score_id)
+    if not db_score:
+        raise HTTPException(status_code=404, detail="Score not found")
+    session.delete(db_score)
+    session.commit()
+    return {"detail": "Score deleted"}
