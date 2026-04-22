@@ -50,6 +50,14 @@ async def create_score(score: ScoreCreate, session: SessionDep):
     if not any(link.chart_id == score.chart_id for link in db_round.chart_links):
         raise HTTPException(status_code=400, detail="Chart is not in the round")
 
+    if any(
+        existing_score.player_id == score.player_id
+        and existing_score.round_id == score.round_id
+        and existing_score.chart_id == score.chart_id
+        for existing_score in db_round.scores
+    ):
+        raise HTTPException(status_code=400, detail="Score already exists for this player, round, and chart")
+
     db_score = Score.model_validate(score)
     session.add(db_score)
     session.commit()
