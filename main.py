@@ -20,6 +20,6 @@ def create_db_and_tables():
     SQLModel.metadata.create_all(engine, checkfirst=True)
 
 
-@app.get("/")
+@app.get("/health")
 def main():
-    return {"message": "Hello World"}
+    return {"status": "ok"}
