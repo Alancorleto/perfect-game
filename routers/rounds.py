@@ -322,3 +322,21 @@ async def cancel_round_start(round_id: uuid.UUID, session: SessionDep):
     session.refresh(db_round)
 
     return db_round
+
+
+@router.post("/{round_id}/pause")
+async def pause_round(round_id: uuid.UUID, session: SessionDep):
+    """Pause a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+
+    if db_round.state != RoundState.IN_PROGRESS:
+        raise HTTPException(status_code=400, detail="Round is not in progress")
+
+    db_round.state = RoundState.PAUSED
+    session.add(db_round)
+    session.commit()
+    session.refresh(db_round)
+
+    return db_round
