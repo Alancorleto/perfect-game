@@ -196,3 +196,34 @@ async def list_charts_in_round(round_id: uuid.UUID, session: SessionDep):
         raise HTTPException(status_code=404, detail="Round not found")
     sorted_charts = sorted(db_round.chart_links, key=lambda link: link.order_index)
     return [link.chart for link in sorted_charts]
+
+
+@router.put("/{round_id}/charts/{old_chart_id}/replace")
+async def replace_chart_in_round(round_id: uuid.UUID, old_chart_id: uuid.UUID, new_chart_id: uuid.UUID, session: SessionDep):
+    """Replace a chart in a round with another chart"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    
+    db_old_chart = session.get(Chart, old_chart_id)
+    if not db_old_chart:
+        raise HTTPException(status_code=404, detail="Old chart not found")
+    
+    db_new_chart = session.get(Chart, new_chart_id)
+    if not db_new_chart:
+        raise HTTPException(status_code=404, detail="New chart not found")
+    
+    db_round_chart_link = next((link for link in db_round.chart_links if link.chart_id == old_chart_id), None)
+    if not db_round_chart_link:
+        raise HTTPException(status_code=404, detail="Old chart is not in the round")
+    
+    # Check if new chart is already in the round
+    if any(link.chart_id == new_chart_id for link in db_round.chart_links):
+        raise HTTPException(status_code=400, detail="New chart is already in the round")
+    
+    db_round_chart_link.chart = db_new_chart
+    session.add(db_round_chart_link)
+    session.commit()
+    session.refresh(db_round)
+    
+    return db_round
