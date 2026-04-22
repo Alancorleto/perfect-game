@@ -16,7 +16,8 @@ router = APIRouter(
 @router.get("/")
 async def list_scores(session: SessionDep):
     """List all scores"""
-    return {"message": "List of scores"}
+    scores = session.exec(select(Score)).all()
+    return scores
 
 
 @router.get("/{score_id}")
