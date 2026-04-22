@@ -227,3 +227,33 @@ async def replace_chart_in_round(round_id: uuid.UUID, old_chart_id: uuid.UUID, n
     session.refresh(db_round)
     
     return db_round
+
+
+@router.put("/{round_id}/charts/order")
+async def update_chart_order_in_round(round_id: uuid.UUID, chart_ids: list[uuid.UUID], session: SessionDep):
+    """Update the order of charts in a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    
+    if len(chart_ids) != len(db_round.chart_links):
+        raise HTTPException(status_code=400, detail="Chart IDs count does not match the number of charts in the round")
+    
+    for order_index, chart_id in enumerate(chart_ids):
+        # Validate chart exists
+        db_chart = session.get(Chart, chart_id)
+        if not db_chart:
+            raise HTTPException(status_code=404, detail=f"Chart with ID {chart_id} not found")
+
+        # Validate chart is in the round
+        db_round_chart_link = next((link for link in db_round.chart_links if link.chart_id == chart_id), None)
+        if not db_round_chart_link:
+            raise HTTPException(status_code=404, detail=f"Chart with ID {chart_id} is not in the round")
+    
+        # Update the order index
+        db_round_chart_link.order_index = order_index
+        session.add(db_round_chart_link)
+
+    session.commit()
+    session.refresh(db_round)
+    return db_round
