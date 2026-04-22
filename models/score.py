@@ -35,7 +35,7 @@ class ScoreBase(SQLModel):
     max_combo: int = Field(ge=0)
     kcal: float = Field(ge=0)
     grade: Grade = Field(default=Grade.S)
-    stage_pass: bool = False
+    stage_pass: bool = True
     video_url: str | None = None
 
 
