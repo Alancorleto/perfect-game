@@ -7,6 +7,7 @@ from models.player import Player
 from models.round_player import RoundPlayerLink
 from models.round_chart import RoundChartLink
 from database import SessionDep
+from models.score import Score
 
 router = APIRouter(
     prefix="/rounds",
@@ -394,3 +395,12 @@ async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep):
     session.refresh(db_round)
 
     return db_round
+
+
+@router.get("/{round_id}/scores", response_model=list[Score])
+async def list_scores_in_round(round_id: uuid.UUID, session: SessionDep):
+    """List all scores in a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    return db_round.scores

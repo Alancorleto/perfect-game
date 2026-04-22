@@ -6,6 +6,10 @@ from models.category_player import CategoryPlayerLink
 from models.round_player import RoundPlayerLink
 from models.round_chart import RoundChartLink
 from enum import Enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.score import Score
 
 
 class RoundFormat(Enum):
@@ -38,6 +42,7 @@ class Round(RoundBase, table=True):
     category: Category = Relationship(back_populates="rounds")
     player_links: list[RoundPlayerLink] = Relationship(back_populates="round")
     chart_links: list[RoundChartLink] = Relationship(back_populates="round")
+    scores: list["Score"] = Relationship(back_populates="round")
 
 
 class RoundCreate(RoundBase):
