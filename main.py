@@ -7,6 +7,7 @@ if os.getenv("ENVIRONMENT") != "production":
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel
 from routers import api_router
 from database import engine
@@ -20,6 +21,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(api_router)
+app.mount("/images", StaticFiles(directory="image_storage_local"), name="images")
 
 
 def create_db_and_tables():
