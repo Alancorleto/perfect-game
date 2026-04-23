@@ -1,10 +1,13 @@
+from typing import Annotated
 import uuid
 from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
 from datetime import date
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException
 from sqlalchemy import Column, String
 from sqlmodel import Field, SQLModel, select, Relationship
 from database import SessionDep
+from image_storage import upload_image
+
 
 router = APIRouter(
     prefix="/players",
@@ -61,3 +64,20 @@ async def delete_player(player_id: uuid.UUID, session: SessionDep):
     session.delete(db_player)
     session.commit()
     return {"detail": "Player deleted"}
+
+
+@router.post("/{player_id}/profile_picture")
+async def upload_profile_picture(player_id: uuid.UUID, profile_picture: Annotated[bytes, File()], session: SessionDep):
+    """Upload a player's profile picture"""
+    db_player = session.get(Player, player_id)
+    if not db_player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    file_name = f"{db_player.id}.png"
+    db_player.profile_picture_url = await upload_image(profile_picture, file_name, "profile_pictures")
+
+    session.add(db_player)
+    session.commit()
+    session.refresh(db_player)
+    
+    return db_player
