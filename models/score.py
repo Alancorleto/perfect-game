@@ -44,24 +44,20 @@ class Score(ScoreBase, table=True):
         default_factory=uuid.uuid4,
         primary_key=True,
     )
-    round_id: uuid.UUID = Field(foreign_key="round.id")
     player_id: uuid.UUID = Field(foreign_key="player.id")
     chart_id: uuid.UUID = Field(foreign_key="chart.id")
 
-    round: Round = Relationship()
     player: Player = Relationship()
     chart: Chart = Relationship()
 
 
 class ScoreCreate(ScoreBase):
-    round_id: uuid.UUID
     player_id: uuid.UUID
     chart_id: uuid.UUID
 
 
 class ScorePublic(ScoreBase):
     id: uuid.UUID
-    round_id: uuid.UUID
     player_id: uuid.UUID
     chart_id: uuid.UUID
 

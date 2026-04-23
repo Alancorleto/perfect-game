@@ -1,15 +1,13 @@
 import uuid
 from sqlmodel import Field, SQLModel, Relationship
-from models.player import Player
 from models.category import Category
-from models.category_player import CategoryPlayerLink
 from models.round_player import RoundPlayerLink
-from models.round_chart import RoundChartLink
 from enum import Enum
 from typing import TYPE_CHECKING
 
+
 if TYPE_CHECKING:
-    from models.score import Score
+    from models.sum_format import SumFormat
 
 
 class RoundFormat(Enum):
@@ -27,8 +25,6 @@ class RoundState(Enum):
 class RoundBase(SQLModel):
     name: str | None = None
     format: RoundFormat = Field(default=RoundFormat.SCORE_SUM)
-    levels: str | None = None
-    qualifiers_count: int = Field(ge=1)
     state: RoundState = Field(default=RoundState.NOT_STARTED)
 
 
@@ -38,11 +34,11 @@ class Round(RoundBase, table=True):
         primary_key=True
     )
     category_id: uuid.UUID = Field(foreign_key="category.id")
-    
+
     category: Category = Relationship(back_populates="rounds")
     player_links: list[RoundPlayerLink] = Relationship(back_populates="round")
-    chart_links: list[RoundChartLink] = Relationship(back_populates="round")
-    scores: list["Score"] = Relationship(back_populates="round")
+    
+    sum_format: "SumFormat" = Relationship(back_populates="round")
 
 
 class RoundCreate(RoundBase):
@@ -57,6 +53,4 @@ class RoundPublic(RoundBase):
 class RoundUpdate(SQLModel):
     name: str | None = None
     format: RoundFormat | None = None
-    levels: str | None = None
-    qualifiers_count: int | None = None
     state: RoundState | None = None
