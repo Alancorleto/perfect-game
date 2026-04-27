@@ -1,17 +1,22 @@
 import uuid
-from sqlmodel import Field, SQLModel, Relationship
+from sqlmodel import Enum, Field, SQLModel, Relationship
 from models.round import Round
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING:
     from models.set_chart import SetChartLink
-    from models.score import Score
+    from models.set_player import SetPlayerLink
+    from models.set_score import SetScoreLink
+
+class SetFormat(Enum):
+    SCORE_SUM = "score_sum"
+    BATTLE = "battle"
 
 
 class SetBase(SQLModel):
     levels: str | None = None
-    qualifiers_count: int = Field(ge=1)
+    qualifiers_count: int | None = Field(ge=1)
+    format: SetFormat = Field(default=SetFormat.SCORE_SUM)
 
 
 class Set(SetBase, table=True):
@@ -20,6 +25,8 @@ class Set(SetBase, table=True):
 
     round: Round = Relationship(back_populates="set")
     chart_links: list["SetChartLink"] = Relationship(back_populates="set")
+    player_links: list["SetPlayerLink"] = Relationship(back_populates="set")
+    score_links: list["SetScoreLink"] = Relationship(back_populates="set")
 
 
 class SetCreate(SetBase):

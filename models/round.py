@@ -6,14 +6,8 @@ from models.set_player import SetPlayerLink
 from enum import Enum
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING:
     from models.set import Set
-
-
-class RoundFormat(Enum):
-    SCORE_SUM = "score_sum"
-    BATTLE = "battle"
 
 
 class RoundState(Enum):
@@ -25,7 +19,6 @@ class RoundState(Enum):
 
 class RoundBase(SQLModel):
     name: str | None = None
-    format: RoundFormat = Field(default=RoundFormat.SCORE_SUM)
     state: RoundState = Field(default=RoundState.NOT_STARTED)
 
 
@@ -37,14 +30,8 @@ class Round(RoundBase, table=True):
     category_id: uuid.UUID = Field(foreign_key="category.id")
 
     category: Category = Relationship(back_populates="rounds")
-    player_links: list[SetPlayerLink] = Relationship(back_populates="round")
-    score_links: list[SetScoreLink] = Relationship(back_populates="round")
 
-    set: "Set" = Relationship(back_populates="round")
-    # sets: list["Set"] = Relationship(back_populates="round")
-    # battles: list["Battle"] = Relationship(back_populates="round")
-    # custom_set: "CustomSet" = Relationship(back_populates="round")
-    # heart_battles: list["HeartBattle"] = Relationship(back_populates="round")
+    sets: list["Set"] = Relationship(back_populates="round")
 
 
 class RoundCreate(RoundBase):
@@ -58,5 +45,4 @@ class RoundPublic(RoundBase):
 
 class RoundUpdate(SQLModel):
     name: str | None = None
-    format: RoundFormat | None = None
     state: RoundState | None = None
