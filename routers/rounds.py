@@ -5,8 +5,9 @@ from models.chart import Chart
 from models.round import Round, RoundCreate, RoundState, RoundUpdate, RoundPublic
 from models.player import Player
 from models.round_player import RoundPlayerLink
-from database import SessionDep
 from models.score import Score
+from models.set import Set
+from database import SessionDep
 
 router = APIRouter(
     prefix="/rounds",
@@ -403,3 +404,12 @@ async def list_scores_in_round(round_id: uuid.UUID, session: SessionDep):
     if not db_round:
         raise HTTPException(status_code=404, detail="Round not found")
     return db_round.scores
+
+
+@router.get("/{round_id}/set", response_model=Set)
+async def get_set_in_round(round_id: uuid.UUID, session: SessionDep):
+    """Get the set associated with a round"""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(status_code=404, detail="Round not found")
+    return db_round.set

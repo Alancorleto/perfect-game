@@ -6,7 +6,7 @@ from routers.rounds import router as round_router
 from routers.songs import router as song_router
 from routers.charts import router as chart_router
 from routers.scores import router as score_router
-from routers.sum_format_rounds import router as sum_format_router
+from routers.sets import router as sum_format_router
 
 api_router = APIRouter()
 api_router.include_router(player_router)

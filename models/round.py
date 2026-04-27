@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from models.sum_format_round import SumFormatRound
+    from models.set import Set
 
 
 class RoundFormat(Enum):
@@ -40,11 +40,12 @@ class Round(RoundBase, table=True):
     player_links: list[RoundPlayerLink] = Relationship(back_populates="round")
     score_links: list[RoundScoreLink] = Relationship(back_populates="round")
 
-    sum_format: "SumFormatRound" = Relationship(back_populates="round")
-    # battle_format: "BattleFormat" = Relationship(back_populates="round", uselist=False)
-    # strategy_format: "StrategyFormat" = Relationship(back_populates="round", uselist=False)
-    # round_robin_format: "RoundRobinFormat" = Relationship(back_populates="round", uselist=False)
-    # multi_battle_format: "MultiBattleFormat" = Relationship(back_populates="round", uselist=False)
+    set: "Set" = Relationship(back_populates="round")
+    sets: list["Set"] = Relationship(back_populates="round")
+    # battles: list["Battle"] = Relationship(back_populates="round")
+    # custom_sets: list["CustomSet"] = Relationship(back_populates="round")
+    # custom_sets: list["CustomSet"] = Relationship(back_populates="round")
+    # heart_battles: list["HeartBattle"] = Relationship(back_populates="round")
 
 
 class RoundCreate(RoundBase):
