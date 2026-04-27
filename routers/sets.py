@@ -1,11 +1,13 @@
 import uuid
 from fastapi import APIRouter, HTTPException
 from models.chart import Chart
+from models.player import Player
 from models.set_chart import SetChartLink
 from sqlmodel import Field, SQLModel, select, Relationship
 from models.set import Set, SetCreate, SetResult, SetResultScore
 from models.round import Round
 from database import SessionDep
+from models.set_player import SetPlayerLink
 
 router = APIRouter(
     prefix="/sets",
@@ -78,7 +80,7 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
     
     chart_links = sorted(db_set.chart_links, key=lambda link: link.order_index)
     
-    for player_link in sorted(db_set.round.player_links, key=lambda link: link.order_index):
+    for player_link in db_set.player_links:
         player = player_link.player
         set_result: SetResult = SetResult(
             player_id=player.id,
@@ -87,8 +89,13 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
             total_score=0,
         )
         for chart_link in chart_links:
-            set_result_score = SetResultScore(chart_id=chart_link.chart_id, repeat_index=chart_link.repeat_index, score=0, score_id=None)
-            score_links = [score_link for score_link in db_set.round.score_links if score_link.score.chart_id == chart_link.chart_id and score_link.repeat_index == chart_link.repeat_index and score_link.score.player_id == player.id]
+            set_result_score = SetResultScore(
+                chart_id=chart_link.chart_id,
+                order_index=chart_link.order_index,
+                score=0,
+                score_id=None
+            )
+            score_links = [score_link for score_link in db_set.score_links if score_link.order_index == chart_link.order_index and score_link.score.player_id == player.id]
             
             if any(score_links):
                 score = score_links[0].score
@@ -103,3 +110,33 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
     results.sort(key=lambda r: (-r.total_score, r.order_index))
 
     return results
+
+
+@router.post("/{set_id}/players/bulk")
+async def bulk_add_players_to_set(set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep):
+    """Bulk add players to a set"""
+    db_set = session.get(Set, set_id)
+    if not db_set:
+        raise HTTPException(status_code=404, detail="Set not found")
+    
+    # Filter out player IDs that are already in the set
+    player_ids = filter(
+        lambda pid: not any(link.player_id == pid for link in db_set.player_links),
+        player_ids
+    )
+
+    previous_player_count = len(db_set.player_links)
+
+    for i, player_id in enumerate(player_ids):
+        db_player = session.get(Player, player_id)
+        if not db_player:
+            raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
+        order_index = previous_player_count + i
+        set_player_link = SetPlayerLink(set=db_set, player=db_player, order_index=order_index)
+        db_set.player_links.append(set_player_link)
+    
+    session.add(db_set)
+    session.commit()
+    session.refresh(db_set)
+    
+    return db_set

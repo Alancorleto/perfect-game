@@ -6,6 +6,7 @@ from models.score import Score, ScoreCreate, ScoreUpdate
 from models.round import Round
 from models.player import Player
 from models.chart import Chart
+from models.set import Set
 from database import SessionDep
 
 router = APIRouter(
@@ -44,28 +45,30 @@ async def create_score(score: ScoreCreate, session: SessionDep):
     db_score = Score.model_validate(score)
     session.add(db_score)
 
-    # Add the score to an existing round if round_id and repeat_index are provided.
-    if score.round_id is not None and score.repeat_index is not None:
-        db_round = session.get(Round, score.round_id)
-        if not db_round:
-            raise HTTPException(status_code=404, detail="Round not found")
+    # Add the score to an existing set if set_id and order_index are provided.
+    if score.set_id is not None and score.order_index is not None:
+        db_set = session.get(Set, score.set_id)
+        if not db_set:
+            raise HTTPException(status_code=404, detail="Set not found")
 
-        if not any(link.player_id == score.player_id for link in db_round.player_links):
-            raise HTTPException(status_code=400, detail="Player is not in the round")
+        if not any(link.player_id == score.player_id for link in db_set.player_links):
+            raise HTTPException(status_code=400, detail="Player is not in the set")
+
+        if not any(link.chart_id == score.chart_id and link.order_index == score.order_index for link in db_set.chart_links):
+            raise HTTPException(status_code=400, detail=f"Chart with index {score.order_index} is not in the set")
 
         if any(
             score_link.score.player_id == score.player_id
-            and score_link.score.chart_id == score.chart_id
-            and score_link.round_id == score.round_id
-            and score_link.repeat_index == score.repeat_index
-            for score_link in db_round.score_links
+            and score_link.set_id == score.set_id
+            and score_link.order_index == score.order_index
+            for score_link in db_set.score_links
         ):
-            raise HTTPException(status_code=400, detail="Score already exists for this player, round, and chart")
+            raise HTTPException(status_code=400, detail="A score already exists for this player, set, and order index")
 
         score_link: SetScoreLink = SetScoreLink(
-            round=db_round,
+            set=db_set,
             score=db_score,
-            repeat_index=score.repeat_index,
+            order_index=score.order_index,
         )
         session.add(score_link)
 

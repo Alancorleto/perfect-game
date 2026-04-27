@@ -1,7 +1,8 @@
 import uuid
-from sqlmodel import Enum, Field, SQLModel, Relationship
+from sqlmodel import Field, SQLModel, Relationship
 from models.round import Round
 from typing import TYPE_CHECKING
+from enum import Enum
 
 if TYPE_CHECKING:
     from models.set_chart import SetChartLink
@@ -25,7 +26,7 @@ class Set(SetBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     round_id: uuid.UUID = Field(foreign_key="round.id")
 
-    round: Round = Relationship(back_populates="set")
+    round: Round = Relationship(back_populates="sets")
     chart_links: list["SetChartLink"] = Relationship(back_populates="set")
     player_links: list["SetPlayerLink"] = Relationship(back_populates="set")
     score_links: list["SetScoreLink"] = Relationship(back_populates="set")
@@ -37,7 +38,7 @@ class SetCreate(SetBase):
 
 class SetResultScore(SQLModel):
     chart_id: uuid.UUID
-    repeat_index: int
+    order_index: int
     score: int
     score_id: uuid.UUID | None = None
 
