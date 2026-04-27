@@ -1,7 +1,7 @@
 import uuid
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Field, SQLModel, select, Relationship
-from models.round_score import RoundScoreLink
+from models.set_score import SetScoreLink
 from models.score import Score, ScoreCreate, ScoreUpdate
 from models.round import Round
 from models.player import Player
@@ -62,7 +62,7 @@ async def create_score(score: ScoreCreate, session: SessionDep):
         ):
             raise HTTPException(status_code=400, detail="Score already exists for this player, round, and chart")
 
-        score_link: RoundScoreLink = RoundScoreLink(
+        score_link: SetScoreLink = SetScoreLink(
             round=db_round,
             score=db_score,
             repeat_index=score.repeat_index,

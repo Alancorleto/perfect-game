@@ -4,8 +4,8 @@ from sqlmodel import Field, SQLModel, select, Relationship
 from models.chart import Chart
 from models.round import Round, RoundCreate, RoundState, RoundUpdate, RoundPublic
 from models.player import Player
-from models.round_player import RoundPlayerLink
-from models.round_score import RoundScoreLink
+from models.set_player import SetPlayerLink
+from models.set_score import SetScoreLink
 from models.score import Score, ScoreCreate
 from models.set import Set
 from database import SessionDep
@@ -87,7 +87,7 @@ async def bulk_add_players_to_round(round_id: uuid.UUID, player_ids: list[uuid.U
         if not db_player:
             raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
         order_index = previous_player_count + i
-        db_round_player_link = RoundPlayerLink(round=db_round, player=db_player, order_index=order_index)
+        db_round_player_link = SetPlayerLink(round=db_round, player=db_player, order_index=order_index)
         db_round.player_links.append(db_round_player_link)
     session.add(db_round)
     session.commit()

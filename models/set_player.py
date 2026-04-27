@@ -3,14 +3,14 @@ from sqlmodel import Field, SQLModel, Relationship
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.round import Round
+    from models.set import Set
     from models.player import Player
 
 
-class RoundPlayerLink(SQLModel, table=True):
-    round_id: uuid.UUID = Field(foreign_key="round.id", primary_key=True)
+class SetPlayerLink(SQLModel, table=True):
+    set_id: uuid.UUID = Field(foreign_key="set.id", primary_key=True)
     player_id: uuid.UUID = Field(foreign_key="player.id", primary_key=True)
     order_index: int = Field(ge=0)
 
-    round: "Round" = Relationship(back_populates="player_links")
+    set: "Set" = Relationship(back_populates="player_links")
     player: "Player" = Relationship()

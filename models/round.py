@@ -1,8 +1,8 @@
 import uuid
-from models.round_score import RoundScoreLink
+from models.set_score import SetScoreLink
 from sqlmodel import Field, SQLModel, Relationship
 from models.category import Category
-from models.round_player import RoundPlayerLink
+from models.set_player import SetPlayerLink
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -37,8 +37,8 @@ class Round(RoundBase, table=True):
     category_id: uuid.UUID = Field(foreign_key="category.id")
 
     category: Category = Relationship(back_populates="rounds")
-    player_links: list[RoundPlayerLink] = Relationship(back_populates="round")
-    score_links: list[RoundScoreLink] = Relationship(back_populates="round")
+    player_links: list[SetPlayerLink] = Relationship(back_populates="round")
+    score_links: list[SetScoreLink] = Relationship(back_populates="round")
 
     set: "Set" = Relationship(back_populates="round")
     # sets: list["Set"] = Relationship(back_populates="round")
