@@ -54,6 +54,8 @@ class Score(ScoreBase, table=True):
 class ScoreCreate(ScoreBase):
     player_id: uuid.UUID
     chart_id: uuid.UUID
+    round_id: uuid.UUID | None = None
+    repeat_index: int | None = None
 
 
 class ScorePublic(ScoreBase):

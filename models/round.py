@@ -41,10 +41,9 @@ class Round(RoundBase, table=True):
     score_links: list[RoundScoreLink] = Relationship(back_populates="round")
 
     set: "Set" = Relationship(back_populates="round")
-    sets: list["Set"] = Relationship(back_populates="round")
+    # sets: list["Set"] = Relationship(back_populates="round")
     # battles: list["Battle"] = Relationship(back_populates="round")
-    # custom_sets: list["CustomSet"] = Relationship(back_populates="round")
-    # custom_sets: list["CustomSet"] = Relationship(back_populates="round")
+    # custom_set: "CustomSet" = Relationship(back_populates="round")
     # heart_battles: list["HeartBattle"] = Relationship(back_populates="round")
 
 
