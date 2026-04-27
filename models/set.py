@@ -3,8 +3,10 @@ from sqlmodel import Field, SQLModel, Relationship
 from models.round import Round
 from typing import TYPE_CHECKING
 
+
 if TYPE_CHECKING:
     from models.set_chart import SetChartLink
+    from models.score import Score
 
 
 class SetBase(SQLModel):
@@ -22,3 +24,17 @@ class Set(SetBase, table=True):
 
 class SetCreate(SetBase):
     round_id: uuid.UUID
+
+
+class SetResultScore(SQLModel):
+    chart_id: uuid.UUID
+    repeat_index: int
+    score: int
+    score_id: uuid.UUID | None = None
+
+
+class SetResult(SQLModel):
+    player_id: uuid.UUID
+    order_index: int
+    scores: list[SetResultScore] # chart_id to score
+    total_score: int
