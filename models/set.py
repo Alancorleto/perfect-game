@@ -8,9 +8,11 @@ if TYPE_CHECKING:
     from models.set_player import SetPlayerLink
     from models.set_score import SetScoreLink
 
+
 class SetFormat(Enum):
     SCORE_SUM = "score_sum"
     BATTLE = "battle"
+    CUSTOM_SET = "custom_set"
 
 
 class SetBase(SQLModel):
@@ -43,5 +45,5 @@ class SetResultScore(SQLModel):
 class SetResult(SQLModel):
     player_id: uuid.UUID
     order_index: int
-    scores: list[SetResultScore] # chart_id to score
+    scores: list[SetResultScore]
     total_score: int
