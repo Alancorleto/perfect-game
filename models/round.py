@@ -1,4 +1,5 @@
 import uuid
+from models.round_score import RoundScoreLink
 from sqlmodel import Field, SQLModel, Relationship
 from models.category import Category
 from models.round_player import RoundPlayerLink
@@ -7,7 +8,7 @@ from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from models.sum_format import SumFormat
+    from models.sum_format_round import SumFormatRound
 
 
 class RoundFormat(Enum):
@@ -37,8 +38,13 @@ class Round(RoundBase, table=True):
 
     category: Category = Relationship(back_populates="rounds")
     player_links: list[RoundPlayerLink] = Relationship(back_populates="round")
-    
-    sum_format: "SumFormat" = Relationship(back_populates="round")
+    score_links: list[RoundScoreLink] = Relationship(back_populates="round")
+
+    sum_format: "SumFormatRound" = Relationship(back_populates="round")
+    # battle_format: "BattleFormat" = Relationship(back_populates="round", uselist=False)
+    # strategy_format: "StrategyFormat" = Relationship(back_populates="round", uselist=False)
+    # round_robin_format: "RoundRobinFormat" = Relationship(back_populates="round", uselist=False)
+    # multi_battle_format: "MultiBattleFormat" = Relationship(back_populates="round", uselist=False)
 
 
 class RoundCreate(RoundBase):

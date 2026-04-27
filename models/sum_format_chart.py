@@ -1,16 +1,15 @@
 import uuid
 from sqlmodel import Field, SQLModel, Relationship
 from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from models.sum_format import SumFormat
-    from models.chart import Chart
+from models.chart import Chart
+from models.round import Round
 
 
 class SumFormatChartLink(SQLModel, table=True):
-    round_id: uuid.UUID = Field(foreign_key="sumformat.round_id", primary_key=True)
+    round_id: uuid.UUID = Field(foreign_key="round.id", primary_key=True)
     chart_id: uuid.UUID = Field(foreign_key="chart.id", primary_key=True)
+    repeat_index: int = Field(ge=0)
     order_index: int = Field(ge=0)
 
-    format: "SumFormat" = Relationship(back_populates="chart_links")
-    chart: "Chart" = Relationship()
+    round: Round = Relationship()
+    chart: Chart = Relationship()

@@ -30,7 +30,7 @@ async def get_score(score_id: uuid.UUID, session: SessionDep):
 
 
 @router.post("/")
-async def create_score(score: ScoreCreate, session: SessionDep):
+async def create_score(score: ScoreCreate, format: str, session: SessionDep):
     """Create a new score"""
     db_round = session.get(Round, score.round_id)
     if not db_round:

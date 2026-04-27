@@ -65,7 +65,7 @@ async def delete_round(round_id: uuid.UUID, session: SessionDep):
     return {"detail": "Round deleted"}
 
 
-@router.post("/{category_id}/players/bulk")
+@router.post("/{round_id}/players/bulk")
 async def bulk_add_players_to_round(round_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep):
     """Bulk add players to a round"""
     db_round = session.get(Round, round_id)

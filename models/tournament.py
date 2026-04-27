@@ -1,6 +1,10 @@
 import uuid
 from datetime import date
 from sqlmodel import Field, SQLModel, Relationship
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.category import Category
 
 
 class TournamentBase(SQLModel):
