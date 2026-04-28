@@ -1,8 +1,6 @@
 import uuid
-from models.set_score import SetScoreLink
-from sqlmodel import Field, SQLModel, Relationship
 from models.category import Category
-from models.set_player import SetPlayerLink
+from sqlmodel import Field, SQLModel, Relationship
 from enum import Enum
 from typing import TYPE_CHECKING
 

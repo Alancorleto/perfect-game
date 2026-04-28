@@ -5,9 +5,8 @@ from typing import TYPE_CHECKING
 from enum import Enum
 
 if TYPE_CHECKING:
-    from models.set_chart import SetChartLink
+    from models.chart_slot import ChartSlot
     from models.set_player import SetPlayerLink
-    from models.set_score import SetScoreLink
 
 
 class SetFormat(Enum):
@@ -27,9 +26,8 @@ class Set(SetBase, table=True):
     round_id: uuid.UUID = Field(foreign_key="round.id")
 
     round: Round = Relationship(back_populates="sets")
-    chart_links: list["SetChartLink"] = Relationship(back_populates="set")
+    chart_slots: list["ChartSlot"] = Relationship(back_populates="set")
     player_links: list["SetPlayerLink"] = Relationship(back_populates="set")
-    score_links: list["SetScoreLink"] = Relationship(back_populates="set")
 
 
 class SetCreate(SetBase):

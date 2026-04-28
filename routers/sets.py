@@ -2,7 +2,7 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from models.chart import Chart
 from models.player import Player
-from models.set_chart import SetChartLink
+from models.chart_slot import ChartSlot
 from sqlmodel import Field, SQLModel, select, Relationship
 from models.set import Set, SetCreate, SetResult, SetResultScore
 from models.round import Round
@@ -49,24 +49,21 @@ async def add_chart_to_set(set_id: uuid.UUID, chart_id: uuid.UUID, session: Sess
     if not db_chart:
         raise HTTPException(status_code=404, detail="Chart not found")
     
-    repeat_index = len([link for link in db_set.chart_links if link.chart_id == chart_id])
-    
-    order_index = len(db_set.chart_links)
+    order_index = len(db_set.chart_slots)
 
-    set_chart_link = SetChartLink(
+    chart_slot = ChartSlot(
         set=db_set,
         chart=db_chart,
-        repeat_index=repeat_index,
         order_index=order_index,
     )
     
-    db_set.chart_links.append(set_chart_link)
+    db_set.chart_slots.append(chart_slot)
     
-    session.add(set_chart_link)
+    session.add(chart_slot)
     session.commit()
-    session.refresh(set_chart_link)
+    session.refresh(chart_slot)
     
-    return set_chart_link
+    return chart_slot
 
 
 @router.get("/{set_id}/results", response_model=list[SetResult])
@@ -78,27 +75,36 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
     
     results: list[SetResult] = []
     
-    chart_links = sorted(db_set.chart_links, key=lambda link: link.order_index)
+    chart_slots = sorted(db_set.chart_slots, key=lambda link: link.order_index)
     
     for player_link in db_set.player_links:
         player = player_link.player
+        
         set_result: SetResult = SetResult(
             player_id=player.id,
             order_index=player_link.order_index,
             scores=[],
             total_score=0,
         )
-        for chart_link in chart_links:
+        
+        for chart_slot in chart_slots:
             set_result_score = SetResultScore(
-                chart_id=chart_link.chart_id,
-                order_index=chart_link.order_index,
+                chart_id=chart_slot.chart_id,
+                order_index=chart_slot.order_index,
                 score=0,
                 score_id=None
             )
-            score_links = [score_link for score_link in db_set.score_links if score_link.order_index == chart_link.order_index and score_link.score.player_id == player.id]
+
+            score = next(
+                (
+                    score_entry.score
+                    for score_entry in chart_slot.score_entries
+                    if score_entry.score.player_id == player.id
+                ),
+                None
+            )
             
-            if any(score_links):
-                score = score_links[0].score
+            if score:
                 set_result_score.score = score.value
                 set_result_score.score_id = score.id
                 set_result.total_score += score.value

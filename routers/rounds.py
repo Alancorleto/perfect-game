@@ -5,7 +5,7 @@ from models.chart import Chart
 from models.round import Round, RoundCreate, RoundState, RoundUpdate, RoundPublic
 from models.player import Player
 from models.set_player import SetPlayerLink
-from models.set_score import SetScoreLink
+from models.score_entry import ScoreEntry
 from models.score import Score, ScoreCreate
 from models.set import Set
 from database import SessionDep

@@ -1,7 +1,7 @@
 import uuid
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Field, SQLModel, select, Relationship
-from models.set_score import SetScoreLink
+from models.score_entry import ScoreEntry
 from models.score import Score, ScoreCreate, ScoreUpdate
 from models.round import Round
 from models.player import Player
@@ -54,22 +54,29 @@ async def create_score(score: ScoreCreate, session: SessionDep):
         if not any(link.player_id == score.player_id for link in db_set.player_links):
             raise HTTPException(status_code=400, detail="Player is not in the set")
 
-        if not any(link.chart_id == score.chart_id and link.order_index == score.order_index for link in db_set.chart_links):
+        if not any(
+            chart_slot.chart_id == score.chart_id
+            and chart_slot.order_index == score.order_index
+            for chart_slot in db_set.chart_slots
+        ):
             raise HTTPException(status_code=400, detail=f"Chart with index {score.order_index} is not in the set")
 
+        chart_slot = next(
+            chart_slot for chart_slot in db_set.chart_slots
+            if chart_slot.order_index == score.order_index
+        )
+
         if any(
-            score_link.score.player_id == score.player_id
-            and score_link.set_id == score.set_id
-            and score_link.order_index == score.order_index
-            for score_link in db_set.score_links
+            score_entry.score.player_id == score.player_id
+            for score_entry in chart_slot.score_entries
         ):
             raise HTTPException(status_code=400, detail="A score already exists for this player, set, and order index")
 
-        score_link: SetScoreLink = SetScoreLink(
-            set=db_set,
+        score_link: ScoreEntry = ScoreEntry(
             score=db_score,
-            order_index=score.order_index,
+            chart_slot=chart_slot
         )
+
         session.add(score_link)
 
     session.commit()
