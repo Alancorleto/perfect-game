@@ -48,5 +48,5 @@ class Result(SQLModel):
 class PlayerResults(SQLModel):
     player_id: uuid.UUID
     order_index: int
-    results: list[Result]
-    total_score: int
+    results: list[Result] = []
+    total_score: int = 0

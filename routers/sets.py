@@ -115,31 +115,25 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
     for player_link in db_set.player_links:
         player = player_link.player
         
-        set_result: PlayerResults = PlayerResults(
+        set_result = PlayerResults(
             player_id=player.id,
             order_index=player_link.order_index,
-            results=[],
-            total_score=0,
         )
         
         for chart_slot in chart_slots:
-            set_result_score = Result(
-                chart_id=chart_slot.chart_id,
-                order_index=chart_slot.order_index,
-                score=0,
-                score_id=None
+            result = Result(
+                player_id=player.id,
+                set_id=db_set.id,
+                chart_order_index=chart_slot.order_index,
             )
 
             score = _try_get_player_score_for_chart_slot(player.id, chart_slot)
             
             if score:
-                set_result_score.score = score.value
-                set_result_score.score_id = score.id
+                result.score = score.value
+                result.score_id = score.id
                 
-                set_result_score.place = next(
-                    i for i, s in sorted_scores[chart_slot.id]
-                    if s.id == score.id
-                )
+                result.place, result.is_tie = _try_get_player_place_for_chart_slot(player.id, chart_slot)
 
                 if db_set.format == SetFormat.SCORE_SUM:
                     set_result.total_score += score.value
@@ -148,9 +142,9 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
                     if score.value == max_score:
                         set_result.total_score += 1
             else:
-                set_result_score.place = len(sorted_scores[chart_slot.id]) + 1
+                result.place = len(sorted_scores[chart_slot.id]) + 1
             
-            set_result.results.append(set_result_score)
+            set_result.results.append(result)
         
         results.append(set_result)
 
@@ -183,3 +177,14 @@ def _try_get_player_score_for_chart_slot(player_id: uuid.UUID, chart_slot: Chart
         if score_entry.player_id == player_id:
             return score_entry.score
     return None
+
+
+def _try_get_player_place_for_chart_slot(player_id: uuid.UUID, chart_slot: ChartSlot) -> tuple[int, bool]:
+    sorted_scores = _sort_chart_slot_scores([chart_slot])[chart_slot.id]
+    
+    for place_index, score in sorted_scores:
+        if score.player_id == player_id:
+            is_tie = any(s.value == score.value for i, s in sorted_scores if i != place_index)
+            return place_index, is_tie
+    
+    return len(sorted_scores) + 1, False
