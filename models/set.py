@@ -34,16 +34,19 @@ class SetCreate(SetBase):
     round_id: uuid.UUID
 
 
-class SetResultScore(SQLModel):
-    chart_id: uuid.UUID
-    order_index: int
-    score: int
+class Result(SQLModel):
+    player_id: uuid.UUID
+    player_order_index: int
+    set_id: uuid.UUID
+    chart_order_index: int
     score_id: uuid.UUID | None = None
+    score: int = 0
     place: int = -1
+    is_tie: bool = False
 
 
-class SetResult(SQLModel):
+class PlayerResults(SQLModel):
     player_id: uuid.UUID
     order_index: int
-    scores: list[SetResultScore]
+    results: list[Result]
     total_score: int

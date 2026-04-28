@@ -5,7 +5,7 @@ from models.player import Player
 from models.chart_slot import ChartSlot
 from sqlmodel import Field, SQLModel, select, Relationship
 from models.score import Score
-from models.set import Set, SetCreate, SetFormat, SetResult, SetResultScore
+from models.set import Set, SetCreate, SetFormat, PlayerResults, Result
 from models.round import Round
 from database import SessionDep
 from models.set_player import SetPlayerLink
@@ -97,7 +97,7 @@ async def bulk_add_players_to_set(set_id: uuid.UUID, player_ids: list[uuid.UUID]
     return db_set
 
 
-@router.get("/{set_id}/results", response_model=list[SetResult])
+@router.get("/{set_id}/results", response_model=list[PlayerResults])
 def get_set_results(set_id: uuid.UUID, session: SessionDep):
     """Get the results for a specific set."""
     
@@ -110,20 +110,20 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
     # Precompute sorted scores for each chart slot to determine place indices
     sorted_scores: dict[uuid.UUID, list[tuple[int, Score]]] = _sort_chart_slot_scores(chart_slots)
     
-    results: list[SetResult] = []
+    results: list[PlayerResults] = []
 
     for player_link in db_set.player_links:
         player = player_link.player
         
-        set_result: SetResult = SetResult(
+        set_result: PlayerResults = PlayerResults(
             player_id=player.id,
             order_index=player_link.order_index,
-            scores=[],
+            results=[],
             total_score=0,
         )
         
         for chart_slot in chart_slots:
-            set_result_score = SetResultScore(
+            set_result_score = Result(
                 chart_id=chart_slot.chart_id,
                 order_index=chart_slot.order_index,
                 score=0,
@@ -150,7 +150,7 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
             else:
                 set_result_score.place = len(sorted_scores[chart_slot.id]) + 1
             
-            set_result.scores.append(set_result_score)
+            set_result.results.append(set_result_score)
         
         results.append(set_result)
 
