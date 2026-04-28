@@ -67,6 +67,36 @@ async def add_chart_to_set(set_id: uuid.UUID, chart_id: uuid.UUID, session: Sess
     return chart_slot
 
 
+@router.post("/{set_id}/players/bulk")
+async def bulk_add_players_to_set(set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep):
+    """Bulk add players to a set"""
+    db_set = session.get(Set, set_id)
+    if not db_set:
+        raise HTTPException(status_code=404, detail="Set not found")
+    
+    # Filter out player IDs that are already in the set
+    player_ids = filter(
+        lambda pid: not any(link.player_id == pid for link in db_set.player_links),
+        player_ids
+    )
+
+    previous_player_count = len(db_set.player_links)
+
+    for i, player_id in enumerate(player_ids):
+        db_player = session.get(Player, player_id)
+        if not db_player:
+            raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
+        order_index = previous_player_count + i
+        set_player_link = SetPlayerLink(set=db_set, player=db_player, order_index=order_index)
+        db_set.player_links.append(set_player_link)
+    
+    session.add(db_set)
+    session.commit()
+    session.refresh(db_set)
+    
+    return db_set
+
+
 @router.get("/{set_id}/results", response_model=list[SetResult])
 def get_set_results(set_id: uuid.UUID, session: SessionDep):
     """Get the results for a specific set."""
@@ -79,21 +109,7 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
     chart_slots = sorted(db_set.chart_slots, key=lambda link: link.order_index)
     
     # Precompute sorted scores for each chart slot to determine place indices
-    sorted_scores: dict[uuid.UUID, list[tuple[int, Score]]] = {}
-    for chart_slot in chart_slots:
-        scores = sorted(
-            (score_entry.score for score_entry in chart_slot.score_entries),
-            key=lambda s: s.value,
-            reverse=True
-        )
-        
-        scores_enumerated = list(enumerate(scores, start=1))
-        
-        for i in range(len(scores_enumerated) - 1):
-            if scores_enumerated[i][1].value == scores_enumerated[i + 1][1].value:
-                scores_enumerated[i + 1][0] = scores_enumerated[i][0]
-        
-        sorted_scores[chart_slot.id] = scores_enumerated
+    sorted_scores: dict[uuid.UUID, list[tuple[int, Score]]] = _sort_chart_slot_scores(chart_slots)
 
     for player_link in db_set.player_links:
         player = player_link.player
@@ -149,31 +165,20 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
     return results
 
 
-@router.post("/{set_id}/players/bulk")
-async def bulk_add_players_to_set(set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep):
-    """Bulk add players to a set"""
-    db_set = session.get(Set, set_id)
-    if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+def _sort_chart_slot_scores(chart_slots: list[ChartSlot]) -> dict[uuid.UUID, list[tuple[int, Score]]]:
+    sorted_scores: dict[uuid.UUID, list[tuple[int, Score]]] = {}
     
-    # Filter out player IDs that are already in the set
-    player_ids = filter(
-        lambda pid: not any(link.player_id == pid for link in db_set.player_links),
-        player_ids
-    )
+    for chart_slot in chart_slots:
+        scores = [score_entry.score for score_entry in chart_slot.score_entries]
+        scores.sort(key=lambda s: s.value, reverse=True)
 
-    previous_player_count = len(db_set.player_links)
-
-    for i, player_id in enumerate(player_ids):
-        db_player = session.get(Player, player_id)
-        if not db_player:
-            raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
-        order_index = previous_player_count + i
-        set_player_link = SetPlayerLink(set=db_set, player=db_player, order_index=order_index)
-        db_set.player_links.append(set_player_link)
+        scores_enumerated = list(enumerate(scores, start=1))
+        
+        # Handle ties by assigning the same place index to tied scores
+        for i in range(len(scores_enumerated) - 1):
+            if scores_enumerated[i][1].value == scores_enumerated[i + 1][1].value:
+                scores_enumerated[i + 1][0] = scores_enumerated[i][0]
+        
+        sorted_scores[chart_slot.id] = scores_enumerated
     
-    session.add(db_set)
-    session.commit()
-    session.refresh(db_set)
-    
-    return db_set
+    return sorted_scores
