@@ -5,7 +5,7 @@ from models.player import Player
 from models.chart_slot import ChartSlot
 from sqlmodel import Field, SQLModel, select, Relationship
 from models.score import Score
-from models.set import Set, SetCreate, SetFormat, PlayerResults, Result
+from models.set import ChartResults, Set, SetCreate, SetFormat, PlayerResults, Result
 from models.round import Round
 from database import SessionDep
 from models.set_player import SetPlayerLink
@@ -101,90 +101,108 @@ async def bulk_add_players_to_set(set_id: uuid.UUID, player_ids: list[uuid.UUID]
 def get_set_results(set_id: uuid.UUID, session: SessionDep):
     """Get the results for a specific set."""
     
-    db_set = session.get(Set, set_id)
-    if not db_set:
+    set = session.get(Set, set_id)
+    if not set:
         raise HTTPException(status_code=404, detail="Set not found")
     
-    chart_slots = sorted(db_set.chart_slots, key=lambda link: link.order_index)
+    chart_slots = sorted(set.chart_slots, key=lambda link: link.order_index)
     
-    # Precompute sorted scores for each chart slot to determine place indices
-    sorted_scores: dict[uuid.UUID, list[tuple[int, Score]]] = _sort_chart_slot_scores(chart_slots)
-    
-    results: list[PlayerResults] = []
+    chart_results_list: list[ChartResults] = []
+    for chart_slot in chart_slots:
+        chart_results = _populate_chart_results(chart_slot)
+        chart_results_list.append(chart_results)
 
-    for player_link in db_set.player_links:
-        player = player_link.player
-        
-        set_result = PlayerResults(
-            player_id=player.id,
-            order_index=player_link.order_index,
+    player_results_list: list[PlayerResults] = []
+    for player_link in set.player_links:
+        player_results = _populate_player_results(player_link, chart_results_list)
+        player_results_list.append(player_results)
+
+    player_results_list.sort(key=lambda r: (-r.total_score, r.order_index))
+
+    return player_results_list
+
+
+def _populate_chart_results(chart_slot: ChartSlot) -> ChartResults:
+    chart_results = ChartResults(
+        chart_slot_id=chart_slot.id,
+        results=[]
+    )
+    
+    for score_entry in chart_slot.score_entries:
+        result = Result(
+            player_id=score_entry.score.player_id,
+            set_id=chart_slot.set_id,
+            chart_order_index=chart_slot.order_index,
+            score=score_entry.score.value,
+            score_id=score_entry.score.id,
         )
         
-        for chart_slot in chart_slots:
+        chart_results.results.append(result)
+    
+    _sort_chart_results(chart_results)
+
+    return chart_results
+
+
+def _sort_chart_results(chart_results: ChartResults):
+    chart_results.results.sort(key=lambda r: (-r.score, r.player_id))
+    
+    if len(chart_results.results) > 0:
+        chart_results.results[0].place = 1
+
+    # Handle ties
+    for i in range(1, len(chart_results.results)):
+        result = chart_results.results[i]
+        previous_result = chart_results.results[i - 1]
+
+        if result.score == previous_result.score:
+            result.is_tie = True
+            previous_result.is_tie = True
+            result.place = previous_result.place
+        else:
+            result.place = i + 1
+
+
+def _populate_player_results(player_link: SetPlayerLink, chart_results_list: list[ChartResults]) -> list[PlayerResults]:
+    player = player_link.player
+    set = player_link.set
+
+    player_results = PlayerResults(
+        player_id=player_link.player_id,
+        order_index=player_link.order_index,
+    )
+    
+    for chart_order_index, chart_results in enumerate(chart_results_list):
+        result = _try_get_player_result(player.id, chart_results.results)
+
+        if not result:
             result = Result(
                 player_id=player.id,
-                set_id=db_set.id,
-                chart_order_index=chart_slot.order_index,
+                set_id=set.id,
+                chart_order_index=chart_order_index,
+                place=len(chart_results.results) + 1,
             )
 
-            score = _try_get_player_score_for_chart_slot(player.id, chart_slot)
-            
-            if score:
-                result.score = score.value
-                result.score_id = score.id
-                
-                result.place, result.is_tie = _try_get_player_place_for_chart_slot(player.id, chart_slot)
+        player_results.results.append(result)
 
-                if db_set.format == SetFormat.SCORE_SUM:
-                    set_result.total_score += score.value
-                elif db_set.format == SetFormat.BATTLE:
-                    max_score = max(score_entry.score.value for score_entry in chart_slot.score_entries)
-                    if score.value == max_score:
-                        set_result.total_score += 1
-            else:
-                result.place = len(sorted_scores[chart_slot.id]) + 1
-            
-            set_result.results.append(result)
-        
-        results.append(set_result)
+    _calculate_player_total_score(player_results, set.format)
 
-    results.sort(key=lambda r: (-r.total_score, r.order_index))
-
-    return results
+    return player_results
 
 
-def _sort_chart_slot_scores(chart_slots: list[ChartSlot]) -> dict[uuid.UUID, list[tuple[int, Score]]]:
-    sorted_scores: dict[uuid.UUID, list[tuple[int, Score]]] = {}
-    
-    for chart_slot in chart_slots:
-        scores = [score_entry.score for score_entry in chart_slot.score_entries]
-        scores.sort(key=lambda s: s.value, reverse=True)
-
-        scores_enumerated = list(enumerate(scores, start=1))
-        
-        # Handle ties by assigning the same place index to tied scores
-        for i in range(len(scores_enumerated) - 1):
-            if scores_enumerated[i][1].value == scores_enumerated[i + 1][1].value:
-                scores_enumerated[i + 1][0] = scores_enumerated[i][0]
-        
-        sorted_scores[chart_slot.id] = scores_enumerated
-    
-    return sorted_scores
-
-
-def _try_get_player_score_for_chart_slot(player_id: uuid.UUID, chart_slot: ChartSlot) -> Score | None:
-    for score_entry in chart_slot.score_entries:
-        if score_entry.player_id == player_id:
-            return score_entry.score
+def _try_get_player_result(player_id: uuid.UUID, results: list[Result]) -> Result:
+    for result in results:
+        if result.player_id == player_id:
+            return result
     return None
 
 
-def _try_get_player_place_for_chart_slot(player_id: uuid.UUID, chart_slot: ChartSlot) -> tuple[int, bool]:
-    sorted_scores = _sort_chart_slot_scores([chart_slot])[chart_slot.id]
+def _calculate_player_total_score(player_results: PlayerResults, set_format: SetFormat):
+    if set_format == SetFormat.SCORE_SUM:
+        for result in player_results.results:
+            player_results.total_score += result.score
     
-    for place_index, score in sorted_scores:
-        if score.player_id == player_id:
-            is_tie = any(s.value == score.value for i, s in sorted_scores if i != place_index)
-            return place_index, is_tie
-    
-    return len(sorted_scores) + 1, False
+    elif set_format == SetFormat.BATTLE:
+        for result in player_results.results:
+            if result.place == 1 and not result.is_tie and result.score_id is not None:
+                player_results.total_score += 1

@@ -1,4 +1,5 @@
 import uuid
+from pydantic import BaseModel
 from sqlmodel import Field, SQLModel, Relationship
 from models.round import Round
 from typing import TYPE_CHECKING
@@ -34,9 +35,8 @@ class SetCreate(SetBase):
     round_id: uuid.UUID
 
 
-class Result(SQLModel):
+class Result(BaseModel):
     player_id: uuid.UUID
-    player_order_index: int
     set_id: uuid.UUID
     chart_order_index: int
     score_id: uuid.UUID | None = None
@@ -45,8 +45,13 @@ class Result(SQLModel):
     is_tie: bool = False
 
 
-class PlayerResults(SQLModel):
+class PlayerResults(BaseModel):
     player_id: uuid.UUID
     order_index: int
     results: list[Result] = []
     total_score: int = 0
+
+
+class ChartResults(BaseModel):
+    chart_slot_id: uuid.UUID
+    results: list[Result] = []
