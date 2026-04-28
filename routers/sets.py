@@ -4,7 +4,8 @@ from models.chart import Chart
 from models.player import Player
 from models.chart_slot import ChartSlot
 from sqlmodel import Field, SQLModel, select, Relationship
-from models.set import Set, SetCreate, SetResult, SetResultScore
+from models.score import Score
+from models.set import Set, SetCreate, SetFormat, SetResult, SetResultScore
 from models.round import Round
 from database import SessionDep
 from models.set_player import SetPlayerLink
@@ -77,6 +78,23 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
     
     chart_slots = sorted(db_set.chart_slots, key=lambda link: link.order_index)
     
+    # Precompute sorted scores for each chart slot to determine place indices
+    sorted_scores: dict[uuid.UUID, list[tuple[int, Score]]] = {}
+    for chart_slot in chart_slots:
+        scores = sorted(
+            (score_entry.score for score_entry in chart_slot.score_entries),
+            key=lambda s: s.value,
+            reverse=True
+        )
+        
+        scores_enumerated = list(enumerate(scores, start=1))
+        
+        for i in range(len(scores_enumerated) - 1):
+            if scores_enumerated[i][1].value == scores_enumerated[i + 1][1].value:
+                scores_enumerated[i + 1][0] = scores_enumerated[i][0]
+        
+        sorted_scores[chart_slot.id] = scores_enumerated
+
     for player_link in db_set.player_links:
         player = player_link.player
         
@@ -107,7 +125,20 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
             if score:
                 set_result_score.score = score.value
                 set_result_score.score_id = score.id
-                set_result.total_score += score.value
+                
+                set_result_score.place = next(
+                    i for i, s in sorted_scores[chart_slot.id]
+                    if s.id == score.id
+                )
+
+                if db_set.format == SetFormat.SCORE_SUM:
+                    set_result.total_score += score.value
+                elif db_set.format == SetFormat.BATTLE:
+                    max_score = max(score_entry.score.value for score_entry in chart_slot.score_entries)
+                    if score.value == max_score:
+                        set_result.total_score += 1
+            else:
+                set_result_score.place = len(sorted_scores[chart_slot.id]) + 1
             
             set_result.scores.append(set_result_score)
         

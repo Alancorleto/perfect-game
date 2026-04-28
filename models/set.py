@@ -39,6 +39,7 @@ class SetResultScore(SQLModel):
     order_index: int
     score: int
     score_id: uuid.UUID | None = None
+    place: int = -1
 
 
 class SetResult(SQLModel):
