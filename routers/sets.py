@@ -60,6 +60,17 @@ def update_set(set_id: uuid.UUID, set: SetUpdate, session: SessionDep):
     return db_set
 
 
+@router.delete("{set_id}")
+def delete_set(set_id: uuid.UUID, session: SessionDep):
+    """Delete a set"""
+    db_set = session.get(Set, set_id)
+    if not db_set:
+        raise HTTPException(status_code=404, detail="Set not found")
+    session.delete(db_set)
+    session.commit()
+    return {"detail": "Set deleted"}
+
+
 @router.post("/{set_id}/charts")
 async def add_chart_to_set(set_id: uuid.UUID, chart_id: uuid.UUID, session: SessionDep):
     """Add a chart to a set"""
