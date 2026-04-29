@@ -214,7 +214,7 @@ async def bulk_add_players_to_set(
 
 
 @router.get("/{set_id}/results", response_model=list[PlayerResults])
-def get_set_results(set_id: uuid.UUID, session: SessionDep):
+async def get_set_results(set_id: uuid.UUID, session: SessionDep):
     """Get the results for a specific set."""
 
     set = session.get(Set, set_id)
