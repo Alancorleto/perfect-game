@@ -106,6 +106,41 @@ async def add_chart_to_set(set_id: uuid.UUID, chart_id: uuid.UUID, session: Sess
     return chart_slot
 
 
+@router.put("/{set_id}/charts", response_model=Set)
+async def replace_chart_in_set(
+    set_id: uuid.UUID,
+    chart_order_index: int,
+    new_chart_id: uuid.UUID,
+    session: SessionDep,
+):
+    db_set = session.get(Set, set_id)
+    if not db_set:
+        raise HTTPException(status_code=404, detail="Set not found")
+
+    db_chart = session.get(Chart, new_chart_id)
+    if not db_chart:
+        raise HTTPException(status_code=404, detail="Chart not found")
+
+    chart_slot = next(
+        (
+            chart_slot
+            for chart_slot in db_set.chart_slots
+            if chart_slot.order_index == chart_order_index
+        ),
+        None,
+    )
+    if not chart_slot:
+        raise HTTPException(status_code=404, detail="Chart slot not found")
+
+    chart_slot.chart = db_chart
+
+    session.add(chart_slot)
+    session.commit()
+    session.refresh(db_set)
+
+    return db_set
+
+
 @router.put("/{set_id}/charts/order")
 async def update_chart_order_in_set(
     set_id: uuid.UUID, new_chart_slot_order: list[uuid.UUID], session: SessionDep
