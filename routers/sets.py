@@ -30,6 +30,12 @@ def create_set(set: SetCreate, session: SessionDep):
     return db_set
 
 
+@router.get("/", response_model=list[Set])
+def list_sets(session: SessionDep):
+    sets = session.exec(select(Set)).all()
+    return sets
+
+
 @router.get("/{set_id}", response_model=Set)
 def get_set(set_id: uuid.UUID, session: SessionDep):
     """Get a specific set."""
