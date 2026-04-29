@@ -50,3 +50,6 @@ image_storage_local/
 # OS
 .DS_Store
 Thumbs.db
+
+# Pyright LSP config
+pyrightconfig.json
