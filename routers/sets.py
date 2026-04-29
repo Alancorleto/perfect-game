@@ -177,6 +177,42 @@ async def update_chart_order_in_set(
     return db_set
 
 
+@router.delete("/{set_id}/charts")
+async def remove_chart_from_set(
+    set_id: uuid.UUID, chart_order_index: int, session: SessionDep
+):
+    """Remove a chart from a set."""
+    db_set = session.get(Set, set_id)
+    if not db_set:
+        raise HTTPException(status_code=404, detail="Set not found")
+
+    chart_slot = next(
+        (slot for slot in db_set.chart_slots if slot.order_index == chart_order_index),
+        None,
+    )
+    if not chart_slot:
+        raise HTTPException(
+            status_code=404,
+            detail=f"ChartSlot with order index {chart_order_index} not found",
+        )
+
+    # Remove score entries associated with the chart slot
+    for score_entry in chart_slot.score_entries:
+        session.delete(score_entry)
+
+    session.delete(chart_slot)
+
+    for slot in db_set.chart_slots:
+        if slot.order_index > chart_order_index:
+            slot.order_index -= 1
+            session.add(slot)
+
+    session.commit()
+    session.refresh(db_set)
+
+    return db_set
+
+
 @router.post("/{set_id}/players/bulk")
 async def bulk_add_players_to_set(
     set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep
