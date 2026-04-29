@@ -1,19 +1,26 @@
 import uuid
+
 from fastapi import APIRouter, HTTPException
-from models.chart import Chart
-from models.player import Player
-from models.chart_slot import ChartSlot
-from sqlmodel import Field, SQLModel, select, Relationship
-from models.score import Score
-from models.set import ChartResults, Set, SetCreate, SetUpdate, SetFormat, PlayerResults, Result
-from models.round import Round
+from sqlmodel import Field, Relationship, SQLModel, select
+
 from database import SessionDep
+from models.chart import Chart
+from models.chart_slot import ChartSlot
+from models.player import Player
+from models.round import Round
+from models.score import Score
+from models.set import (
+    ChartResults,
+    PlayerResults,
+    Result,
+    Set,
+    SetCreate,
+    SetFormat,
+    SetUpdate,
+)
 from models.set_player import SetPlayerLink
 
-router = APIRouter(
-    prefix="/sets",
-    tags=["sets"]
-)
+router = APIRouter(prefix="/sets", tags=["sets"])
 
 
 @router.post("/", response_model=Set)
@@ -22,7 +29,7 @@ def create_set(set: SetCreate, session: SessionDep):
     round = session.get(Round, set.round_id)
     if not round:
         raise HTTPException(status_code=404, detail="Round not found")
-    
+
     db_set = Set.model_validate(set)
     session.add(db_set)
     session.commit()
@@ -77,11 +84,11 @@ async def add_chart_to_set(set_id: uuid.UUID, chart_id: uuid.UUID, session: Sess
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
-    
+
     db_chart = session.get(Chart, chart_id)
     if not db_chart:
         raise HTTPException(status_code=404, detail="Chart not found")
-    
+
     order_index = len(db_set.chart_slots)
 
     chart_slot = ChartSlot(
@@ -89,46 +96,59 @@ async def add_chart_to_set(set_id: uuid.UUID, chart_id: uuid.UUID, session: Sess
         chart=db_chart,
         order_index=order_index,
     )
-    
+
     db_set.chart_slots.append(chart_slot)
-    
+
     session.add(chart_slot)
     session.commit()
     session.refresh(chart_slot)
-    
+
     return chart_slot
 
 
-@router.put("/{set_id}")
-async def update_chart_order_in_set(set_id: uuid.UUID, new_chart_slot_order: list[uuid.UUID], session: SessionDep):
+@router.put("/{set_id}/charts/order")
+async def update_chart_order_in_set(
+    set_id: uuid.UUID, new_chart_slot_order: list[uuid.UUID], session: SessionDep
+):
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
-    
+
     for i, chart_slot_id in enumerate(new_chart_slot_order):
-        chart_slot = next((chart_slot for chart_slot in db_set.chart_slots if chart_slot.id == chart_slot_id), None)
+        chart_slot = next(
+            (
+                chart_slot
+                for chart_slot in db_set.chart_slots
+                if chart_slot.id == chart_slot_id
+            ),
+            None,
+        )
         if not chart_slot:
-            raise HTTPException(status_code=404, detail=f"ChartSlot with ID {chart_slot_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"ChartSlot with ID {chart_slot_id} not found"
+            )
         chart_slot.order_index = i
         session.add(chart_slot)
-    
+
     session.commit()
     session.refresh(db_set)
-    
+
     return db_set
 
 
 @router.post("/{set_id}/players/bulk")
-async def bulk_add_players_to_set(set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep):
+async def bulk_add_players_to_set(
+    set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep
+):
     """Bulk add players to a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
-    
+
     # Filter out player IDs that are already in the set
     player_ids = filter(
         lambda pid: not any(link.player_id == pid for link in db_set.player_links),
-        player_ids
+        player_ids,
     )
 
     previous_player_count = len(db_set.player_links)
@@ -136,28 +156,32 @@ async def bulk_add_players_to_set(set_id: uuid.UUID, player_ids: list[uuid.UUID]
     for i, player_id in enumerate(player_ids):
         db_player = session.get(Player, player_id)
         if not db_player:
-            raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Player with ID {player_id} not found"
+            )
         order_index = previous_player_count + i
-        set_player_link = SetPlayerLink(set=db_set, player=db_player, order_index=order_index)
+        set_player_link = SetPlayerLink(
+            set=db_set, player=db_player, order_index=order_index
+        )
         db_set.player_links.append(set_player_link)
-    
+
     session.add(db_set)
     session.commit()
     session.refresh(db_set)
-    
+
     return db_set
 
 
 @router.get("/{set_id}/results", response_model=list[PlayerResults])
 def get_set_results(set_id: uuid.UUID, session: SessionDep):
     """Get the results for a specific set."""
-    
+
     set = session.get(Set, set_id)
     if not set:
         raise HTTPException(status_code=404, detail="Set not found")
-    
+
     chart_slots = sorted(set.chart_slots, key=lambda link: link.order_index)
-    
+
     chart_results_list: list[ChartResults] = []
     for chart_slot in chart_slots:
         chart_results = _populate_chart_results(chart_slot)
@@ -174,11 +198,8 @@ def get_set_results(set_id: uuid.UUID, session: SessionDep):
 
 
 def _populate_chart_results(chart_slot: ChartSlot) -> ChartResults:
-    chart_results = ChartResults(
-        chart_slot_id=chart_slot.id,
-        results=[]
-    )
-    
+    chart_results = ChartResults(chart_slot_id=chart_slot.id, results=[])
+
     for score_entry in chart_slot.score_entries:
         result = Result(
             player_id=score_entry.score.player_id,
@@ -187,9 +208,9 @@ def _populate_chart_results(chart_slot: ChartSlot) -> ChartResults:
             score=score_entry.score.value,
             score_id=score_entry.score.id,
         )
-        
+
         chart_results.results.append(result)
-    
+
     _sort_chart_results(chart_results)
 
     return chart_results
@@ -197,7 +218,7 @@ def _populate_chart_results(chart_slot: ChartSlot) -> ChartResults:
 
 def _sort_chart_results(chart_results: ChartResults):
     chart_results.results.sort(key=lambda r: (-r.score, r.player_id))
-    
+
     if len(chart_results.results) > 0:
         chart_results.results[0].place = 1
 
@@ -214,7 +235,9 @@ def _sort_chart_results(chart_results: ChartResults):
             result.place = i + 1
 
 
-def _populate_player_results(player_link: SetPlayerLink, chart_results_list: list[ChartResults]) -> list[PlayerResults]:
+def _populate_player_results(
+    player_link: SetPlayerLink, chart_results_list: list[ChartResults]
+) -> list[PlayerResults]:
     player = player_link.player
     set = player_link.set
 
@@ -222,7 +245,7 @@ def _populate_player_results(player_link: SetPlayerLink, chart_results_list: lis
         player_id=player_link.player_id,
         order_index=player_link.order_index,
     )
-    
+
     for chart_order_index, chart_results in enumerate(chart_results_list):
         result = _try_get_player_result(player.id, chart_results.results)
 
@@ -252,7 +275,7 @@ def _calculate_player_total_score(player_results: PlayerResults, set_format: Set
     if set_format == SetFormat.SCORE_SUM:
         for result in player_results.results:
             player_results.total_score += result.score
-    
+
     elif set_format == SetFormat.BATTLE:
         for result in player_results.results:
             if result.place == 1 and not result.is_tie and result.score_id is not None:
