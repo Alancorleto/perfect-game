@@ -24,7 +24,7 @@ router = APIRouter(prefix="/sets", tags=["sets"])
 
 
 @router.post("/", response_model=Set)
-def create_set(set: SetCreate, session: SessionDep):
+async def create_set(set: SetCreate, session: SessionDep):
     """Create a new set for a round."""
     round = session.get(Round, set.round_id)
     if not round:
@@ -38,14 +38,14 @@ def create_set(set: SetCreate, session: SessionDep):
 
 
 @router.get("/", response_model=list[Set])
-def list_sets(session: SessionDep):
+async def list_sets(session: SessionDep):
     """List all sets."""
     sets = session.exec(select(Set)).all()
     return sets
 
 
 @router.get("/{set_id}", response_model=Set)
-def get_set(set_id: uuid.UUID, session: SessionDep):
+async def get_set(set_id: uuid.UUID, session: SessionDep):
     """Get a specific set."""
     db_set = session.get(Set, set_id)
     if not db_set:
@@ -54,7 +54,7 @@ def get_set(set_id: uuid.UUID, session: SessionDep):
 
 
 @router.patch("/{set_id}", response_model=Set)
-def update_set(set_id: uuid.UUID, set: SetUpdate, session: SessionDep):
+async def update_set(set_id: uuid.UUID, set: SetUpdate, session: SessionDep):
     """Update a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
@@ -67,8 +67,8 @@ def update_set(set_id: uuid.UUID, set: SetUpdate, session: SessionDep):
     return db_set
 
 
-@router.delete("{set_id}")
-def delete_set(set_id: uuid.UUID, session: SessionDep):
+@router.delete("/{set_id}")
+async def delete_set(set_id: uuid.UUID, session: SessionDep):
     """Delete a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
