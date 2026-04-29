@@ -1,16 +1,11 @@
 import uuid
 
 from fastapi import APIRouter, HTTPException
-from sqlmodel import Field, Relationship, SQLModel, select
+from sqlmodel import select
 
 from database import SessionDep
-from models.chart import Chart
-from models.player import Player
-from models.round import Round, RoundCreate, RoundPublic, RoundState, RoundUpdate
-from models.score import Score, ScoreCreate
-from models.score_entry import ScoreEntry
+from models.round import Round, RoundCreate, RoundState, RoundUpdate
 from models.set import Set
-from models.set_player import SetPlayerLink
 
 router = APIRouter(prefix="/rounds", tags=["rounds"])
 

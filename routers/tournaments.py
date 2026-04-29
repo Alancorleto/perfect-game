@@ -1,15 +1,13 @@
 import uuid
-from models.tournament import Tournament, TournamentCreate, TournamentPublic, TournamentUpdate
-from models.category import CategoryPublic
-from datetime import date
-from fastapi import APIRouter, HTTPException
-from sqlmodel import Field, Relationship, SQLModel, select
-from database import SessionDep
 
-router = APIRouter(
-    prefix="/tournaments",
-    tags=["tournaments"]
-)
+from fastapi import APIRouter, HTTPException
+from sqlmodel import select
+
+from database import SessionDep
+from models.category import CategoryPublic
+from models.tournament import Tournament, TournamentCreate, TournamentUpdate
+
+router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 
 @router.get("/")
@@ -39,7 +37,9 @@ async def create_tournament(tournament: TournamentCreate, session: SessionDep):
 
 
 @router.patch("/{tournament_id}")
-async def update_tournament(tournament_id: uuid.UUID, tournament: TournamentUpdate, session: SessionDep):
+async def update_tournament(
+    tournament_id: uuid.UUID, tournament: TournamentUpdate, session: SessionDep
+):
     """Update a tournament"""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:

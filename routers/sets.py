@@ -1,14 +1,13 @@
 import uuid
 
 from fastapi import APIRouter, HTTPException
-from sqlmodel import Field, Relationship, SQLModel, select
+from sqlmodel import select
 
 from database import SessionDep
 from models.chart import Chart
 from models.chart_slot import ChartSlot
 from models.player import Player
 from models.round import Round
-from models.score import Score
 from models.set import (
     ChartResults,
     PlayerResults,

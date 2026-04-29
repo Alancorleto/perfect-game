@@ -1,18 +1,16 @@
 import uuid
-from fastapi import APIRouter, HTTPException
-from sqlmodel import Field, SQLModel, select, Relationship
-from models.score_entry import ScoreEntry
-from models.score import Score, ScoreCreate, ScoreUpdate
-from models.round import Round
-from models.player import Player
-from models.chart import Chart
-from models.set import Set
-from database import SessionDep
 
-router = APIRouter(
-    prefix="/scores",
-    tags=["scores"]
-)
+from fastapi import APIRouter, HTTPException
+from sqlmodel import select
+
+from database import SessionDep
+from models.chart import Chart
+from models.player import Player
+from models.score import Score, ScoreCreate, ScoreUpdate
+from models.score_entry import ScoreEntry
+from models.set import Set
+
+router = APIRouter(prefix="/scores", tags=["scores"])
 
 
 @router.get("/")
@@ -37,11 +35,11 @@ async def create_score(score: ScoreCreate, session: SessionDep):
     db_player = session.get(Player, score.player_id)
     if not db_player:
         raise HTTPException(status_code=404, detail="Player not found")
-    
+
     db_chart = session.get(Chart, score.chart_id)
     if not db_chart:
         raise HTTPException(status_code=404, detail="Chart not found")
-    
+
     db_score = Score.model_validate(score)
     session.add(db_score)
 
@@ -59,10 +57,14 @@ async def create_score(score: ScoreCreate, session: SessionDep):
             and chart_slot.order_index == score.order_index
             for chart_slot in db_set.chart_slots
         ):
-            raise HTTPException(status_code=400, detail=f"Chart with index {score.order_index} is not in the set")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Chart with index {score.order_index} is not in the set",
+            )
 
         chart_slot = next(
-            chart_slot for chart_slot in db_set.chart_slots
+            chart_slot
+            for chart_slot in db_set.chart_slots
             if chart_slot.order_index == score.order_index
         )
 
@@ -70,19 +72,18 @@ async def create_score(score: ScoreCreate, session: SessionDep):
             score_entry.score.player_id == score.player_id
             for score_entry in chart_slot.score_entries
         ):
-            raise HTTPException(status_code=400, detail="A score already exists for this player, set, and order index")
+            raise HTTPException(
+                status_code=400,
+                detail="A score already exists for this player, set, and order index",
+            )
 
-        score_link: ScoreEntry = ScoreEntry(
-            score=db_score,
-            chart_slot=chart_slot
-        )
+        score_link: ScoreEntry = ScoreEntry(score=db_score, chart_slot=chart_slot)
 
         session.add(score_link)
 
     session.commit()
     session.refresh(db_score)
     return db_score
-
 
 
 @router.patch("/{score_id}")

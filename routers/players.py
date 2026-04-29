@@ -1,18 +1,14 @@
-from typing import Annotated
 import uuid
-from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
-from datetime import date
+from typing import Annotated
+
 from fastapi import APIRouter, File, HTTPException
-from sqlalchemy import Column, String
-from sqlmodel import Field, SQLModel, select, Relationship
+from sqlmodel import select
+
 from database import SessionDep
 from image_storage import upload_image
+from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
 
-
-router = APIRouter(
-    prefix="/players",
-    tags=["players"]
-)
+router = APIRouter(prefix="/players", tags=["players"])
 
 
 @router.get("/", response_model=list[PlayerPublic])
@@ -42,7 +38,9 @@ async def create_player(player: PlayerCreate, session: SessionDep):
 
 
 @router.patch("/{player_id}", response_model=PlayerPublic)
-async def update_player(player_id: uuid.UUID, player: PlayerUpdate, session: SessionDep):
+async def update_player(
+    player_id: uuid.UUID, player: PlayerUpdate, session: SessionDep
+):
     """Update a player"""
     db_player = session.get(Player, player_id)
     if not db_player:
@@ -67,17 +65,21 @@ async def delete_player(player_id: uuid.UUID, session: SessionDep):
 
 
 @router.post("/{player_id}/profile_picture")
-async def upload_profile_picture(player_id: uuid.UUID, profile_picture: Annotated[bytes, File()], session: SessionDep):
+async def upload_profile_picture(
+    player_id: uuid.UUID, profile_picture: Annotated[bytes, File()], session: SessionDep
+):
     """Upload a player's profile picture"""
     db_player = session.get(Player, player_id)
     if not db_player:
         raise HTTPException(status_code=404, detail="Player not found")
 
     file_name = f"{db_player.id}.png"
-    db_player.profile_picture_url = await upload_image(profile_picture, file_name, "profile_pictures")
+    db_player.profile_picture_url = await upload_image(
+        profile_picture, file_name, "profile_pictures"
+    )
 
     session.add(db_player)
     session.commit()
     session.refresh(db_player)
-    
+
     return db_player

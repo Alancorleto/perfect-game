@@ -1,14 +1,12 @@
 import uuid
-from models.chart import Chart, ChartCreate, ChartUpdate
-from database import SessionDep
+
 from fastapi import APIRouter, HTTPException
-from sqlmodel import Field, SQLModel, select, Relationship
+from sqlmodel import select
 
+from database import SessionDep
+from models.chart import Chart, ChartCreate, ChartUpdate
 
-router = APIRouter(
-    prefix="/charts",
-    tags=["charts"]
-)
+router = APIRouter(prefix="/charts", tags=["charts"])
 
 
 @router.get("/")

@@ -1,16 +1,13 @@
 import uuid
-from models.category import Category, CategoryCreate, CategoryUpdate
-from datetime import date
-from fastapi import APIRouter, HTTPException
-from sqlmodel import Field, SQLModel, select, Relationship
-from database import SessionDep
-from routers.players import Player
-from routers.tournaments import Tournament
 
-router = APIRouter(
-    prefix="/categories",
-    tags=["categories"]
-)
+from fastapi import APIRouter, HTTPException
+from sqlmodel import select
+
+from database import SessionDep
+from models.category import Category, CategoryCreate, CategoryUpdate
+from routers.players import Player
+
+router = APIRouter(prefix="/categories", tags=["categories"])
 
 
 @router.get("/")
@@ -40,7 +37,9 @@ async def create_category(category: CategoryCreate, session: SessionDep):
 
 
 @router.patch("/{category_id}")
-async def update_category(category_id: uuid.UUID, category: CategoryUpdate, session: SessionDep):
+async def update_category(
+    category_id: uuid.UUID, category: CategoryUpdate, session: SessionDep
+):
     """Update a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
@@ -65,7 +64,9 @@ async def delete_category(category_id: uuid.UUID, session: SessionDep):
 
 
 @router.post("/{category_id}/players/bulk")
-async def bulk_add_players_to_category(category_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep):
+async def bulk_add_players_to_category(
+    category_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep
+):
     """Bulk add players to a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
@@ -73,7 +74,9 @@ async def bulk_add_players_to_category(category_id: uuid.UUID, player_ids: list[
     for player_id in player_ids:
         db_player = session.get(Player, player_id)
         if not db_player:
-            raise HTTPException(status_code=404, detail=f"Player with ID {player_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Player with ID {player_id} not found"
+            )
         db_category.players.append(db_player)
     session.add(db_category)
     session.commit()
@@ -91,7 +94,9 @@ async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
 
 
 @router.delete("/{category_id}/players/{player_id}")
-async def remove_player_from_category(category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep):
+async def remove_player_from_category(
+    category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep
+):
     """Remove a player from a category"""
     db_category = session.get(Category, category_id)
     if not db_category:

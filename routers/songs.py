@@ -1,16 +1,14 @@
-from typing import Annotated
 import uuid
-from fastapi import APIRouter, File, HTTPException, UploadFile
-from models.song import Song, SongCreate, SongUpdate
-from sqlmodel import Field, SQLModel, select, Relationship
+from typing import Annotated
+
+from fastapi import APIRouter, File, HTTPException
+from sqlmodel import select
+
 from database import SessionDep
 from image_storage import upload_image
+from models.song import Song, SongCreate, SongUpdate
 
-
-router = APIRouter(
-    prefix="/songs",
-    tags=["songs"]
-)
+router = APIRouter(prefix="/songs", tags=["songs"])
 
 
 @router.get("/")
@@ -65,7 +63,9 @@ async def delete_song(song_id: uuid.UUID, session: SessionDep):
 
 
 @router.post("/{song_id}/title")
-async def upload_song_title(song_id: uuid.UUID, title_file: Annotated[bytes, File()], session: SessionDep):
+async def upload_song_title(
+    song_id: uuid.UUID, title_file: Annotated[bytes, File()], session: SessionDep
+):
     """Upload a song title"""
     db_song = session.get(Song, song_id)
     if not db_song:
@@ -77,5 +77,5 @@ async def upload_song_title(song_id: uuid.UUID, title_file: Annotated[bytes, Fil
     session.add(db_song)
     session.commit()
     session.refresh(db_song)
-    
+
     return db_song
