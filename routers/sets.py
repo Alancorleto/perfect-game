@@ -267,6 +267,39 @@ async def update_player_order_in_set(
     return new_players
 
 
+@router.delete("/{set_id}/players/{player_id}", response_model=list[Player])
+async def remove_player_from_set(
+    set_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep
+):
+    """Remove a player from a set."""
+    db_set = session.get(Set, set_id)
+    if not db_set:
+        raise HTTPException(status_code=404, detail="Set not found")
+
+    db_set_player_link = next(
+        (link for link in db_set.player_links if link.player_id == player_id), None
+    )
+    if not db_set_player_link:
+        raise HTTPException(
+            status_code=404, detail=f"Player with ID {player_id} is not in the set"
+        )
+
+    player_order_index = db_set_player_link.order_index
+
+    session.delete(db_set_player_link)
+
+    for player_link in db_set.player_links:
+        if player_link.order_index > player_order_index:
+            player_link.order_index -= 1
+            session.add(player_link)
+
+    session.commit()
+
+    player_links_sorted = sorted(db_set.player_links, key=lambda link: link.order_index)
+    new_players = [player_link.player for player_link in player_links_sorted]
+    return new_players
+
+
 @router.get("/{set_id}/results", response_model=list[PlayerResults])
 async def get_set_results(set_id: uuid.UUID, session: SessionDep):
     """Get the results for a specific set."""
