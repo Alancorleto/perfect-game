@@ -149,6 +149,12 @@ async def update_chart_order_in_set(
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
 
+    if len(new_chart_slot_order) != len(db_set.chart_slots):
+        raise HTTPException(
+            status_code=400,
+            detail="Chart slot order does not match number of chart slots for this set",
+        )
+
     for i, chart_slot_id in enumerate(new_chart_slot_order):
         chart_slot = next(
             (
