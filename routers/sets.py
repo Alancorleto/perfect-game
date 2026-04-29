@@ -322,6 +322,12 @@ async def remove_player_from_set(
 
     player_order_index = db_set_player_link.order_index
 
+    # Remove score entries associated with the player
+    for chart_slot in db_set.chart_slots:
+        for score_entry in chart_slot.score_entries:
+            if score_entry.score.player_id == player_id:
+                session.delete(score_entry)
+
     session.delete(db_set_player_link)
 
     for player_link in db_set.player_links:
