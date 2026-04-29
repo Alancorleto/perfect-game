@@ -223,6 +223,50 @@ async def list_players_in_set(set_id: uuid.UUID, session: SessionDep):
     return players
 
 
+@router.put("/{set_id}/players/order", response_model=list[Player])
+async def update_player_order_in_set(
+    set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep
+):
+    """Update the order of players in a set"""
+    db_set = session.get(Set, set_id)
+    if not db_set:
+        raise HTTPException(status_code=404, detail="Set not found")
+
+    if len(player_ids) != len(db_set.player_links):
+        raise HTTPException(
+            status_code=400,
+            detail="Player IDs count does not match the number of players in the set",
+        )
+
+    for order_index, player_id in enumerate(player_ids):
+        # Validate player exists
+        db_player = session.get(Player, player_id)
+        if not db_player:
+            raise HTTPException(
+                status_code=404, detail=f"Player with ID {player_id} not found"
+            )
+
+        # Validate player is in the set
+        db_set_player_link = next(
+            (link for link in db_set.player_links if link.player_id == player_id), None
+        )
+        if not db_set_player_link:
+            raise HTTPException(
+                status_code=404, detail=f"Player with ID {player_id} is not in the set"
+            )
+
+        # Update the order index
+        db_set_player_link.order_index = order_index
+        session.add(db_set_player_link)
+
+    session.commit()
+    session.refresh(db_set)
+
+    player_links_sorted = sorted(db_set.player_links, key=lambda link: link.order_index)
+    new_players = [player_link.player for player_link in player_links_sorted]
+    return new_players
+
+
 @router.get("/{set_id}/results", response_model=list[PlayerResults])
 async def get_set_results(set_id: uuid.UUID, session: SessionDep):
     """Get the results for a specific set."""
