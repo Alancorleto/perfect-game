@@ -213,6 +213,16 @@ async def bulk_add_players_to_set(
     return db_set
 
 
+@router.get("/{set_id}/players", response_model=list[Player])
+async def list_players_in_set(set_id: uuid.UUID, session: SessionDep):
+    """Get the players for a specific set."""
+    set = session.get(Set, set_id)
+    if not set:
+        raise HTTPException(status_code=404, detail="Set not found")
+    players = [player_link.player for player_link in set.player_links]
+    return players
+
+
 @router.get("/{set_id}/results", response_model=list[PlayerResults])
 async def get_set_results(set_id: uuid.UUID, session: SessionDep):
     """Get the results for a specific set."""
