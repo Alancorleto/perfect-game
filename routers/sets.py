@@ -99,6 +99,25 @@ async def add_chart_to_set(set_id: uuid.UUID, chart_id: uuid.UUID, session: Sess
     return chart_slot
 
 
+@router.put("/{set_id}")
+async def update_chart_order_in_set(set_id: uuid.UUID, new_chart_slot_order: list[uuid.UUID], session: SessionDep):
+    db_set = session.get(Set, set_id)
+    if not db_set:
+        raise HTTPException(status_code=404, detail="Set not found")
+    
+    for i, chart_slot_id in enumerate(new_chart_slot_order):
+        chart_slot = next((chart_slot for chart_slot in db_set.chart_slots if chart_slot.id == chart_slot_id), None)
+        if not chart_slot:
+            raise HTTPException(status_code=404, detail=f"ChartSlot with ID {chart_slot_id} not found")
+        chart_slot.order_index = i
+        session.add(chart_slot)
+    
+    session.commit()
+    session.refresh(db_set)
+    
+    return db_set
+
+
 @router.post("/{set_id}/players/bulk")
 async def bulk_add_players_to_set(set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep):
     """Bulk add players to a set"""
