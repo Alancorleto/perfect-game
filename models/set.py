@@ -35,6 +35,12 @@ class SetCreate(SetBase):
     round_id: uuid.UUID
 
 
+class SetUpdate(SetBase):
+    levels: str | None = None
+    qualifiers_count: int | None = Field(ge=1, default=1)
+    format: SetFormat | None = Field(default=SetFormat.SCORE_SUM)
+
+
 class Result(BaseModel):
     player_id: uuid.UUID
     set_id: uuid.UUID

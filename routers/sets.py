@@ -5,7 +5,7 @@ from models.player import Player
 from models.chart_slot import ChartSlot
 from sqlmodel import Field, SQLModel, select, Relationship
 from models.score import Score
-from models.set import ChartResults, Set, SetCreate, SetFormat, PlayerResults, Result
+from models.set import ChartResults, Set, SetCreate, SetUpdate, SetFormat, PlayerResults, Result
 from models.round import Round
 from database import SessionDep
 from models.set_player import SetPlayerLink
@@ -32,6 +32,7 @@ def create_set(set: SetCreate, session: SessionDep):
 
 @router.get("/", response_model=list[Set])
 def list_sets(session: SessionDep):
+    """List all sets."""
     sets = session.exec(select(Set)).all()
     return sets
 
@@ -42,6 +43,20 @@ def get_set(set_id: uuid.UUID, session: SessionDep):
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
+    return db_set
+
+
+@router.patch("/{set_id}", response_model=Set)
+def update_set(set_id: uuid.UUID, set: SetUpdate, session: SessionDep):
+    """Update a set"""
+    db_set = session.get(Set, set_id)
+    if not db_set:
+        raise HTTPException(status_code=404, detail="Set not found")
+    set_data = set.model_dump(exclude_unset=True)
+    db_set.sqlmodel_update(set_data)
+    session.add(db_set)
+    session.commit()
+    session.refresh(db_set)
     return db_set
 
 
