@@ -28,6 +28,9 @@ class Tournament(TournamentBase, table=True):
         back_populates="tournaments", link_model=TournamentOrganizer
     )
 
+    def has_organizer(self, user: "User") -> bool:
+        return user in self.organizers
+
 
 class TournamentCreate(TournamentBase):
     pass

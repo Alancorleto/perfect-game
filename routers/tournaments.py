@@ -48,12 +48,21 @@ async def create_tournament(
 
 @router.patch("/{tournament_id}")
 async def update_tournament(
-    tournament_id: uuid.UUID, tournament: TournamentUpdate, session: SessionDep
+    tournament_id: uuid.UUID,
+    tournament: TournamentUpdate,
+    session: SessionDep,
+    user: UserDep,
 ):
     """Update a tournament"""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(status_code=404, detail="Tournament not found")
+
+    if not db_tournament.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="Not authorized to update this tournament"
+        )
+
     tournament_data = tournament.model_dump(exclude_unset=True)
     db_tournament.sqlmodel_update(tournament_data)
     session.add(db_tournament)
@@ -63,11 +72,19 @@ async def update_tournament(
 
 
 @router.delete("/{tournament_id}")
-async def delete_tournament(tournament_id: uuid.UUID, session: SessionDep):
+async def delete_tournament(
+    tournament_id: uuid.UUID, session: SessionDep, user: UserDep
+):
     """Delete a tournament"""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(status_code=404, detail="Tournament not found")
+
+    if not db_tournament.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="Not authorized to delete this tournament"
+        )
+
     session.delete(db_tournament)
     session.commit()
     return {"detail": "Tournament deleted"}
