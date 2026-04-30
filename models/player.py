@@ -1,6 +1,7 @@
-from sqlmodel import SQLModel, Field
-from datetime import date
 import uuid
+from datetime import date
+
+from sqlmodel import Field, SQLModel
 
 
 class PlayerBase(SQLModel):
