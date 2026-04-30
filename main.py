@@ -8,15 +8,9 @@ if os.getenv("ENVIRONMENT") != "production":
     load_dotenv()
 
 from contextlib import asynccontextmanager
-from typing import Annotated
 
-import jwt
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from jwt.exceptions import InvalidTokenError
-from pwdlib import PasswordHash
-from pydantic import BaseModel
 from sqlmodel import SQLModel
 
 from database import engine
