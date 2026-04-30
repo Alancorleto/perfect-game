@@ -15,13 +15,16 @@ class TokenData(SQLModel):
 class UserBase(SQLModel):
     username: str
     email: str | None = None
-    full_name: str | None = None
 
 
-class User(UserBase):
+class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
 
 
 class UserPublic(UserBase):
     id: uuid.UUID
+
+
+class UserCreate(UserBase):
+    password: str

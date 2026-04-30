@@ -7,8 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
+from sqlmodel import Session, select
 
-from models.user import Token, TokenData, User, UserPublic
+from database import SessionDep
+from models.user import Token, TokenData, User, UserCreate, UserPublic
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = os.getenv("JWT_ALGORITHM")
@@ -41,14 +43,15 @@ def get_password_hash(password):
     return password_hash.hash(password)
 
 
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return User(**user_dict)
+def get_user(username: str, session: Session):
+    user = session.exec(select(User).where(User.username == username)).first()
+    if not user:
+        return None
+    return user
 
 
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
+def authenticate_user(username: str, password: str, session: Session):
+    user = get_user(username, session)
     if not user:
         verify_password(password, DUMMY_HASH)
         return False
@@ -68,7 +71,9 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)], session: SessionDep
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -84,18 +89,36 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     except InvalidTokenError:
         raise credentials_exception
 
-    user = get_user(fake_users_db, username=token_data.username)
+    user = get_user(username=token_data.username, session=session)
     if user is None:
         raise credentials_exception
 
     return user
 
 
+@router.post("/users", response_model=UserPublic)
+async def create_user(user: UserCreate, session: SessionDep):
+    password = get_password_hash(user.password)
+
+    db_user = User(
+        username=user.username,
+        email=user.email,
+        hashed_password=password,
+    )
+
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+
+    return db_user
+
+
 @router.post("/token")
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    session: SessionDep,
 ) -> Token:
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    user = authenticate_user(form_data.username, form_data.password, session)
 
     if not user:
         raise HTTPException(
@@ -112,7 +135,7 @@ async def login_for_access_token(
     return Token(access_token=access_token, token_type="bearer")
 
 
-@router.get("/users/me")
+@router.get("/users/me", response_model=UserPublic)
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
