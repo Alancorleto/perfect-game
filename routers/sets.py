@@ -18,16 +18,22 @@ from models.set import (
     SetUpdate,
 )
 from models.set_player import SetPlayerLink
+from routers.users import UserDep
 
 router = APIRouter(prefix="/sets", tags=["sets"])
 
 
 @router.post("/", response_model=Set)
-async def create_set(set: SetCreate, session: SessionDep):
+async def create_set(set: SetCreate, session: SessionDep, user: UserDep):
     """Create a new set for a round."""
     round = session.get(Round, set.round_id)
     if not round:
         raise HTTPException(status_code=404, detail="Round not found")
+
+    if not round.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
 
     db_set = Set.model_validate(set)
     session.add(db_set)
@@ -53,11 +59,19 @@ async def get_set(set_id: uuid.UUID, session: SessionDep):
 
 
 @router.patch("/{set_id}", response_model=Set)
-async def update_set(set_id: uuid.UUID, set: SetUpdate, session: SessionDep):
+async def update_set(
+    set_id: uuid.UUID, set: SetUpdate, session: SessionDep, user: UserDep
+):
     """Update a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
+
+    if not db_set.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
+
     set_data = set.model_dump(exclude_unset=True)
     db_set.sqlmodel_update(set_data)
     session.add(db_set)
@@ -67,22 +81,35 @@ async def update_set(set_id: uuid.UUID, set: SetUpdate, session: SessionDep):
 
 
 @router.delete("/{set_id}")
-async def delete_set(set_id: uuid.UUID, session: SessionDep):
+async def delete_set(set_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Delete a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
+
+    if not db_set.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
+
     session.delete(db_set)
     session.commit()
     return {"detail": "Set deleted"}
 
 
 @router.post("/{set_id}/charts")
-async def add_chart_to_set(set_id: uuid.UUID, chart_id: uuid.UUID, session: SessionDep):
+async def add_chart_to_set(
+    set_id: uuid.UUID, chart_id: uuid.UUID, session: SessionDep, user: UserDep
+):
     """Add a chart to a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
+
+    if not db_set.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
 
     db_chart = session.get(Chart, chart_id)
     if not db_chart:
@@ -111,10 +138,16 @@ async def replace_chart_in_set(
     chart_order_index: int,
     new_chart_id: uuid.UUID,
     session: SessionDep,
+    user: UserDep,
 ):
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
+
+    if not db_set.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
 
     db_chart = session.get(Chart, new_chart_id)
     if not db_chart:
@@ -142,11 +175,19 @@ async def replace_chart_in_set(
 
 @router.put("/{set_id}/charts/order")
 async def update_chart_order_in_set(
-    set_id: uuid.UUID, new_chart_slot_order: list[uuid.UUID], session: SessionDep
+    set_id: uuid.UUID,
+    new_chart_slot_order: list[uuid.UUID],
+    session: SessionDep,
+    user: UserDep,
 ):
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
+
+    if not db_set.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
 
     if len(new_chart_slot_order) != len(db_set.chart_slots):
         raise HTTPException(
@@ -178,12 +219,17 @@ async def update_chart_order_in_set(
 
 @router.delete("/{set_id}/charts")
 async def remove_chart_from_set(
-    set_id: uuid.UUID, chart_order_index: int, session: SessionDep
+    set_id: uuid.UUID, chart_order_index: int, session: SessionDep, user: UserDep
 ):
     """Remove a chart from a set."""
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
+
+    if not db_set.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
 
     chart_slot = next(
         (slot for slot in db_set.chart_slots if slot.order_index == chart_order_index),
@@ -214,12 +260,17 @@ async def remove_chart_from_set(
 
 @router.post("/{set_id}/players/bulk")
 async def bulk_add_players_to_set(
-    set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep
+    set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep, user: UserDep
 ):
     """Bulk add players to a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
+
+    if not db_set.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
 
     # Filter out player IDs that are already in the set
     player_ids = filter(
@@ -260,12 +311,17 @@ async def list_players_in_set(set_id: uuid.UUID, session: SessionDep):
 
 @router.put("/{set_id}/players/order", response_model=list[Player])
 async def update_player_order_in_set(
-    set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep
+    set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep, user: UserDep
 ):
     """Update the order of players in a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
+
+    if not db_set.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
 
     if len(player_ids) != len(db_set.player_links):
         raise HTTPException(
@@ -304,12 +360,17 @@ async def update_player_order_in_set(
 
 @router.delete("/{set_id}/players/{player_id}", response_model=list[Player])
 async def remove_player_from_set(
-    set_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep
+    set_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     """Remove a player from a set."""
     db_set = session.get(Set, set_id)
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
+
+    if not db_set.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
 
     db_set_player_link = next(
         (link for link in db_set.player_links if link.player_id == player_id), None

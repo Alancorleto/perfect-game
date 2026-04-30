@@ -1,9 +1,12 @@
 import uuid
-from pydantic import BaseModel
-from sqlmodel import Field, SQLModel, Relationship
-from models.round import Round
-from typing import TYPE_CHECKING
 from enum import Enum
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel
+from sqlmodel import Field, Relationship, SQLModel
+
+from models.round import Round
+from models.user import User
 
 if TYPE_CHECKING:
     from models.chart_slot import ChartSlot
@@ -29,6 +32,9 @@ class Set(SetBase, table=True):
     round: Round = Relationship(back_populates="sets")
     chart_slots: list["ChartSlot"] = Relationship(back_populates="set")
     player_links: list["SetPlayerLink"] = Relationship(back_populates="set")
+
+    def has_organizer(self, user: User) -> bool:
+        return self.round.has_organizer(user)
 
 
 class SetCreate(SetBase):
