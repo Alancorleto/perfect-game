@@ -5,7 +5,9 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.category import Category, CategoryCreate, CategoryUpdate
+from models.tournament import Tournament
 from routers.players import Player
+from routers.users import UserDep
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
@@ -27,8 +29,18 @@ async def get_category(category_id: uuid.UUID, session: SessionDep):
 
 
 @router.post("/")
-async def create_category(category: CategoryCreate, session: SessionDep):
+async def create_category(category: CategoryCreate, session: SessionDep, user: UserDep):
     """Create a new category"""
+
+    tournament = session.get(Tournament, category.tournament_id)
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+
+    if not tournament.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
+
     db_category = Category.model_validate(category)
     session.add(db_category)
     session.commit()
@@ -38,12 +50,18 @@ async def create_category(category: CategoryCreate, session: SessionDep):
 
 @router.patch("/{category_id}")
 async def update_category(
-    category_id: uuid.UUID, category: CategoryUpdate, session: SessionDep
+    category_id: uuid.UUID, category: CategoryUpdate, session: SessionDep, user: UserDep
 ):
     """Update a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
+
+    if not db_category.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
+
     category_data = category.model_dump(exclude_unset=True)
     db_category.sqlmodel_update(category_data)
     session.add(db_category)
@@ -53,11 +71,17 @@ async def update_category(
 
 
 @router.delete("/{category_id}")
-async def delete_category(category_id: uuid.UUID, session: SessionDep):
+async def delete_category(category_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Delete a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
+
+    if not db_category.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
+
     session.delete(db_category)
     session.commit()
     return {"detail": "Category deleted"}
@@ -65,12 +89,21 @@ async def delete_category(category_id: uuid.UUID, session: SessionDep):
 
 @router.post("/{category_id}/players/bulk")
 async def bulk_add_players_to_category(
-    category_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep
+    category_id: uuid.UUID,
+    player_ids: list[uuid.UUID],
+    session: SessionDep,
+    user: UserDep,
 ):
     """Bulk add players to a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
+
+    if not db_category.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
+
     for player_id in player_ids:
         db_player = session.get(Player, player_id)
         if not db_player:
@@ -95,18 +128,26 @@ async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
 
 @router.delete("/{category_id}/players/{player_id}")
 async def remove_player_from_category(
-    category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep
+    category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     """Remove a player from a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
+
+    if not db_category.has_organizer(user):
+        raise HTTPException(
+            status_code=403, detail="You are not an organizer for this tournament"
+        )
+
     db_player = session.get(Player, player_id)
     if not db_player:
         raise HTTPException(status_code=404, detail="Player not found")
+
     if db_player in db_category.players:
         db_category.players.remove(db_player)
         session.add(db_category)
         session.commit()
         session.refresh(db_category)
+
     return {"detail": "Player removed from category"}
