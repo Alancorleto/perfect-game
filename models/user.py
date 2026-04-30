@@ -1,7 +1,13 @@
 import uuid
+from typing import TYPE_CHECKING
 
 from pydantic import EmailStr
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
+
+from models.tournament_organizer import TournamentOrganizer
+
+if TYPE_CHECKING:
+    from models.tournament import Tournament
 
 
 class Token(SQLModel):
@@ -20,6 +26,10 @@ class UserBase(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+
+    tournaments: list["Tournament"] = Relationship(
+        back_populates="organizers", link_model=TournamentOrganizer
+    )
 
 
 class UserPublic(UserBase):

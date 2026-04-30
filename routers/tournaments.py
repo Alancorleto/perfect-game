@@ -6,6 +6,8 @@ from sqlmodel import select
 from database import SessionDep
 from models.category import CategoryPublic
 from models.tournament import Tournament, TournamentCreate, TournamentUpdate
+from models.tournament_organizer import TournamentOrganizer
+from routers.users import UserDep
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
@@ -27,12 +29,20 @@ async def get_tournament(tournament_id: uuid.UUID, session: SessionDep):
 
 
 @router.post("/")
-async def create_tournament(tournament: TournamentCreate, session: SessionDep):
+async def create_tournament(
+    tournament: TournamentCreate, session: SessionDep, user: UserDep
+):
     """Create a new tournament"""
     db_tournament = Tournament.model_validate(tournament)
     session.add(db_tournament)
     session.commit()
     session.refresh(db_tournament)
+
+    db_tournament.organizers.append(user)
+    session.add(db_tournament)
+    session.commit()
+    session.refresh(db_tournament)
+
     return db_tournament
 
 

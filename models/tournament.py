@@ -1,10 +1,15 @@
 import uuid
 from datetime import date
-from sqlmodel import Field, SQLModel, Relationship
 from typing import TYPE_CHECKING
+
+from sqlmodel import Field, Relationship, SQLModel
+
+from models.tournament_organizer import TournamentOrganizer
+from models.user import User
 
 if TYPE_CHECKING:
     from models.category import Category
+    from models.user import User
 
 
 class TournamentBase(SQLModel):
@@ -19,6 +24,9 @@ class Tournament(TournamentBase, table=True):
         primary_key=True,
     )
     categories: list["Category"] = Relationship(back_populates="tournament")
+    organizers: list["User"] = Relationship(
+        back_populates="tournaments", link_model=TournamentOrganizer
+    )
 
 
 class TournamentCreate(TournamentBase):

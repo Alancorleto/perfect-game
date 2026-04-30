@@ -1,5 +1,4 @@
 import uuid
-from datetime import date
 from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
@@ -10,8 +9,5 @@ if TYPE_CHECKING:
 
 
 class TournamentOrganizer(SQLModel, table=True):
-    tournament_id: uuid.UUID = Field(foreign_key="tournament.id")
-    user_id: uuid.UUID = Field(foreign_key="user.id")
-
-    tournament: "Tournament" = Relationship(back_populates="organizers")
-    user: "User" = Relationship(back_populates="tournaments")
+    tournament_id: uuid.UUID = Field(primary_key=True, foreign_key="tournament.id")
+    user_id: uuid.UUID = Field(primary_key=True, foreign_key="user.id")

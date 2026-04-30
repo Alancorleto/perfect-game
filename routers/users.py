@@ -96,6 +96,9 @@ async def get_current_user(
     return user
 
 
+UserDep = Annotated[User, Depends(get_current_user)]
+
+
 @router.post("/users", response_model=UserPublic)
 async def create_user(user: UserCreate, session: SessionDep):
     existing_email = session.exec(select(User).where(User.email == user.email)).first()
