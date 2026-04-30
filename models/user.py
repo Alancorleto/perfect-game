@@ -1,5 +1,6 @@
 import uuid
 
+from pydantic import EmailStr
 from sqlmodel import Field, SQLModel
 
 
@@ -13,8 +14,7 @@ class TokenData(SQLModel):
 
 
 class UserBase(SQLModel):
-    username: str
-    email: str | None = None
+    email: EmailStr | None = None
 
 
 class User(UserBase, table=True):

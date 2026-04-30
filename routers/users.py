@@ -43,15 +43,15 @@ def get_password_hash(password):
     return password_hash.hash(password)
 
 
-def get_user(username: str, session: Session):
-    user = session.exec(select(User).where(User.username == username)).first()
+def get_user(email: str, session: Session):
+    user = session.exec(select(User).where(User.email == email)).first()
     if not user:
         return None
     return user
 
 
-def authenticate_user(username: str, password: str, session: Session):
-    user = get_user(username, session)
+def authenticate_user(email: str, password: str, session: Session):
+    user = get_user(email, session)
     if not user:
         verify_password(password, DUMMY_HASH)
         return False
@@ -89,7 +89,7 @@ async def get_current_user(
     except InvalidTokenError:
         raise credentials_exception
 
-    user = get_user(username=token_data.username, session=session)
+    user = get_user(email=token_data.username, session=session)
     if user is None:
         raise credentials_exception
 
@@ -98,10 +98,16 @@ async def get_current_user(
 
 @router.post("/users", response_model=UserPublic)
 async def create_user(user: UserCreate, session: SessionDep):
+    existing_email = session.exec(select(User).where(User.email == user.email)).first()
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+
     password = get_password_hash(user.password)
 
     db_user = User(
-        username=user.username,
         email=user.email,
         hashed_password=password,
     )
@@ -129,7 +135,7 @@ async def login_for_access_token(
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.email}, expires_delta=access_token_expires
     )
 
     return Token(access_token=access_token, token_type="bearer")
