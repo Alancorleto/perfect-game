@@ -1,8 +1,11 @@
 import uuid
-from models.category import Category
-from sqlmodel import Field, SQLModel, Relationship
 from enum import Enum
 from typing import TYPE_CHECKING
+
+from sqlmodel import Field, Relationship, SQLModel
+
+from models.category import Category
+from models.user import User
 
 if TYPE_CHECKING:
     from models.set import Set
@@ -21,15 +24,15 @@ class RoundBase(SQLModel):
 
 
 class Round(RoundBase, table=True):
-    id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
-        primary_key=True
-    )
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     category_id: uuid.UUID = Field(foreign_key="category.id")
 
     category: Category = Relationship(back_populates="rounds")
 
     sets: list["Set"] = Relationship(back_populates="round")
+
+    def has_organizer(self, user: User) -> bool:
+        return user in self.category.tournament.organizers
 
 
 class RoundCreate(RoundBase):
