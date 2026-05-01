@@ -42,6 +42,7 @@ env/
 *.sqlite3
 local_test_database.db
 local_test_database_project.sqbpro
+local_test_database.db-journal
 database.db
 
 # Local image storage
