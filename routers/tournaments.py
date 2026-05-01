@@ -58,7 +58,7 @@ async def update_tournament(
     if not db_tournament:
         raise HTTPException(status_code=404, detail="Tournament not found")
 
-    if not db_tournament.has_organizer(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="Not authorized to update this tournament"
         )
@@ -80,7 +80,7 @@ async def delete_tournament(
     if not db_tournament:
         raise HTTPException(status_code=404, detail="Tournament not found")
 
-    if not db_tournament.has_organizer(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="Not authorized to delete this tournament"
         )

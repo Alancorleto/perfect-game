@@ -31,8 +31,8 @@ class Round(RoundBase, table=True):
 
     sets: list["Set"] = Relationship(back_populates="round")
 
-    def has_organizer(self, user: User) -> bool:
-        return user in self.category.tournament.organizers
+    def can_be_edited_by(self, user: User) -> bool:
+        return self.category.can_be_edited_by(user)
 
 
 class RoundCreate(RoundBase):

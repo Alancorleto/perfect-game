@@ -36,9 +36,13 @@ class Player(PlayerBase, table=True):
     )
 
     def can_be_edited_by(self, user: User) -> bool:
-        return self.user_id == user.id or (
-            self.guest_tournament is not None
-            and self.guest_tournament.has_organizer(user)
+        return (
+            self.user_id == user.id
+            or (
+                self.guest_tournament is not None
+                and self.guest_tournament.can_be_edited_by(user)
+            )
+            or user.is_super_admin
         )
 
 

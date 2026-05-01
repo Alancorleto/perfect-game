@@ -33,8 +33,8 @@ class Set(SetBase, table=True):
     chart_slots: list["ChartSlot"] = Relationship(back_populates="set")
     player_links: list["SetPlayerLink"] = Relationship(back_populates="set")
 
-    def has_organizer(self, user: User) -> bool:
-        return self.round.has_organizer(user)
+    def can_be_edited_by(self, user: User) -> bool:
+        return self.round.can_be_edited_by(user)
 
 
 class SetCreate(SetBase):

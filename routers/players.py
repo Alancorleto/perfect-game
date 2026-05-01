@@ -58,7 +58,7 @@ async def create_guest_player(
     if not tournament:
         raise HTTPException(status_code=404, detail="Tournament not found")
 
-    if not tournament.has_organizer(user):
+    if not tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )

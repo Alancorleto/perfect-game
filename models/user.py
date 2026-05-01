@@ -22,6 +22,7 @@ class TokenData(SQLModel):
 
 class UserBase(SQLModel):
     email: EmailStr | None = None
+    is_super_admin: bool = False
 
 
 class User(UserBase, table=True):

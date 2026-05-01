@@ -30,7 +30,7 @@ async def create_set(set: SetCreate, session: SessionDep, user: UserDep):
     if not round:
         raise HTTPException(status_code=404, detail="Round not found")
 
-    if not round.has_organizer(user):
+    if not round.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -67,7 +67,7 @@ async def update_set(
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
 
-    if not db_set.has_organizer(user):
+    if not db_set.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -87,7 +87,7 @@ async def delete_set(set_id: uuid.UUID, session: SessionDep, user: UserDep):
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
 
-    if not db_set.has_organizer(user):
+    if not db_set.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -116,7 +116,7 @@ async def add_chart_to_set(
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
 
-    if not db_set.has_organizer(user):
+    if not db_set.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -154,7 +154,7 @@ async def replace_chart_in_set(
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
 
-    if not db_set.has_organizer(user):
+    if not db_set.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -194,7 +194,7 @@ async def update_chart_order_in_set(
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
 
-    if not db_set.has_organizer(user):
+    if not db_set.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -236,7 +236,7 @@ async def remove_chart_from_set(
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
 
-    if not db_set.has_organizer(user):
+    if not db_set.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -277,7 +277,7 @@ async def bulk_add_players_to_set(
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
 
-    if not db_set.has_organizer(user):
+    if not db_set.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -328,7 +328,7 @@ async def update_player_order_in_set(
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
 
-    if not db_set.has_organizer(user):
+    if not db_set.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -377,7 +377,7 @@ async def remove_player_from_set(
     if not db_set:
         raise HTTPException(status_code=404, detail="Set not found")
 
-    if not db_set.has_organizer(user):
+    if not db_set.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )

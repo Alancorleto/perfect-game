@@ -31,8 +31,8 @@ class Tournament(TournamentBase, table=True):
     )
     guest_players: list["Player"] = Relationship(back_populates="guest_tournament")
 
-    def has_organizer(self, user: "User") -> bool:
-        return user in self.organizers
+    def can_be_edited_by(self, user: "User") -> bool:
+        return user in self.organizers or user.is_super_admin
 
 
 class TournamentCreate(TournamentBase):

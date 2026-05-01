@@ -24,8 +24,8 @@ class Category(CategoryBase, table=True):
     tournament: Tournament = Relationship(back_populates="categories")
     rounds: list["Round"] = Relationship(back_populates="category")
 
-    def has_organizer(self, user: User) -> bool:
-        return self.tournament.has_organizer(user)
+    def can_be_edited_by(self, user: User) -> bool:
+        return self.tournament.can_be_edited_by(user)
 
 
 class CategoryCreate(CategoryBase):

@@ -36,7 +36,7 @@ async def create_category(category: CategoryCreate, session: SessionDep, user: U
     if not tournament:
         raise HTTPException(status_code=404, detail="Tournament not found")
 
-    if not tournament.has_organizer(user):
+    if not tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -57,7 +57,7 @@ async def update_category(
     if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    if not db_category.has_organizer(user):
+    if not db_category.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -77,7 +77,7 @@ async def delete_category(category_id: uuid.UUID, session: SessionDep, user: Use
     if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    if not db_category.has_organizer(user):
+    if not db_category.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -99,7 +99,7 @@ async def bulk_add_players_to_category(
     if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    if not db_category.has_organizer(user):
+    if not db_category.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -135,7 +135,7 @@ async def remove_player_from_category(
     if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    if not db_category.has_organizer(user):
+    if not db_category.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )

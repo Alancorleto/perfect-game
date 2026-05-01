@@ -59,7 +59,9 @@ class Score(ScoreBase, table=True):
     )
 
     def can_be_edited_by(self, user: User) -> bool:
-        return self.chart_slot is not None and self.chart_slot.set.has_organizer(user)
+        return self.chart_slot is not None and self.chart_slot.set.can_be_edited_by(
+            user
+        )
 
 
 class ScoreCreate(ScoreBase):

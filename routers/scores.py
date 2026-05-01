@@ -50,7 +50,7 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
         if not db_set:
             raise HTTPException(status_code=404, detail="Set not found")
 
-        if not db_set.has_organizer(user):
+        if not db_set.can_be_edited_by(user):
             raise HTTPException(
                 status_code=403, detail="You are not an organizer for this tournament"
             )

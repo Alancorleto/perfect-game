@@ -35,7 +35,7 @@ async def create_round(round: RoundCreate, session: SessionDep, user: UserDep):
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    if not category.has_organizer(user):
+    if not category.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -57,7 +57,7 @@ async def update_round(
     if not db_round:
         raise HTTPException(status_code=404, detail="Round not found")
 
-    if not db_round.has_organizer(user):
+    if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -77,7 +77,7 @@ async def delete_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     if not db_round:
         raise HTTPException(status_code=404, detail="Round not found")
 
-    if not db_round.has_organizer(user):
+    if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -103,7 +103,7 @@ async def start_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     if not db_round:
         raise HTTPException(status_code=404, detail="Round not found")
 
-    if not db_round.has_organizer(user):
+    if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -126,7 +126,7 @@ async def cancel_round_start(round_id: uuid.UUID, session: SessionDep, user: Use
     if not db_round:
         raise HTTPException(status_code=404, detail="Round not found")
 
-    if not db_round.has_organizer(user):
+    if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -149,7 +149,7 @@ async def pause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     if not db_round:
         raise HTTPException(status_code=404, detail="Round not found")
 
-    if not db_round.has_organizer(user):
+    if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -172,7 +172,7 @@ async def unpause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep)
     if not db_round:
         raise HTTPException(status_code=404, detail="Round not found")
 
-    if not db_round.has_organizer(user):
+    if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -195,7 +195,7 @@ async def finish_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     if not db_round:
         raise HTTPException(status_code=404, detail="Round not found")
 
-    if not db_round.has_organizer(user):
+    if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
@@ -218,7 +218,7 @@ async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep, user: Us
     if not db_round:
         raise HTTPException(status_code=404, detail="Round not found")
 
-    if not db_round.has_organizer(user):
+    if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=403, detail="You are not an organizer for this tournament"
         )
