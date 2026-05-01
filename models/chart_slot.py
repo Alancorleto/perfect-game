@@ -1,11 +1,14 @@
 import uuid
-from sqlmodel import Field, SQLModel, Relationship
 from typing import TYPE_CHECKING
+
+from sqlmodel import Field, Relationship, SQLModel
+
 from models.chart import Chart
+from models.score_entry import ScoreEntry
 from models.set import Set
 
 if TYPE_CHECKING:
-    from models.score_entry import ScoreEntry
+    from models.score import Score
 
 
 class ChartSlot(SQLModel, table=True):
@@ -16,4 +19,5 @@ class ChartSlot(SQLModel, table=True):
 
     set: Set = Relationship(back_populates="chart_slots")
     chart: Chart = Relationship()
-    score_entries: list["ScoreEntry"] = Relationship(back_populates="chart_slot")
+    score_entries: list[ScoreEntry] = Relationship(back_populates="chart_slot")
+    scores: list["Score"] = Relationship(link_model=ScoreEntry)

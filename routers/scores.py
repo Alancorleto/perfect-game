@@ -9,6 +9,7 @@ from models.player import Player
 from models.score import Score, ScoreCreate, ScoreUpdate
 from models.score_entry import ScoreEntry
 from models.set import Set
+from routers.users import UserDep
 
 router = APIRouter(prefix="/scores", tags=["scores"])
 
@@ -30,7 +31,7 @@ async def get_score(score_id: uuid.UUID, session: SessionDep):
 
 
 @router.post("/")
-async def create_score(score: ScoreCreate, session: SessionDep):
+async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
     """Create a new score"""
     db_player = session.get(Player, score.player_id)
     if not db_player:
@@ -48,6 +49,11 @@ async def create_score(score: ScoreCreate, session: SessionDep):
         db_set = session.get(Set, score.set_id)
         if not db_set:
             raise HTTPException(status_code=404, detail="Set not found")
+
+        if not db_set.has_organizer(user):
+            raise HTTPException(
+                status_code=403, detail="You are not an organizer for this tournament"
+            )
 
         if not any(link.player_id == score.player_id for link in db_set.player_links):
             raise HTTPException(status_code=400, detail="Player is not in the set")
@@ -87,11 +93,19 @@ async def create_score(score: ScoreCreate, session: SessionDep):
 
 
 @router.patch("/{score_id}")
-async def update_score(score_id: uuid.UUID, score: ScoreUpdate, session: SessionDep):
+async def update_score(
+    score_id: uuid.UUID, score: ScoreUpdate, session: SessionDep, user: UserDep
+):
     """Update a score"""
     db_score = session.get(Score, score_id)
     if not db_score:
         raise HTTPException(status_code=404, detail="Score not found")
+
+    if not db_score.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=403, detail="You are not allowed to edit this score"
+        )
+
     score_data = score.model_dump(exclude_unset=True)
     db_score.sqlmodel_update(score_data)
     session.add(db_score)
@@ -101,11 +115,17 @@ async def update_score(score_id: uuid.UUID, score: ScoreUpdate, session: Session
 
 
 @router.delete("/{score_id}")
-async def delete_score(score_id: uuid.UUID, session: SessionDep):
+async def delete_score(score_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Delete a score"""
     db_score = session.get(Score, score_id)
     if not db_score:
         raise HTTPException(status_code=404, detail="Score not found")
+
+    if not db_score.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=403, detail="You are not allowed to delete this score"
+        )
+
     session.delete(db_score)
     session.commit()
     return {"detail": "Score deleted"}

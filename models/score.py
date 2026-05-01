@@ -1,9 +1,14 @@
-from sqlmodel import Relationship, SQLModel, Field
-from enum import Enum
-from models.round import Round
-from models.player import Player
-from models.chart import Chart
 import uuid
+from enum import Enum
+from typing import TYPE_CHECKING
+
+from sqlmodel import Field, Relationship, SQLModel
+
+from models.chart import Chart
+from models.chart_slot import ChartSlot
+from models.player import Player
+from models.score_entry import ScoreEntry
+from models.user import User
 
 
 class Grade(Enum):
@@ -49,6 +54,12 @@ class Score(ScoreBase, table=True):
 
     player: Player = Relationship()
     chart: Chart = Relationship()
+    chart_slot: ChartSlot | None = Relationship(
+        back_populates="scores", link_model=ScoreEntry
+    )
+
+    def can_be_edited_by(self, user: User) -> bool:
+        return self.chart_slot is not None and self.chart_slot.set.has_organizer(user)
 
 
 class ScoreCreate(ScoreBase):
@@ -65,14 +76,14 @@ class ScorePublic(ScoreBase):
 
 
 class ScoreUpdate(SQLModel):
-    value: int | None = Field(ge=0, default = None)
-    perfect: int | None = Field(ge=0, default = None)
-    great: int | None = Field(ge=0, default = None)
-    good: int | None = Field(ge=0, default = None)
-    bad: int | None = Field(ge=0, default = None)
-    miss: int | None = Field(ge=0, default = None)
-    max_combo: int | None = Field(ge=0, default = None)
-    kcal: float | None = Field(ge=0, default = None)
+    value: int | None = Field(ge=0, default=None)
+    perfect: int | None = Field(ge=0, default=None)
+    great: int | None = Field(ge=0, default=None)
+    good: int | None = Field(ge=0, default=None)
+    bad: int | None = Field(ge=0, default=None)
+    miss: int | None = Field(ge=0, default=None)
+    max_combo: int | None = Field(ge=0, default=None)
+    kcal: float | None = Field(ge=0, default=None)
     grade: Grade | None = None
     stage_pass: bool | None = None
     video_url: str | None = None
