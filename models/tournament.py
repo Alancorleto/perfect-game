@@ -2,6 +2,7 @@ import uuid
 from datetime import date
 from typing import TYPE_CHECKING
 
+from fastapi.routing import get_request_handler
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.tournament_organizer import TournamentOrganizer
@@ -9,6 +10,7 @@ from models.user import User
 
 if TYPE_CHECKING:
     from models.category import Category
+    from models.player import Player
     from models.user import User
 
 
@@ -27,6 +29,7 @@ class Tournament(TournamentBase, table=True):
     organizers: list["User"] = Relationship(
         back_populates="tournaments", link_model=TournamentOrganizer
     )
+    guest_players: list["Player"] = Relationship(back_populates="guest_tournament")
 
     def has_organizer(self, user: "User") -> bool:
         return user in self.organizers

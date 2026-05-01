@@ -1,5 +1,5 @@
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -7,6 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from models.tournament_organizer import TournamentOrganizer
 
 if TYPE_CHECKING:
+    from models.player import Player
     from models.tournament import Tournament
 
 
@@ -30,6 +31,7 @@ class User(UserBase, table=True):
     tournaments: list["Tournament"] = Relationship(
         back_populates="organizers", link_model=TournamentOrganizer
     )
+    player: Optional["Player"] = Relationship(back_populates="user")
 
 
 class UserPublic(UserBase):
