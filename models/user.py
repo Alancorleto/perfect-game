@@ -40,4 +40,4 @@ class UserPublic(UserBase):
 
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(min_length=8, max_length=100)
