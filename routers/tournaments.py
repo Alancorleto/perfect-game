@@ -143,3 +143,45 @@ async def add_organizer_to_tournament(
     session.commit()
 
     return [user.player for user in db_tournament.organizers if user.player is not None]
+
+
+@router.delete(
+    "/{tournament_id}/organizers/{player_id}", response_model=list[PlayerPublic]
+)
+async def remove_organizer_from_tournament(
+    tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
+):
+    """Remove a player as an organizer from a tournament"""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+
+    if not db_tournament.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to remove organizer from this tournament",
+        )
+
+    db_player = session.get(Player, player_id)
+    if not db_player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    if db_player.user is None:
+        raise HTTPException(
+            status_code=400, detail="Player is not registered with a user account"
+        )
+
+    if db_player.user not in db_tournament.organizers:
+        raise HTTPException(status_code=400, detail="Player is not an organizer")
+
+    if len(db_tournament.organizers) <= 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot remove the last organizer from the tournament",
+        )
+
+    db_tournament.organizers.remove(db_player.user)
+
+    session.commit()
+
+    return [user.player for user in db_tournament.organizers if user.player is not None]
