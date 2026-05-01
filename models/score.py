@@ -77,10 +77,6 @@ class ScorePublic(ScoreBase):
     player: PlayerPublic
     chart: ChartPublic
 
-    def __init__(self, score: Score):
-        score_data = score.model_dump()
-        self.sqlmodel_update(score_data)
-
 
 class ScoreUpdate(SQLModel):
     value: int | None = Field(ge=0, default=None)

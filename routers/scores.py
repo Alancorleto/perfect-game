@@ -14,7 +14,7 @@ from routers.users import UserDep
 router = APIRouter(prefix="/scores", tags=["scores"])
 
 
-@router.get("/")
+@router.get("/", response_model=list[ScorePublic])
 async def list_scores(session: SessionDep):
     """List all scores"""
     scores = session.exec(select(Score)).all()

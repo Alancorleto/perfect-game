@@ -39,10 +39,6 @@ class ChartPublic(ChartBase):
     id: uuid.UUID
     song: SongPublic
 
-    def __init__(self, chart: Chart):
-        chart_data = chart.model_dump()
-        self.sqlmodel_update(chart_data)
-
 
 class ChartUpdate(SQLModel):
     mode: Mode | None = None
