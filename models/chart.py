@@ -1,8 +1,10 @@
 import uuid
 from datetime import date
 from enum import Enum
-from sqlmodel import Field, SQLModel, Relationship
-from models.song import Song
+
+from sqlmodel import Field, Relationship, SQLModel
+
+from models.song import Song, SongPublic
 
 
 class Mode(Enum):
@@ -35,7 +37,11 @@ class ChartCreate(ChartBase):
 
 class ChartPublic(ChartBase):
     id: uuid.UUID
-    song_id: uuid.UUID
+    song: SongPublic
+
+    def __init__(self, chart: Chart):
+        chart_data = chart.model_dump()
+        self.sqlmodel_update(chart_data)
 
 
 class ChartUpdate(SQLModel):

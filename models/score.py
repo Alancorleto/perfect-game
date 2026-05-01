@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from models.chart import Chart
+from models.chart import Chart, ChartPublic
 from models.chart_slot import ChartSlot
-from models.player import Player
+from models.player import Player, PlayerPublic
 from models.score_entry import ScoreEntry
 from models.user import User
 
@@ -71,8 +71,13 @@ class ScoreCreate(ScoreBase):
 
 class ScorePublic(ScoreBase):
     id: uuid.UUID
-    player_id: uuid.UUID
-    chart_id: uuid.UUID
+
+    player: PlayerPublic
+    chart: ChartPublic
+
+    def __init__(self, score: Score):
+        score_data = score.model_dump()
+        self.sqlmodel_update(score_data)
 
 
 class ScoreUpdate(SQLModel):

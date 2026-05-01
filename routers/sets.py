@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from sqlmodel import select
 
 from database import SessionDep
-from models.chart import Chart
+from models.chart import Chart, ChartPublic
 from models.chart_slot import ChartSlot
 from models.player import Player
 from models.round import Round
@@ -97,7 +97,7 @@ async def delete_set(set_id: uuid.UUID, session: SessionDep, user: UserDep):
     return {"detail": "Set deleted"}
 
 
-@router.get("/{set_id}/charts")
+@router.get("/{set_id}/charts", response_model=list[ChartPublic])
 async def list_charts_for_set(set_id: uuid.UUID, session: SessionDep):
     """Get all charts for a set"""
     db_set = session.get(Set, set_id)

@@ -6,7 +6,7 @@ from sqlmodel import select
 from database import SessionDep
 from models.chart import Chart
 from models.player import Player
-from models.score import Score, ScoreCreate, ScoreUpdate
+from models.score import Score, ScoreCreate, ScorePublic, ScoreUpdate
 from models.score_entry import ScoreEntry
 from models.set import Set
 from routers.users import UserDep
@@ -21,7 +21,7 @@ async def list_scores(session: SessionDep):
     return scores
 
 
-@router.get("/{score_id}")
+@router.get("/{score_id}", response_model=ScorePublic)
 async def get_score(score_id: uuid.UUID, session: SessionDep):
     """Get a specific score"""
     score = session.get(Score, score_id)

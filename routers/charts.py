@@ -4,19 +4,19 @@ from fastapi import APIRouter, HTTPException
 from sqlmodel import select
 
 from database import SessionDep
-from models.chart import Chart, ChartCreate, ChartUpdate
+from models.chart import Chart, ChartCreate, ChartPublic, ChartUpdate
 
 router = APIRouter(prefix="/charts", tags=["charts"])
 
 
-@router.get("/")
+@router.get("/", response_model=list[ChartPublic])
 async def list_charts(session: SessionDep):
     """List all charts"""
     charts = session.exec(select(Chart)).all()
     return charts
 
 
-@router.get("/{chart_id}")
+@router.get("/{chart_id}", response_model=ChartPublic)
 async def get_chart(chart_id: uuid.UUID, session: SessionDep):
     """Get a specific chart"""
     chart = session.get(Chart, chart_id)
@@ -25,7 +25,7 @@ async def get_chart(chart_id: uuid.UUID, session: SessionDep):
     return chart
 
 
-@router.post("/")
+@router.post("/", response_model=ChartPublic)
 async def create_chart(chart: ChartCreate, session: SessionDep):
     """Create a new chart"""
     db_chart = Chart.model_validate(chart)
@@ -35,7 +35,7 @@ async def create_chart(chart: ChartCreate, session: SessionDep):
     return db_chart
 
 
-@router.patch("/{chart_id}")
+@router.patch("/{chart_id}", response_model=ChartPublic)
 async def update_chart(chart_id: uuid.UUID, chart: ChartUpdate, session: SessionDep):
     """Update a chart"""
     db_chart = session.get(Chart, chart_id)
