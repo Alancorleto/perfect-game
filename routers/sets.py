@@ -97,6 +97,16 @@ async def delete_set(set_id: uuid.UUID, session: SessionDep, user: UserDep):
     return {"detail": "Set deleted"}
 
 
+@router.get("/{set_id}/charts")
+async def list_charts_for_set(set_id: uuid.UUID, session: SessionDep):
+    """Get all charts for a set"""
+    db_set = session.get(Set, set_id)
+    if not db_set:
+        raise HTTPException(status_code=404, detail="Set not found")
+
+    return [chart_slot.chart for chart_slot in db_set.chart_slots]
+
+
 @router.post("/{set_id}/charts")
 async def add_chart_to_set(
     set_id: uuid.UUID, chart_id: uuid.UUID, session: SessionDep, user: UserDep
