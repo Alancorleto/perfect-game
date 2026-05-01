@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
@@ -43,7 +44,7 @@ def get_password_hash(password):
     return password_hash.hash(password)
 
 
-def get_user(email: str, session: Session):
+def get_user_by_email(email: str, session: Session):
     user = session.exec(select(User).where(User.email == email)).first()
     if not user:
         return None
@@ -51,7 +52,7 @@ def get_user(email: str, session: Session):
 
 
 def authenticate_user(email: str, password: str, session: Session):
-    user = get_user(email, session)
+    user = get_user_by_email(email, session)
     if not user:
         verify_password(password, DUMMY_HASH)
         return False
@@ -89,7 +90,7 @@ async def get_current_user(
     except InvalidTokenError:
         raise credentials_exception
 
-    user = get_user(email=token_data.username, session=session)
+    user = get_user_by_email(email=token_data.username, session=session)
     if user is None:
         raise credentials_exception
 
@@ -149,3 +150,32 @@ async def read_users_me(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     return current_user
+
+
+@router.get("/users", response_model=list[UserPublic])
+async def list_users(session: SessionDep):
+    users = session.exec(select(User)).all()
+    return users
+
+
+@router.get("/users/{user_id}", response_model=UserPublic)
+async def get_user(user_id: uuid.UUID, session: SessionDep):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: uuid.UUID, session: SessionDep, logged_user: UserDep):
+    db_user = session.get(User, user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if db_user.id != logged_user.id and not logged_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    session.delete(db_user)
+    session.commit()
+
+    return {"detail": "User deleted"}
