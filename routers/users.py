@@ -123,7 +123,7 @@ async def create_user(user: UserCreate, session: SessionDep):
     return db_user
 
 
-@router.post("/token")
+@router.post("/token", response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: SessionDep,
@@ -146,8 +146,8 @@ async def login_for_access_token(
 
 
 @router.get("/users/me", response_model=UserPublic)
-async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_user)],
+async def get_currently_logged_user(
+    current_user: UserDep,
 ):
     return current_user
 
@@ -164,21 +164,6 @@ async def get_user(user_id: uuid.UUID, session: SessionDep):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
-
-
-@router.delete("/users/{user_id}")
-async def delete_user(user_id: uuid.UUID, session: SessionDep, logged_user: UserDep):
-    db_user = session.get(User, user_id)
-    if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if db_user.id != logged_user.id and not logged_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    session.delete(db_user)
-    session.commit()
-
-    return {"detail": "User deleted"}
 
 
 @router.put("/users/{user_id}", response_model=UserPublic)
@@ -207,3 +192,18 @@ async def update_user(
     session.refresh(db_user)
 
     return db_user
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: uuid.UUID, session: SessionDep, logged_user: UserDep):
+    db_user = session.get(User, user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if db_user.id != logged_user.id and not logged_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    session.delete(db_user)
+    session.commit()
+
+    return {"detail": "User deleted"}

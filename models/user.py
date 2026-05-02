@@ -43,6 +43,6 @@ class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=100)
 
 
-class UserUpdate(UserBase):
+class UserUpdate(SQLModel):
     password: str | None = Field(min_length=8, max_length=100, default=None)
     email: EmailStr | None = Field(default=None)
