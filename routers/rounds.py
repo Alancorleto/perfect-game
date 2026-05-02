@@ -5,21 +5,21 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.category import Category
-from models.round import Round, RoundCreate, RoundState, RoundUpdate
-from models.set import Set
+from models.round import Round, RoundCreate, RoundPublic, RoundState, RoundUpdate
+from models.set import SetPublic
 from routers.users import UserDep
 
 router = APIRouter(prefix="/rounds", tags=["rounds"])
 
 
-@router.get("/")
+@router.get("/", response_model=list[RoundPublic])
 async def list_rounds(session: SessionDep):
     """List all rounds"""
     rounds = session.exec(select(Round)).all()
     return rounds
 
 
-@router.get("/{round_id}")
+@router.get("/{round_id}", response_model=RoundPublic)
 async def get_round(round_id: uuid.UUID, session: SessionDep):
     """Get a specific round"""
     round = session.get(Round, round_id)
@@ -28,7 +28,7 @@ async def get_round(round_id: uuid.UUID, session: SessionDep):
     return round
 
 
-@router.post("/")
+@router.post("/", response_model=RoundPublic)
 async def create_round(round: RoundCreate, session: SessionDep, user: UserDep):
     """Create a new round"""
     category = session.get(Category, round.category_id)
@@ -48,7 +48,7 @@ async def create_round(round: RoundCreate, session: SessionDep, user: UserDep):
     return db_round
 
 
-@router.patch("/{round_id}")
+@router.patch("/{round_id}", response_model=RoundPublic)
 async def update_round(
     round_id: uuid.UUID, round: RoundUpdate, session: SessionDep, user: UserDep
 ):
@@ -87,7 +87,7 @@ async def delete_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     return {"detail": "Round deleted"}
 
 
-@router.get("/{round_id}/sets", response_model=list[Set])
+@router.get("/{round_id}/sets", response_model=list[SetPublic])
 async def list_sets_in_round(round_id: uuid.UUID, session: SessionDep):
     """Get the set associated with a round"""
     db_round = session.get(Round, round_id)
@@ -96,7 +96,7 @@ async def list_sets_in_round(round_id: uuid.UUID, session: SessionDep):
     return db_round.sets
 
 
-@router.post("/{round_id}/start")
+@router.post("/{round_id}/start", response_model=RoundPublic)
 async def start_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Start a round"""
     db_round = session.get(Round, round_id)
@@ -119,7 +119,7 @@ async def start_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     return db_round
 
 
-@router.post("/{round_id}/cancel-start")
+@router.post("/{round_id}/cancel-start", response_model=RoundPublic)
 async def cancel_round_start(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Cancel the start of a round"""
     db_round = session.get(Round, round_id)
@@ -142,7 +142,7 @@ async def cancel_round_start(round_id: uuid.UUID, session: SessionDep, user: Use
     return db_round
 
 
-@router.post("/{round_id}/pause")
+@router.post("/{round_id}/pause", response_model=RoundPublic)
 async def pause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Pause a round"""
     db_round = session.get(Round, round_id)
@@ -165,7 +165,7 @@ async def pause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     return db_round
 
 
-@router.post("/{round_id}/unpause")
+@router.post("/{round_id}/unpause", response_model=RoundPublic)
 async def unpause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Resume a paused round"""
     db_round = session.get(Round, round_id)
@@ -188,7 +188,7 @@ async def unpause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep)
     return db_round
 
 
-@router.post("/{round_id}/finish")
+@router.post("/{round_id}/finish", response_model=RoundPublic)
 async def finish_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Finish a round"""
     db_round = session.get(Round, round_id)
@@ -211,7 +211,7 @@ async def finish_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     return db_round
 
 
-@router.post("/{round_id}/cancel-finish")
+@router.post("/{round_id}/cancel-finish", response_model=RoundPublic)
 async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Cancel the finish of a round"""
     db_round = session.get(Round, round_id)
