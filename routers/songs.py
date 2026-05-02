@@ -6,19 +6,19 @@ from sqlmodel import select
 
 from database import SessionDep
 from image_storage import upload_image
-from models.song import Song, SongCreate, SongUpdate
+from models.song import Song, SongCreate, SongPublic, SongUpdate
 
 router = APIRouter(prefix="/songs", tags=["songs"])
 
 
-@router.get("/")
+@router.get("/", response_model=list[SongPublic])
 async def list_songs(session: SessionDep):
     """List all songs"""
     songs = session.exec(select(Song)).all()
     return songs
 
 
-@router.get("/{song_id}")
+@router.get("/{song_id}", response_model=SongPublic)
 async def get_song(song_id: uuid.UUID, session: SessionDep):
     """Get a specific song"""
     song = session.get(Song, song_id)
@@ -27,7 +27,7 @@ async def get_song(song_id: uuid.UUID, session: SessionDep):
     return song
 
 
-@router.post("/")
+@router.post("/", response_model=SongPublic)
 async def create_song(song: SongCreate, session: SessionDep):
     """Create a new song"""
     db_song = Song.model_validate(song)
@@ -37,7 +37,7 @@ async def create_song(song: SongCreate, session: SessionDep):
     return db_song
 
 
-@router.patch("/{song_id}")
+@router.patch("/{song_id}", response_model=SongPublic)
 async def update_song(song_id: uuid.UUID, song: SongUpdate, session: SessionDep):
     """Update a song"""
     db_song = session.get(Song, song_id)
@@ -62,7 +62,7 @@ async def delete_song(song_id: uuid.UUID, session: SessionDep):
     return {"detail": "Song deleted"}
 
 
-@router.post("/{song_id}/title")
+@router.post("/{song_id}/title", response_model=SongPublic)
 async def upload_song_title(
     song_id: uuid.UUID, title_file: Annotated[bytes, File()], session: SessionDep
 ):
