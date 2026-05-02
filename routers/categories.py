@@ -4,22 +4,22 @@ from fastapi import APIRouter, HTTPException
 from sqlmodel import select
 
 from database import SessionDep
-from models.category import Category, CategoryCreate, CategoryUpdate
+from models.category import Category, CategoryCreate, CategoryPublic, CategoryUpdate
 from models.tournament import Tournament
-from routers.players import Player
+from routers.players import Player, PlayerPublic
 from routers.users import UserDep
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 
-@router.get("/")
+@router.get("/", response_model=list[CategoryPublic])
 async def list_categories(session: SessionDep):
     """List all categories"""
     categories = session.exec(select(Category)).all()
     return categories
 
 
-@router.get("/{category_id}")
+@router.get("/{category_id}", response_model=CategoryPublic)
 async def get_category(category_id: uuid.UUID, session: SessionDep):
     """Get a specific category"""
     db_category = session.get(Category, category_id)
@@ -28,7 +28,7 @@ async def get_category(category_id: uuid.UUID, session: SessionDep):
     return db_category
 
 
-@router.post("/")
+@router.post("/", response_model=CategoryPublic)
 async def create_category(category: CategoryCreate, session: SessionDep, user: UserDep):
     """Create a new category"""
 
@@ -42,13 +42,15 @@ async def create_category(category: CategoryCreate, session: SessionDep, user: U
         )
 
     db_category = Category.model_validate(category)
+
     session.add(db_category)
     session.commit()
     session.refresh(db_category)
+
     return db_category
 
 
-@router.patch("/{category_id}")
+@router.patch("/{category_id}", response_model=CategoryPublic)
 async def update_category(
     category_id: uuid.UUID, category: CategoryUpdate, session: SessionDep, user: UserDep
 ):
@@ -64,9 +66,11 @@ async def update_category(
 
     category_data = category.model_dump(exclude_unset=True)
     db_category.sqlmodel_update(category_data)
+
     session.add(db_category)
     session.commit()
     session.refresh(db_category)
+
     return db_category
 
 
@@ -87,7 +91,7 @@ async def delete_category(category_id: uuid.UUID, session: SessionDep, user: Use
     return {"detail": "Category deleted"}
 
 
-@router.post("/{category_id}/players/bulk")
+@router.post("/{category_id}/players/bulk", response_model=list[PlayerPublic])
 async def bulk_add_players_to_category(
     category_id: uuid.UUID,
     player_ids: list[uuid.UUID],
@@ -111,13 +115,15 @@ async def bulk_add_players_to_category(
                 status_code=404, detail=f"Player with ID {player_id} not found"
             )
         db_category.players.append(db_player)
+
     session.add(db_category)
     session.commit()
     session.refresh(db_category)
-    return db_category
+
+    return db_category.players
 
 
-@router.get("/{category_id}/players")
+@router.get("/{category_id}/players", response_model=list[PlayerPublic])
 async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
     """List all players in a category"""
     db_category = session.get(Category, category_id)
@@ -126,7 +132,7 @@ async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
     return db_category.players
 
 
-@router.delete("/{category_id}/players/{player_id}")
+@router.delete("/{category_id}/players/{player_id}", response_model=list[PlayerPublic])
 async def remove_player_from_category(
     category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
