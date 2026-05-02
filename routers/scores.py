@@ -30,7 +30,7 @@ async def get_score(score_id: uuid.UUID, session: SessionDep):
     return score
 
 
-@router.post("/")
+@router.post("/", response_model=ScorePublic)
 async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
     """Create a new score"""
     db_player = session.get(Player, score.player_id)
@@ -92,7 +92,7 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
     return db_score
 
 
-@router.patch("/{score_id}")
+@router.patch("/{score_id}", response_model=ScorePublic)
 async def update_score(
     score_id: uuid.UUID, score: ScoreUpdate, session: SessionDep, user: UserDep
 ):
@@ -107,10 +107,12 @@ async def update_score(
         )
 
     score_data = score.model_dump(exclude_unset=True)
+
     db_score.sqlmodel_update(score_data)
     session.add(db_score)
     session.commit()
     session.refresh(db_score)
+
     return db_score
 
 
