@@ -22,12 +22,12 @@ class TokenData(SQLModel):
 
 class UserBase(SQLModel):
     email: EmailStr | None = None
-    is_super_admin: bool = False
 
 
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    is_super_admin: bool = False
 
     tournaments: list["Tournament"] = Relationship(
         back_populates="organizers", link_model=TournamentOrganizer
