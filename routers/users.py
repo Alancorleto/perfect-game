@@ -11,7 +11,7 @@ from pwdlib import PasswordHash
 from sqlmodel import Session, select
 
 from database import SessionDep
-from models.user import Token, TokenData, User, UserCreate, UserPublic
+from models.user import Token, TokenData, User, UserCreate, UserPublic, UserUpdate
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = os.getenv("JWT_ALGORITHM")
@@ -179,3 +179,31 @@ async def delete_user(user_id: uuid.UUID, session: SessionDep, logged_user: User
     session.commit()
 
     return {"detail": "User deleted"}
+
+
+@router.put("/users/{user_id}", response_model=UserPublic)
+async def update_user(
+    user_id: uuid.UUID,
+    session: SessionDep,
+    logged_user: UserDep,
+    user_update: UserUpdate,
+):
+    db_user = session.get(User, user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if db_user.id != logged_user.id and not logged_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    user_data = user_update.model_dump(exclude_unset=True)
+    db_user.sqlmodel_update(user_data)
+
+    if user_update.password:
+        hashed_password = get_password_hash(user_update.password)
+        db_user.hashed_password = hashed_password
+
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+
+    return db_user
