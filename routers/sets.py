@@ -6,7 +6,7 @@ from sqlmodel import select
 from database import SessionDep
 from models.chart import Chart, ChartPublic
 from models.chart_slot import ChartSlot
-from models.player import Player
+from models.player import Player, PlayerPublic
 from models.round import Round
 from models.set import (
     ChartResults,
@@ -15,6 +15,7 @@ from models.set import (
     Set,
     SetCreate,
     SetFormat,
+    SetPublic,
     SetUpdate,
 )
 from models.set_player import SetPlayerLink
@@ -23,7 +24,7 @@ from routers.users import UserDep
 router = APIRouter(prefix="/sets", tags=["sets"])
 
 
-@router.post("/", response_model=Set)
+@router.post("/", response_model=SetPublic)
 async def create_set(set: SetCreate, session: SessionDep, user: UserDep):
     """Create a new set for a round."""
     round = session.get(Round, set.round_id)
@@ -42,14 +43,14 @@ async def create_set(set: SetCreate, session: SessionDep, user: UserDep):
     return db_set
 
 
-@router.get("/", response_model=list[Set])
+@router.get("/", response_model=list[SetPublic])
 async def list_sets(session: SessionDep):
     """List all sets."""
     sets = session.exec(select(Set)).all()
     return sets
 
 
-@router.get("/{set_id}", response_model=Set)
+@router.get("/{set_id}", response_model=SetPublic)
 async def get_set(set_id: uuid.UUID, session: SessionDep):
     """Get a specific set."""
     db_set = session.get(Set, set_id)
@@ -58,7 +59,7 @@ async def get_set(set_id: uuid.UUID, session: SessionDep):
     return db_set
 
 
-@router.patch("/{set_id}", response_model=Set)
+@router.patch("/{set_id}", response_model=SetPublic)
 async def update_set(
     set_id: uuid.UUID, set: SetUpdate, session: SessionDep, user: UserDep
 ):
@@ -107,7 +108,7 @@ async def list_charts_for_set(set_id: uuid.UUID, session: SessionDep):
     return [chart_slot.chart for chart_slot in db_set.chart_slots]
 
 
-@router.post("/{set_id}/charts")
+@router.post("/{set_id}/charts", response_model=list[ChartPublic])
 async def add_chart_to_set(
     set_id: uuid.UUID, chart_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
@@ -139,10 +140,12 @@ async def add_chart_to_set(
     session.commit()
     session.refresh(chart_slot)
 
-    return chart_slot
+    sorted_chart_slots = sorted(db_set.chart_slots, key=lambda c: c.order_index)
+
+    return [chart_slot.chart for chart_slot in sorted_chart_slots]
 
 
-@router.put("/{set_id}/charts", response_model=Set)
+@router.put("/{set_id}/charts", response_model=list[ChartPublic])
 async def replace_chart_in_set(
     set_id: uuid.UUID,
     chart_order_index: int,
@@ -180,10 +183,12 @@ async def replace_chart_in_set(
     session.commit()
     session.refresh(db_set)
 
-    return db_set
+    sorted_chart_slots = sorted(db_set.chart_slots, key=lambda c: c.order_index)
+
+    return [chart_slot.chart for chart_slot in sorted_chart_slots]
 
 
-@router.put("/{set_id}/charts/order")
+@router.put("/{set_id}/charts/order", response_model=list[ChartPublic])
 async def update_chart_order_in_set(
     set_id: uuid.UUID,
     new_chart_slot_order: list[uuid.UUID],
@@ -224,10 +229,12 @@ async def update_chart_order_in_set(
     session.commit()
     session.refresh(db_set)
 
-    return db_set
+    sorted_chart_slots = sorted(db_set.chart_slots, key=lambda c: c.order_index)
+
+    return [chart_slot.chart for chart_slot in sorted_chart_slots]
 
 
-@router.delete("/{set_id}/charts")
+@router.delete("/{set_id}/charts", response_model=list[ChartPublic])
 async def remove_chart_from_set(
     set_id: uuid.UUID, chart_order_index: int, session: SessionDep, user: UserDep
 ):
@@ -265,10 +272,12 @@ async def remove_chart_from_set(
     session.commit()
     session.refresh(db_set)
 
-    return db_set
+    sorted_chart_slots = sorted(db_set.chart_slots, key=lambda c: c.order_index)
+
+    return [chart_slot.chart for chart_slot in sorted_chart_slots]
 
 
-@router.post("/{set_id}/players/bulk")
+@router.post("/{set_id}/players/bulk", response_model=list[PlayerPublic])
 async def bulk_add_players_to_set(
     set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep, user: UserDep
 ):
@@ -306,10 +315,12 @@ async def bulk_add_players_to_set(
     session.commit()
     session.refresh(db_set)
 
-    return db_set
+    sorted_player_links = sorted(db_set.player_links, key=lambda p: p.order_index)
+
+    return [player_link.player for player_link in sorted_player_links]
 
 
-@router.get("/{set_id}/players", response_model=list[Player])
+@router.get("/{set_id}/players", response_model=list[PlayerPublic])
 async def list_players_in_set(set_id: uuid.UUID, session: SessionDep):
     """Get the players for a specific set."""
     set = session.get(Set, set_id)
@@ -319,7 +330,7 @@ async def list_players_in_set(set_id: uuid.UUID, session: SessionDep):
     return players
 
 
-@router.put("/{set_id}/players/order", response_model=list[Player])
+@router.put("/{set_id}/players/order", response_model=list[PlayerPublic])
 async def update_player_order_in_set(
     set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep, user: UserDep
 ):
@@ -363,12 +374,12 @@ async def update_player_order_in_set(
     session.commit()
     session.refresh(db_set)
 
-    player_links_sorted = sorted(db_set.player_links, key=lambda link: link.order_index)
-    new_players = [player_link.player for player_link in player_links_sorted]
-    return new_players
+    sorted_player_links = sorted(db_set.player_links, key=lambda link: link.order_index)
+
+    return [player_link.player for player_link in sorted_player_links]
 
 
-@router.delete("/{set_id}/players/{player_id}", response_model=list[Player])
+@router.delete("/{set_id}/players/{player_id}", response_model=list[PlayerPublic])
 async def remove_player_from_set(
     set_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
@@ -407,9 +418,9 @@ async def remove_player_from_set(
 
     session.commit()
 
-    player_links_sorted = sorted(db_set.player_links, key=lambda link: link.order_index)
-    new_players = [player_link.player for player_link in player_links_sorted]
-    return new_players
+    sorted_player_links = sorted(db_set.player_links, key=lambda link: link.order_index)
+
+    return [player_link.player for player_link in sorted_player_links]
 
 
 @router.get("/{set_id}/results", response_model=list[PlayerResults])

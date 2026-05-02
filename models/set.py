@@ -47,6 +47,11 @@ class SetUpdate(SetBase):
     format: SetFormat | None = Field(default=SetFormat.SCORE_SUM)
 
 
+class SetPublic(BaseModel):
+    id: uuid.UUID
+    round_id: uuid.UUID
+
+
 class Result(BaseModel):
     player_id: uuid.UUID
     set_id: uuid.UUID
