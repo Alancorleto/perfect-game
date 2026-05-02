@@ -6,20 +6,25 @@ from sqlmodel import select
 from database import SessionDep
 from models.category import CategoryPublic
 from models.player import Player, PlayerPublic
-from models.tournament import Tournament, TournamentCreate, TournamentUpdate
+from models.tournament import (
+    Tournament,
+    TournamentCreate,
+    TournamentPublic,
+    TournamentUpdate,
+)
 from routers.users import UserDep
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 
-@router.get("/")
+@router.get("/", response_model=list[TournamentPublic])
 async def list_tournaments(session: SessionDep):
     """List all tournaments"""
     tournaments = session.exec(select(Tournament)).all()
     return tournaments
 
 
-@router.get("/{tournament_id}")
+@router.get("/{tournament_id}", response_model=TournamentPublic)
 async def get_tournament(tournament_id: uuid.UUID, session: SessionDep):
     """Get a specific tournament"""
     db_tournament = session.get(Tournament, tournament_id)
@@ -28,7 +33,7 @@ async def get_tournament(tournament_id: uuid.UUID, session: SessionDep):
     return db_tournament
 
 
-@router.post("/")
+@router.post("/", response_model=TournamentPublic)
 async def create_tournament(
     tournament: TournamentCreate, session: SessionDep, user: UserDep
 ):
@@ -46,7 +51,7 @@ async def create_tournament(
     return db_tournament
 
 
-@router.patch("/{tournament_id}")
+@router.patch("/{tournament_id}", response_model=TournamentPublic)
 async def update_tournament(
     tournament_id: uuid.UUID,
     tournament: TournamentUpdate,
