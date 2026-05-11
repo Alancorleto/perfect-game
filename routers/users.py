@@ -115,7 +115,7 @@ async def create_user(user: UserCreate, session: SessionDep):
 
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(
+async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: SessionDep,
 ) -> Token:
@@ -166,6 +166,15 @@ async def refresh_access_token(refresh_token: str, session: SessionDep) -> Token
         token_type="bearer",
         refresh_token=refresh_token,
     )
+
+
+@router.post("/token/revoke")
+async def revoke_token(refresh_token: str, session: SessionDep) -> dict:
+    db_token = session.get(RefreshToken, refresh_token)
+    if db_token:
+        db_token.revoked_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        session.commit()
+    return {"detail": "Token revoked"}
 
 
 @router.get("/users/me", response_model=UserPublic)
