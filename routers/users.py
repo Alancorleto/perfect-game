@@ -169,7 +169,7 @@ async def refresh_access_token(refresh_token: str, session: SessionDep) -> Token
 
 
 @router.post("/token/revoke")
-async def revoke_token(refresh_token: str, session: SessionDep) -> dict:
+async def revoke_refresh_token(refresh_token: str, session: SessionDep) -> dict:
     db_token = session.get(RefreshToken, refresh_token)
     if db_token:
         db_token.revoked_at = datetime.now(timezone.utc).replace(tzinfo=None)
