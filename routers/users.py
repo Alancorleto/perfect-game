@@ -11,6 +11,7 @@ from pwdlib import PasswordHash
 from sqlmodel import Session, select
 
 from database import SessionDep
+from models.refresh_token import RefreshToken
 from models.user import Token, TokenData, User, UserCreate, UserPublic, UserUpdate
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -18,16 +19,6 @@ ALGORITHM = os.getenv("JWT_ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 router = APIRouter(tags=["users"])
-
-
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "email": "johndoe@example.com",
-        "hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$wagCPXjifgvUFBzq4hqe3w$CYaIb8sB+wtD+Vu/P4uod1+Qof8h+1g7bbDlBID48Rc",
-    }
-}
-
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -142,7 +133,39 @@ async def login_for_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
 
-    return Token(access_token=access_token, token_type="bearer")
+    refresh_token = RefreshToken.create(user_id=user.id, ttl=timedelta(days=30))
+    session.add(refresh_token)
+    session.commit()
+
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        refresh_token=refresh_token.token,
+    )
+
+
+@router.post("/token/refresh", response_model=Token)
+async def refresh_access_token(refresh_token: str, session: SessionDep) -> Token:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    db_token = session.get(RefreshToken, refresh_token)
+
+    if not db_token or db_token.revoked_at is not None or db_token.expires_at < now:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+
+    new_access_token = create_access_token(
+        data={"sub": db_token.user.email},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+
+    return Token(
+        access_token=new_access_token,
+        token_type="bearer",
+        refresh_token=refresh_token,
+    )
 
 
 @router.get("/users/me", response_model=UserPublic)
