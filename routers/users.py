@@ -17,6 +17,7 @@ from models.refresh_token import RefreshToken
 from models.user import (
     PasswordResetConfirm,
     PasswordResetRequest,
+    PasswordResetVerify,
     Token,
     TokenData,
     User,
@@ -304,6 +305,35 @@ async def request_password_reset(
     return {
         "detail": "If the email exists, you will receive a link to reset your password."
     }
+
+
+@router.post("/password-reset/verify")
+async def verify_password_reset_code(
+    body: PasswordResetVerify, session: SessionDep
+) -> dict:
+    """Verifies that the 6-digit code received by email is valid."""
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    user = get_user_by_email(body.email, session)
+    db_token = (
+        session.exec(
+            select(PasswordResetToken)
+            .where(PasswordResetToken.user_id == user.id)
+            .where(PasswordResetToken.code == body.code)
+            .where(PasswordResetToken.used_at == None)  # noqa: E711
+            .where(PasswordResetToken.expires_at > now)
+        ).first()
+        if user
+        else None
+    )
+
+    if not db_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired code.",
+        )
+
+    return {"detail": "Code is valid."}
 
 
 @router.post("/password-reset/confirm")

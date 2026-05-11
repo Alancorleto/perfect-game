@@ -53,6 +53,11 @@ class PasswordResetRequest(SQLModel):
     email: EmailStr
 
 
+class PasswordResetVerify(SQLModel):
+    email: EmailStr
+    code: str
+
+
 class PasswordResetConfirm(SQLModel):
     email: EmailStr
     code: str
