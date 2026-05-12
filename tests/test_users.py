@@ -1,82 +1,9 @@
-import os
-
-# Environment variables must be set BEFORE importing any app module,
-# because database.py creates the engine at module load time.
-os.environ.setdefault("DATABASE_URL", "sqlite://")
-os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-only-for-testing")
-os.environ.setdefault("JWT_ALGORITHM", "HS256")
-
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, create_engine
-from sqlmodel.pool import StaticPool
+from sqlmodel import Session
 
-from database import get_session
-from main import app
-from models.user import User
-from routers.users import get_password_hash
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture(name="session")
-def session_fixture():
-    """Creates an in-memory SQLite database for each test."""
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
-        yield session
-
-
-@pytest.fixture(name="client")
-def client_fixture(session: Session):
-    """Creates a TestClient that uses the test session instead of the production one."""
-
-    def get_session_override():
-        return session
-
-    app.dependency_overrides[get_session] = get_session_override
-    client = TestClient(app)
-    yield client
-    app.dependency_overrides.clear()
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def create_user_in_db(
-    session: Session,
-    email: str = "user@example.com",
-    password: str = "securepassword123",
-    is_super_admin: bool = False,
-) -> User:
-    """Creates a user directly in the test database."""
-    user = User(
-        email=email,
-        hashed_password=get_password_hash(password),
-        is_super_admin=is_super_admin,
-    )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-    return user
-
-
-def get_auth_headers(client: TestClient, email: str, password: str) -> dict:
-    """Logs in and returns Authorization headers with the access token."""
-    response = client.post("/token", data={"username": email, "password": password})
-    token = response.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
-
+from tests.helpers import create_user_in_db, get_auth_headers
 
 # ---------------------------------------------------------------------------
 # POST /users

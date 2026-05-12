@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException
+from fastapi import APIRouter, File, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
@@ -25,7 +25,9 @@ async def get_player(player_id: uuid.UUID, session: SessionDep):
     """Get a specific player"""
     db_player = session.get(Player, player_id)
     if not db_player:
-        raise HTTPException(status_code=404, detail="Player not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
+        )
     return db_player
 
 
@@ -35,7 +37,7 @@ async def create_player(player: PlayerCreate, session: SessionDep, user: UserDep
     all_players = session.exec(select(Player)).all()
     if any(p.user_id == user.id for p in all_players):
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_409_CONFLICT,
             detail="You already have a player associated with this account",
         )
 
@@ -56,11 +58,14 @@ async def create_guest_player(
     """Create a guest player for a tournament"""
     tournament = session.get(Tournament, tournament_id)
     if not tournament:
-        raise HTTPException(status_code=404, detail="Tournament not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
+        )
 
     if not tournament.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     db_player = Player.model_validate(player)
@@ -79,10 +84,14 @@ async def update_player(
     """Update a player"""
     db_player = session.get(Player, player_id)
     if not db_player:
-        raise HTTPException(status_code=404, detail="Player not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
+        )
 
     if not db_player.can_be_edited_by(user):
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
+        )
 
     player_data = player.model_dump(exclude_unset=True)
     db_player.sqlmodel_update(player_data)
@@ -92,19 +101,24 @@ async def update_player(
     return db_player
 
 
-@router.delete("/{player_id}")
-async def delete_player(player_id: uuid.UUID, session: SessionDep, user: UserDep):
+@router.delete("/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_player(
+    player_id: uuid.UUID, session: SessionDep, user: UserDep
+) -> None:
     """Delete a player"""
     db_player = session.get(Player, player_id)
     if not db_player:
-        raise HTTPException(status_code=404, detail="Player not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
+        )
 
     if not db_player.can_be_edited_by(user):
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
+        )
 
     session.delete(db_player)
     session.commit()
-    return {"detail": "Player deleted"}
 
 
 @router.post("/{player_id}/profile_picture", response_model=PlayerPublic)
@@ -117,10 +131,14 @@ async def upload_profile_picture(
     """Upload a player's profile picture"""
     db_player = session.get(Player, player_id)
     if not db_player:
-        raise HTTPException(status_code=404, detail="Player not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
+        )
 
     if db_player.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
+        )
 
     file_name = f"{db_player.id}.png"
     db_player.profile_picture_url = await upload_image(
