@@ -68,3 +68,14 @@ def create_tournament_in_db(
         session.commit()
 
     return tournament
+
+
+def add_organizer_to_tournament(
+    session: Session,
+    tournament: Tournament,
+    user: User,
+) -> None:
+    """Adds a user as an organizer to an existing tournament."""
+    link = TournamentOrganizer(tournament_id=tournament.id, user_id=user.id)
+    session.add(link)
+    session.commit()
