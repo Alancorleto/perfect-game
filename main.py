@@ -11,9 +11,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import HTTPException
 from sqlmodel import SQLModel
 
-from database import engine
+from database import SessionDep, engine
 from routers import api_router
 
 
@@ -35,3 +36,13 @@ def create_db_and_tables():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.delete("/")
+async def clear_test_database(session: SessionDep):
+    if os.getenv("ENVIRONMENT") != "production":
+        session.expunge_all()
+        session.commit()
+    else:
+        raise HTTPException(status_code=403, detail="not allowed in production")
+    return {"detail": "all objects deleted"}

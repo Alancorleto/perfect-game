@@ -124,7 +124,7 @@ async def create_user(user: UserCreate, session: SessionDep):
     existing_email = session.exec(select(User).where(User.email == user.email)).first()
     if existing_email:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_409_CONFLICT,
             detail="Email already registered",
         )
 
@@ -196,13 +196,12 @@ async def refresh_access_token(refresh_token: str, session: SessionDep) -> Token
     )
 
 
-@router.post("/token/revoke")
-async def revoke_refresh_token(refresh_token: str, session: SessionDep) -> dict:
+@router.post("/token/revoke", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_refresh_token(refresh_token: str, session: SessionDep) -> None:
     db_token = session.get(RefreshToken, refresh_token)
     if db_token:
         db_token.revoked_at = datetime.now(timezone.utc).replace(tzinfo=None)
         session.commit()
-    return {"detail": "Token revoked"}
 
 
 @router.get("/users/me", response_model=UserPublic)
@@ -226,7 +225,7 @@ async def get_user(user_id: uuid.UUID, session: SessionDep):
     return user
 
 
-@router.put("/users/{user_id}", response_model=UserPublic)
+@router.patch("/users/{user_id}", response_model=UserPublic)
 async def update_user(
     user_id: uuid.UUID,
     session: SessionDep,
@@ -239,6 +238,16 @@ async def update_user(
 
     if db_user.id != logged_user.id and not logged_user.is_super_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
+
+    if user_update.email and user_update.email != db_user.email:
+        existing_email = session.exec(
+            select(User).where(User.email == user_update.email)
+        ).first()
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already registered",
+            )
 
     user_data = user_update.model_dump(exclude_unset=True)
     db_user.sqlmodel_update(user_data)
@@ -254,8 +263,10 @@ async def update_user(
     return db_user
 
 
-@router.delete("/users/{user_id}")
-async def delete_user(user_id: uuid.UUID, session: SessionDep, logged_user: UserDep):
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: uuid.UUID, session: SessionDep, logged_user: UserDep
+) -> None:
     db_user = session.get(User, user_id)
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -265,8 +276,6 @@ async def delete_user(user_id: uuid.UUID, session: SessionDep, logged_user: User
 
     session.delete(db_user)
     session.commit()
-
-    return {"detail": "User deleted"}
 
 
 @router.post("/password-reset/request")
