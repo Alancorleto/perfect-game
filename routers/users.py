@@ -221,7 +221,9 @@ async def list_users(session: SessionDep):
 async def get_user(user_id: uuid.UUID, session: SessionDep):
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     return user
 
 
@@ -234,10 +236,14 @@ async def update_user(
 ):
     db_user = session.get(User, user_id)
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     if db_user.id != logged_user.id and not logged_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
+        )
 
     if user_update.email and user_update.email != db_user.email:
         existing_email = session.exec(
@@ -269,10 +275,14 @@ async def delete_user(
 ) -> None:
     db_user = session.get(User, user_id)
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     if db_user.id != logged_user.id and not logged_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
+        )
 
     session.delete(db_user)
     session.commit()

@@ -7,6 +7,7 @@ os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-only-for-testing")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 
 import pytest
+from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
@@ -89,7 +90,7 @@ def test_create_user(client: TestClient):
     )
     data = response.json()
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert data["email"] == "test@example.com"
     assert data["id"] is not None
     assert "password" not in data
@@ -104,7 +105,7 @@ def test_create_user_duplicate_email(session: Session, client: TestClient):
         json={"email": "duplicate@example.com", "password": "anotherpassword123"},
     )
 
-    assert response.status_code == 409
+    assert response.status_code == status.HTTP_409_CONFLICT
 
 
 def test_create_user_invalid_email(client: TestClient):
@@ -113,7 +114,7 @@ def test_create_user_invalid_email(client: TestClient):
         json={"email": "not-an-email", "password": "securepassword123"},
     )
 
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_user_password_too_short(client: TestClient):
@@ -122,7 +123,7 @@ def test_create_user_password_too_short(client: TestClient):
         json={"email": "test@example.com", "password": "short"},
     )
 
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +140,7 @@ def test_login(session: Session, client: TestClient):
     )
     data = response.json()
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert data["access_token"] is not None
     assert data["token_type"] == "bearer"
     assert data["refresh_token"] is not None
@@ -153,7 +154,7 @@ def test_login_wrong_password(session: Session, client: TestClient):
         data={"username": "user@example.com", "password": "wrongpassword"},
     )
 
-    assert response.status_code == 401
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 def test_login_nonexistent_user(client: TestClient):
@@ -162,7 +163,7 @@ def test_login_nonexistent_user(client: TestClient):
         data={"username": "ghost@example.com", "password": "doesnotmatter"},
     )
 
-    assert response.status_code == 401
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +183,7 @@ def test_refresh_token(session: Session, client: TestClient):
     response = client.post("/token/refresh", params={"refresh_token": refresh_token})
     data = response.json()
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert data["access_token"] is not None
     assert data["token_type"] == "bearer"
 
@@ -192,7 +193,7 @@ def test_refresh_token_invalid(client: TestClient):
         "/token/refresh", params={"refresh_token": "totally-invalid-token"}
     )
 
-    assert response.status_code == 401
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 def test_refresh_token_revoked(session: Session, client: TestClient):
@@ -208,7 +209,7 @@ def test_refresh_token_revoked(session: Session, client: TestClient):
 
     response = client.post("/token/refresh", params={"refresh_token": refresh_token})
 
-    assert response.status_code == 401
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
@@ -227,7 +228,7 @@ def test_revoke_token(session: Session, client: TestClient):
 
     response = client.post("/token/revoke", params={"refresh_token": refresh_token})
 
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
 def test_revoke_token_nonexistent(client: TestClient):
@@ -236,7 +237,7 @@ def test_revoke_token_nonexistent(client: TestClient):
         "/token/revoke", params={"refresh_token": "nonexistent-token"}
     )
 
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
 # ---------------------------------------------------------------------------
@@ -251,7 +252,7 @@ def test_get_me(session: Session, client: TestClient):
     response = client.get("/users/me", headers=headers)
     data = response.json()
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert data["email"] == "me@example.com"
     assert data["id"] is not None
 
@@ -259,7 +260,7 @@ def test_get_me(session: Session, client: TestClient):
 def test_get_me_unauthenticated(client: TestClient):
     response = client.get("/users/me")
 
-    assert response.status_code == 401
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
@@ -274,7 +275,7 @@ def test_list_users(session: Session, client: TestClient):
     response = client.get("/users")
     data = response.json()
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert len(data) == 2
     emails = [u["email"] for u in data]
     assert "alice@example.com" in emails
@@ -284,7 +285,7 @@ def test_list_users(session: Session, client: TestClient):
 def test_list_users_empty(client: TestClient):
     response = client.get("/users")
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
@@ -299,7 +300,7 @@ def test_get_user(session: Session, client: TestClient):
     response = client.get(f"/users/{user.id}")
     data = response.json()
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert data["email"] == "target@example.com"
     assert data["id"] == str(user.id)
 
@@ -307,7 +308,7 @@ def test_get_user(session: Session, client: TestClient):
 def test_get_user_not_found(client: TestClient):
     response = client.get("/users/00000000-0000-0000-0000-000000000000")
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
@@ -326,7 +327,7 @@ def test_update_user(session: Session, client: TestClient):
     )
     data = response.json()
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert data["email"] == "new@example.com"
 
 
@@ -348,7 +349,7 @@ def test_update_user_password(session: Session, client: TestClient):
         data={"username": "user@example.com", "password": "newpassword456"},
     )
 
-    assert login_response.status_code == 200
+    assert login_response.status_code == status.HTTP_200_OK
 
 
 def test_update_user_not_found(session: Session, client: TestClient):
@@ -364,7 +365,7 @@ def test_update_user_not_found(session: Session, client: TestClient):
         headers=headers,
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_update_user_unauthorized(session: Session, client: TestClient):
@@ -378,7 +379,7 @@ def test_update_user_unauthorized(session: Session, client: TestClient):
         headers=headers,
     )
 
-    assert response.status_code == 403
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_update_user_as_super_admin(session: Session, client: TestClient):
@@ -397,7 +398,7 @@ def test_update_user_as_super_admin(session: Session, client: TestClient):
         headers=headers,
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
     assert response.json()["email"] == "updated@example.com"
 
 
@@ -417,7 +418,7 @@ def test_update_user_email_already_registered(session: Session, client: TestClie
         headers=headers,
     )
 
-    assert response.status_code == 409
+    assert response.status_code == status.HTTP_409_CONFLICT
 
 
 # ---------------------------------------------------------------------------
@@ -433,11 +434,11 @@ def test_delete_user(session: Session, client: TestClient):
 
     response = client.delete(f"/users/{user.id}", headers=headers)
 
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     # Confirm the user no longer exists
     get_response = client.get(f"/users/{user.id}")
-    assert get_response.status_code == 404
+    assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_delete_user_not_found(session: Session, client: TestClient):
@@ -451,7 +452,7 @@ def test_delete_user_not_found(session: Session, client: TestClient):
         "/users/00000000-0000-0000-0000-000000000000", headers=headers
     )
 
-    assert response.status_code == 404
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_delete_user_unauthorized(session: Session, client: TestClient):
@@ -461,7 +462,7 @@ def test_delete_user_unauthorized(session: Session, client: TestClient):
 
     response = client.delete(f"/users/{target.id}", headers=headers)
 
-    assert response.status_code == 403
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_delete_user_as_super_admin(session: Session, client: TestClient):
@@ -476,4 +477,4 @@ def test_delete_user_as_super_admin(session: Session, client: TestClient):
 
     response = client.delete(f"/users/{target.id}", headers=headers)
 
-    assert response.status_code == 204
+    assert response.status_code == status.HTTP_204_NO_CONTENT
