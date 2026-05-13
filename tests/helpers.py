@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from models.chart import Chart, Mode
 from models.player import Player
 from models.song import Song
 from models.tournament import Tournament
@@ -63,6 +64,26 @@ def create_song_in_db(
     session.commit()
     session.refresh(song)
     return song
+
+
+def create_chart_in_db(
+    session: Session,
+    song: Song,
+    mode: Mode = Mode.SINGLE,
+    level: int = 1,
+    player_count: int = 1,
+) -> Chart:
+    """Creates a chart directly in the test database."""
+    chart = Chart(
+        song_id=song.id,
+        mode=mode,
+        level=level,
+        player_count=player_count,
+    )
+    session.add(chart)
+    session.commit()
+    session.refresh(chart)
+    return chart
 
 
 def create_tournament_in_db(
