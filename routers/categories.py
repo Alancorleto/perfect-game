@@ -171,10 +171,14 @@ async def remove_player_from_category(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
         )
 
-    if db_player in db_category.players:
-        db_category.players.remove(db_player)
-        session.add(db_category)
-        session.commit()
-        session.refresh(db_category)
+    if db_player not in db_category.players:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Player not found in category"
+        )
+
+    db_category.players.remove(db_player)
+    session.add(db_category)
+    session.commit()
+    session.refresh(db_category)
 
     return db_category.players

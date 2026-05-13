@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from models.category import Category
 from models.chart import Chart, Mode
 from models.player import Player
 from models.song import Song
@@ -84,6 +85,19 @@ def create_chart_in_db(
     session.commit()
     session.refresh(chart)
     return chart
+
+
+def create_category_in_db(
+    session: Session,
+    tournament: Tournament,
+    name: str = "Test Category",
+) -> Category:
+    """Creates a category directly in the test database."""
+    category = Category(name=name, tournament_id=tournament.id)
+    session.add(category)
+    session.commit()
+    session.refresh(category)
+    return category
 
 
 def create_tournament_in_db(
