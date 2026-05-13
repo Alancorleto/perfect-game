@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
@@ -21,7 +21,9 @@ async def get_chart(chart_id: uuid.UUID, session: SessionDep):
     """Get a specific chart"""
     chart = session.get(Chart, chart_id)
     if not chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
+        )
     return chart
 
 
@@ -40,7 +42,9 @@ async def update_chart(chart_id: uuid.UUID, chart: ChartUpdate, session: Session
     """Update a chart"""
     db_chart = session.get(Chart, chart_id)
     if not db_chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
+        )
     chart_data = chart.model_dump(exclude_unset=True)
     db_chart.sqlmodel_update(chart_data)
     session.add(db_chart)
@@ -49,12 +53,13 @@ async def update_chart(chart_id: uuid.UUID, chart: ChartUpdate, session: Session
     return db_chart
 
 
-@router.delete("/{chart_id}")
+@router.delete("/{chart_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_chart(chart_id: uuid.UUID, session: SessionDep):
     """Delete a chart"""
     db_chart = session.get(Chart, chart_id)
     if not db_chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
+        )
     session.delete(db_chart)
     session.commit()
-    return {"detail": "Chart deleted"}

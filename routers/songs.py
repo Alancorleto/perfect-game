@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException
+from fastapi import APIRouter, File, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
@@ -23,7 +23,9 @@ async def get_song(song_id: uuid.UUID, session: SessionDep):
     """Get a specific song"""
     song = session.get(Song, song_id)
     if not song:
-        raise HTTPException(status_code=404, detail="Song not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Song not found"
+        )
     return song
 
 
@@ -42,7 +44,9 @@ async def update_song(song_id: uuid.UUID, song: SongUpdate, session: SessionDep)
     """Update a song"""
     db_song = session.get(Song, song_id)
     if not db_song:
-        raise HTTPException(status_code=404, detail="Song not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Song not found"
+        )
     song_data = song.model_dump(exclude_unset=True)
     db_song.sqlmodel_update(song_data)
     session.add(db_song)
@@ -51,15 +55,16 @@ async def update_song(song_id: uuid.UUID, song: SongUpdate, session: SessionDep)
     return db_song
 
 
-@router.delete("/{song_id}")
+@router.delete("/{song_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_song(song_id: uuid.UUID, session: SessionDep):
     """Delete a song"""
     db_song = session.get(Song, song_id)
     if not db_song:
-        raise HTTPException(status_code=404, detail="Song not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Song not found"
+        )
     session.delete(db_song)
     session.commit()
-    return {"detail": "Song deleted"}
 
 
 @router.post("/{song_id}/title", response_model=SongPublic)
@@ -69,7 +74,9 @@ async def upload_song_title(
     """Upload a song title"""
     db_song = session.get(Song, song_id)
     if not db_song:
-        raise HTTPException(status_code=404, detail="Song not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Song not found"
+        )
 
     file_name = f"{db_song.id}.png"
     db_song.title_url = await upload_image(title_file, file_name, "titles")

@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
@@ -29,11 +29,14 @@ async def create_set(set: SetCreate, session: SessionDep, user: UserDep):
     """Create a new set for a round."""
     round = session.get(Round, set.round_id)
     if not round:
-        raise HTTPException(status_code=404, detail="Round not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
 
     if not round.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     db_set = Set.model_validate(set)
@@ -55,7 +58,9 @@ async def get_set(set_id: uuid.UUID, session: SessionDep):
     """Get a specific set."""
     db_set = session.get(Set, set_id)
     if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
     return db_set
 
 
@@ -66,11 +71,14 @@ async def update_set(
     """Update a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
 
     if not db_set.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     set_data = set.model_dump(exclude_unset=True)
@@ -81,21 +89,23 @@ async def update_set(
     return db_set
 
 
-@router.delete("/{set_id}")
+@router.delete("/{set_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_set(set_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Delete a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
 
     if not db_set.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     session.delete(db_set)
     session.commit()
-    return {"detail": "Set deleted"}
 
 
 @router.get("/{set_id}/charts", response_model=list[ChartPublic])
@@ -103,7 +113,9 @@ async def list_charts_for_set(set_id: uuid.UUID, session: SessionDep):
     """Get all charts for a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
 
     return [chart_slot.chart for chart_slot in db_set.chart_slots]
 
@@ -115,16 +127,21 @@ async def add_chart_to_set(
     """Add a chart to a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
 
     if not db_set.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     db_chart = session.get(Chart, chart_id)
     if not db_chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
+        )
 
     order_index = len(db_set.chart_slots)
 
@@ -155,16 +172,21 @@ async def replace_chart_in_set(
 ):
     db_set = session.get(Set, set_id)
     if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
 
     if not db_set.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     db_chart = session.get(Chart, new_chart_id)
     if not db_chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
+        )
 
     chart_slot = next(
         (
@@ -175,7 +197,9 @@ async def replace_chart_in_set(
         None,
     )
     if not chart_slot:
-        raise HTTPException(status_code=404, detail="Chart slot not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chart slot not found"
+        )
 
     chart_slot.chart = db_chart
 
@@ -197,16 +221,19 @@ async def update_chart_order_in_set(
 ):
     db_set = session.get(Set, set_id)
     if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
 
     if not db_set.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     if len(new_chart_slot_order) != len(db_set.chart_slots):
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Chart slot order does not match number of chart slots for this set",
         )
 
@@ -221,7 +248,8 @@ async def update_chart_order_in_set(
         )
         if not chart_slot:
             raise HTTPException(
-                status_code=404, detail=f"ChartSlot with ID {chart_slot_id} not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"ChartSlot with ID {chart_slot_id} not found",
             )
         chart_slot.order_index = i
         session.add(chart_slot)
@@ -241,11 +269,14 @@ async def remove_chart_from_set(
     """Remove a chart from a set."""
     db_set = session.get(Set, set_id)
     if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
 
     if not db_set.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     chart_slot = next(
@@ -254,7 +285,7 @@ async def remove_chart_from_set(
     )
     if not chart_slot:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"ChartSlot with order index {chart_order_index} not found",
         )
 
@@ -284,11 +315,14 @@ async def bulk_add_players_to_set(
     """Bulk add players to a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
 
     if not db_set.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     # Filter out player IDs that are already in the set
@@ -303,7 +337,8 @@ async def bulk_add_players_to_set(
         db_player = session.get(Player, player_id)
         if not db_player:
             raise HTTPException(
-                status_code=404, detail=f"Player with ID {player_id} not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Player with ID {player_id} not found",
             )
         order_index = previous_player_count + i
         set_player_link = SetPlayerLink(
@@ -325,7 +360,9 @@ async def list_players_in_set(set_id: uuid.UUID, session: SessionDep):
     """Get the players for a specific set."""
     set = session.get(Set, set_id)
     if not set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
     players = [player_link.player for player_link in set.player_links]
     return players
 
@@ -337,16 +374,19 @@ async def update_player_order_in_set(
     """Update the order of players in a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
 
     if not db_set.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     if len(player_ids) != len(db_set.player_links):
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Player IDs count does not match the number of players in the set",
         )
 
@@ -355,7 +395,8 @@ async def update_player_order_in_set(
         db_player = session.get(Player, player_id)
         if not db_player:
             raise HTTPException(
-                status_code=404, detail=f"Player with ID {player_id} not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Player with ID {player_id} not found",
             )
 
         # Validate player is in the set
@@ -364,7 +405,8 @@ async def update_player_order_in_set(
         )
         if not db_set_player_link:
             raise HTTPException(
-                status_code=404, detail=f"Player with ID {player_id} is not in the set"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Player with ID {player_id} is not in the set",
             )
 
         # Update the order index
@@ -386,11 +428,14 @@ async def remove_player_from_set(
     """Remove a player from a set."""
     db_set = session.get(Set, set_id)
     if not db_set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
 
     if not db_set.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     db_set_player_link = next(
@@ -398,7 +443,8 @@ async def remove_player_from_set(
     )
     if not db_set_player_link:
         raise HTTPException(
-            status_code=404, detail=f"Player with ID {player_id} is not in the set"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Player with ID {player_id} is not in the set",
         )
 
     player_order_index = db_set_player_link.order_index
@@ -429,7 +475,9 @@ async def get_set_results(set_id: uuid.UUID, session: SessionDep):
 
     set = session.get(Set, set_id)
     if not set:
-        raise HTTPException(status_code=404, detail="Set not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
 
     chart_slots = sorted(set.chart_slots, key=lambda link: link.order_index)
 

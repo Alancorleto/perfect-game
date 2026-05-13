@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
@@ -24,7 +24,9 @@ async def get_category(category_id: uuid.UUID, session: SessionDep):
     """Get a specific category"""
     db_category = session.get(Category, category_id)
     if not db_category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
     return db_category
 
 
@@ -34,11 +36,14 @@ async def create_category(category: CategoryCreate, session: SessionDep, user: U
 
     tournament = session.get(Tournament, category.tournament_id)
     if not tournament:
-        raise HTTPException(status_code=404, detail="Tournament not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
+        )
 
     if not tournament.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     db_category = Category.model_validate(category)
@@ -57,11 +62,14 @@ async def update_category(
     """Update a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
 
     if not db_category.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     category_data = category.model_dump(exclude_unset=True)
@@ -74,21 +82,23 @@ async def update_category(
     return db_category
 
 
-@router.delete("/{category_id}")
+@router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(category_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Delete a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
 
     if not db_category.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     session.delete(db_category)
     session.commit()
-    return {"detail": "Category deleted"}
 
 
 @router.post("/{category_id}/players/bulk", response_model=list[PlayerPublic])
@@ -101,18 +111,22 @@ async def bulk_add_players_to_category(
     """Bulk add players to a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
 
     if not db_category.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     for player_id in player_ids:
         db_player = session.get(Player, player_id)
         if not db_player:
             raise HTTPException(
-                status_code=404, detail=f"Player with ID {player_id} not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Player with ID {player_id} not found",
             )
         db_category.players.append(db_player)
 
@@ -128,32 +142,41 @@ async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
     """List all players in a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
     return db_category.players
 
 
-@router.delete("/{category_id}/players/{player_id}", response_model=list[PlayerPublic])
+@router.delete(
+    "/{category_id}/players/{player_id}",
+    response_model=list[PlayerPublic],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def remove_player_from_category(
     category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     """Remove a player from a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
 
     if not db_category.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     db_player = session.get(Player, player_id)
     if not db_player:
-        raise HTTPException(status_code=404, detail="Player not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
+        )
 
     if db_player in db_category.players:
         db_category.players.remove(db_player)
         session.add(db_category)
         session.commit()
         session.refresh(db_category)
-
-    return {"detail": "Player removed from category"}

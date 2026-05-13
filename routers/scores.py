@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
@@ -26,7 +26,9 @@ async def get_score(score_id: uuid.UUID, session: SessionDep):
     """Get a specific score"""
     score = session.get(Score, score_id)
     if not score:
-        raise HTTPException(status_code=404, detail="Score not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score not found"
+        )
     return score
 
 
@@ -35,11 +37,15 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
     """Create a new score"""
     db_player = session.get(Player, score.player_id)
     if not db_player:
-        raise HTTPException(status_code=404, detail="Player not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
+        )
 
     db_chart = session.get(Chart, score.chart_id)
     if not db_chart:
-        raise HTTPException(status_code=404, detail="Chart not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
+        )
 
     db_score = Score.model_validate(score)
     session.add(db_score)
@@ -48,15 +54,21 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
     if score.set_id is not None and score.order_index is not None:
         db_set = session.get(Set, score.set_id)
         if not db_set:
-            raise HTTPException(status_code=404, detail="Set not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+            )
 
         if not db_set.can_be_edited_by(user):
             raise HTTPException(
-                status_code=403, detail="You are not an organizer for this tournament"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not an organizer for this tournament",
             )
 
         if not any(link.player_id == score.player_id for link in db_set.player_links):
-            raise HTTPException(status_code=400, detail="Player is not in the set")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Player is not in the set",
+            )
 
         if not any(
             chart_slot.chart_id == score.chart_id
@@ -64,7 +76,7 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
             for chart_slot in db_set.chart_slots
         ):
             raise HTTPException(
-                status_code=400,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Chart with index {score.order_index} is not in the set",
             )
 
@@ -79,7 +91,7 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
             for score_entry in chart_slot.score_entries
         ):
             raise HTTPException(
-                status_code=400,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A score already exists for this player, set, and order index",
             )
 
@@ -99,11 +111,14 @@ async def update_score(
     """Update a score"""
     db_score = session.get(Score, score_id)
     if not db_score:
-        raise HTTPException(status_code=404, detail="Score not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score not found"
+        )
 
     if not db_score.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not allowed to edit this score"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not allowed to edit this score",
         )
 
     score_data = score.model_dump(exclude_unset=True)
@@ -116,18 +131,20 @@ async def update_score(
     return db_score
 
 
-@router.delete("/{score_id}")
+@router.delete("/{score_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_score(score_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Delete a score"""
     db_score = session.get(Score, score_id)
     if not db_score:
-        raise HTTPException(status_code=404, detail="Score not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score not found"
+        )
 
     if not db_score.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not allowed to delete this score"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not allowed to delete this score",
         )
 
     session.delete(db_score)
     session.commit()
-    return {"detail": "Score deleted"}

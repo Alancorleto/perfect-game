@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
@@ -24,7 +24,9 @@ async def get_round(round_id: uuid.UUID, session: SessionDep):
     """Get a specific round"""
     round = session.get(Round, round_id)
     if not round:
-        raise HTTPException(status_code=404, detail="Round not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
     return round
 
 
@@ -33,11 +35,14 @@ async def create_round(round: RoundCreate, session: SessionDep, user: UserDep):
     """Create a new round"""
     category = session.get(Category, round.category_id)
     if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
 
     if not category.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     db_round = Round.model_validate(round)
@@ -55,11 +60,14 @@ async def update_round(
     """Update a round"""
     db_round = session.get(Round, round_id)
     if not db_round:
-        raise HTTPException(status_code=404, detail="Round not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
 
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     round_data = round.model_dump(exclude_unset=True)
@@ -70,21 +78,23 @@ async def update_round(
     return db_round
 
 
-@router.delete("/{round_id}")
+@router.delete("/{round_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Delete a round"""
     db_round = session.get(Round, round_id)
     if not db_round:
-        raise HTTPException(status_code=404, detail="Round not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
 
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     session.delete(db_round)
     session.commit()
-    return {"detail": "Round deleted"}
 
 
 @router.get("/{round_id}/sets", response_model=list[SetPublic])
@@ -92,7 +102,9 @@ async def list_sets_in_round(round_id: uuid.UUID, session: SessionDep):
     """Get the set associated with a round"""
     db_round = session.get(Round, round_id)
     if not db_round:
-        raise HTTPException(status_code=404, detail="Round not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
     return db_round.sets
 
 
@@ -101,15 +113,21 @@ async def start_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Start a round"""
     db_round = session.get(Round, round_id)
     if not db_round:
-        raise HTTPException(status_code=404, detail="Round not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
 
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     if db_round.state != RoundState.NOT_STARTED:
-        raise HTTPException(status_code=400, detail="Round has already been started")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Round has already been started",
+        )
 
     db_round.state = RoundState.IN_PROGRESS
     session.add(db_round)
@@ -124,15 +142,20 @@ async def cancel_round_start(round_id: uuid.UUID, session: SessionDep, user: Use
     """Cancel the start of a round"""
     db_round = session.get(Round, round_id)
     if not db_round:
-        raise HTTPException(status_code=404, detail="Round not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
 
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     if db_round.state != RoundState.IN_PROGRESS:
-        raise HTTPException(status_code=400, detail="Round is not in progress")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Round is not in progress"
+        )
 
     db_round.state = RoundState.NOT_STARTED
     session.add(db_round)
@@ -147,15 +170,20 @@ async def pause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Pause a round"""
     db_round = session.get(Round, round_id)
     if not db_round:
-        raise HTTPException(status_code=404, detail="Round not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
 
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     if db_round.state != RoundState.IN_PROGRESS:
-        raise HTTPException(status_code=400, detail="Round is not in progress")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Round is not in progress"
+        )
 
     db_round.state = RoundState.PAUSED
     session.add(db_round)
@@ -170,15 +198,20 @@ async def unpause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep)
     """Resume a paused round"""
     db_round = session.get(Round, round_id)
     if not db_round:
-        raise HTTPException(status_code=404, detail="Round not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
 
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     if db_round.state != RoundState.PAUSED:
-        raise HTTPException(status_code=400, detail="Round is not paused")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Round is not paused"
+        )
 
     db_round.state = RoundState.IN_PROGRESS
     session.add(db_round)
@@ -193,15 +226,20 @@ async def finish_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Finish a round"""
     db_round = session.get(Round, round_id)
     if not db_round:
-        raise HTTPException(status_code=404, detail="Round not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
 
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     if db_round.state != RoundState.IN_PROGRESS:
-        raise HTTPException(status_code=400, detail="Round is not in progress")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Round is not in progress"
+        )
 
     db_round.state = RoundState.FINISHED
     session.add(db_round)
@@ -216,15 +254,20 @@ async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep, user: Us
     """Cancel the finish of a round"""
     db_round = session.get(Round, round_id)
     if not db_round:
-        raise HTTPException(status_code=404, detail="Round not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
 
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
-            status_code=403, detail="You are not an organizer for this tournament"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
         )
 
     if db_round.state != RoundState.FINISHED:
-        raise HTTPException(status_code=400, detail="Round is not finished")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Round is not finished"
+        )
 
     db_round.state = RoundState.IN_PROGRESS
     session.add(db_round)
