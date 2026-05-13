@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from models.player import Player
+from models.song import Song
 from models.tournament import Tournament
 from models.tournament_organizer import TournamentOrganizer
 from models.user import User
@@ -49,6 +50,19 @@ def create_player_in_db(
     session.commit()
     session.refresh(player)
     return player
+
+
+def create_song_in_db(
+    session: Session,
+    name: str = "Test Song",
+    title_url: str | None = None,
+) -> Song:
+    """Creates a song directly in the test database."""
+    song = Song(name=name, title_url=title_url)
+    session.add(song)
+    session.commit()
+    session.refresh(song)
+    return song
 
 
 def create_tournament_in_db(

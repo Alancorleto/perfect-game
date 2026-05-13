@@ -148,11 +148,7 @@ async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
     return db_category.players
 
 
-@router.delete(
-    "/{category_id}/players/{player_id}",
-    response_model=list[PlayerPublic],
-    status_code=status.HTTP_204_NO_CONTENT,
-)
+@router.delete("/{category_id}/players/{player_id}", response_model=list[PlayerPublic])
 async def remove_player_from_category(
     category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
@@ -180,3 +176,5 @@ async def remove_player_from_category(
         session.add(db_category)
         session.commit()
         session.refresh(db_category)
+
+    return db_category.players
