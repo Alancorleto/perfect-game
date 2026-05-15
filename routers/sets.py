@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
-from models import chart
 from models.chart import Chart, ChartPublic
 from models.chart_slot import ChartSlot
 from models.player import Player, PlayerPublic
