@@ -208,6 +208,41 @@ def create_score_in_db(
     return score
 
 
+def get_grade(score: int) -> str:
+    if score >= 995000:
+        return "SSS+"
+    elif score >= 990000:
+        return "SSS"
+    elif score >= 985000:
+        return "SS+"
+    elif score >= 980000:
+        return "SS"
+    elif score >= 975000:
+        return "S+"
+    elif score >= 970000:
+        return "S"
+    elif score >= 960000:
+        return "AAA+"
+    elif score >= 950000:
+        return "AAA"
+    elif score >= 925000:
+        return "AA+"
+    elif score >= 900000:
+        return "AA"
+    elif score >= 825000:
+        return "A+"
+    elif score >= 750000:
+        return "A"
+    elif score >= 700000:
+        return "B"
+    elif score >= 600000:
+        return "C"
+    elif score >= 450000:
+        return "D"
+    else:
+        return "F"
+
+
 def create_tournament_in_db(
     session: Session,
     organizer: User | None = None,
