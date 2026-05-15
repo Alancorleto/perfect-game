@@ -1019,6 +1019,8 @@ def test_get_set_results_score_sum(session: Session, client: TestClient):
     assert data[1]["total_score"] == 850000
     assert data[1]["results"][1]["score"] == 0
     assert data[1]["results"][1]["place"] == 2
+    assert data[0]["place"] == 1
+    assert data[1]["place"] == 2
 
 
 def test_get_set_results_battle(session: Session, client: TestClient):
@@ -1051,6 +1053,8 @@ def test_get_set_results_battle(session: Session, client: TestClient):
     assert data[0]["player_id"] == str(player_a.id)
     assert data[0]["total_score"] == 1
     assert data[1]["total_score"] == 0
+    assert data[0]["place"] == 1
+    assert data[1]["place"] == 2
 
 
 def test_get_set_results_battle_tie_scores_no_points(
