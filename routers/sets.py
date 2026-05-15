@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
+from models import chart
 from models.chart import Chart, ChartPublic
 from models.chart_slot import ChartSlot
 from models.player import Player, PlayerPublic
@@ -469,7 +470,7 @@ async def get_set_results(set_id: uuid.UUID, session: SessionDep):
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
         )
 
-    chart_slots = sorted(set.chart_slots, key=lambda link: link.order_index)
+    chart_slots = sorted(set.chart_slots, key=lambda chart_slot: chart_slot.order_index)
 
     chart_results_list: list[ChartResults] = []
     for chart_slot in chart_slots:
@@ -481,7 +482,7 @@ async def get_set_results(set_id: uuid.UUID, session: SessionDep):
         player_results = _populate_player_results(player_link, chart_results_list)
         player_results_list.append(player_results)
 
-    player_results_list.sort(key=lambda r: (-r.total_score, r.order_index))
+    _sort_player_results(player_results_list)
 
     return player_results_list
 
@@ -489,13 +490,19 @@ async def get_set_results(set_id: uuid.UUID, session: SessionDep):
 def _populate_chart_results(chart_slot: ChartSlot) -> ChartResults:
     chart_results = ChartResults(chart_slot_id=chart_slot.id, results=[])
 
-    for score_entry in chart_slot.score_entries:
+    for score in chart_slot.scores:
+        player_order_index = next(
+            set_player.order_index
+            for set_player in chart_slot.set.player_links
+            if set_player.player_id == score.player_id
+        )
         result = Result(
-            player_id=score_entry.score.player_id,
+            player_id=score.player_id,
+            player_order_index=player_order_index,
             set_id=chart_slot.set_id,
             chart_order_index=chart_slot.order_index,
-            score=score_entry.score.value,
-            score_id=score_entry.score.id,
+            score=score.value,
+            score_id=score.id,
         )
 
         chart_results.results.append(result)
@@ -506,7 +513,7 @@ def _populate_chart_results(chart_slot: ChartSlot) -> ChartResults:
 
 
 def _sort_chart_results(chart_results: ChartResults):
-    chart_results.results.sort(key=lambda r: (-r.score, r.player_id))
+    chart_results.results.sort(key=lambda r: (-r.score, r.player_order_index))
 
     if len(chart_results.results) > 0:
         chart_results.results[0].place = 1
@@ -541,6 +548,7 @@ def _populate_player_results(
         if not result:
             result = Result(
                 player_id=player.id,
+                player_order_index=player_link.order_index,
                 set_id=set.id,
                 chart_order_index=chart_order_index,
                 place=len(chart_results.results) + 1,
@@ -569,3 +577,24 @@ def _calculate_player_total_score(player_results: PlayerResults, set_format: Set
         for result in player_results.results:
             if result.place == 1 and not result.is_tie and result.score_id is not None:
                 player_results.total_score += 1
+
+
+def _sort_player_results(results: list[PlayerResults]) -> list[PlayerResults]:
+    results.sort(key=lambda x: (-x.total_score, x.order_index))
+
+    if len(results) > 0:
+        results[0].place = 1
+
+    # Handle ties
+    for i in range(1, len(results)):
+        result = results[i]
+        previous_result = results[i - 1]
+
+        if result.total_score == previous_result.total_score:
+            result.is_tie = True
+            previous_result.is_tie = True
+            result.place = previous_result.place
+        else:
+            result.place = i + 1
+
+    return results

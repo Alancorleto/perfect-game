@@ -54,6 +54,7 @@ class SetPublic(BaseModel):
 
 class Result(BaseModel):
     player_id: uuid.UUID
+    player_order_index: int
     set_id: uuid.UUID
     chart_order_index: int
     score_id: uuid.UUID | None = None
@@ -67,6 +68,8 @@ class PlayerResults(BaseModel):
     order_index: int
     results: list[Result] = []
     total_score: int = 0
+    place: int = -1
+    is_tie: bool = False
 
 
 class ChartResults(BaseModel):

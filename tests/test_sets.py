@@ -1086,6 +1086,8 @@ def test_get_set_results_battle_tie_scores_no_points(
     assert data[1]["total_score"] == 0
     assert data[0]["results"][0]["is_tie"] is True
     assert data[1]["results"][0]["is_tie"] is True
+    assert data[0]["place"] == 1
+    assert data[1]["place"] == 1
 
 
 def test_get_set_results_not_found(client: TestClient):
