@@ -215,7 +215,7 @@ async def replace_chart_in_set(
 @router.put("/{set_id}/charts/order", response_model=list[ChartPublic])
 async def update_chart_order_in_set(
     set_id: uuid.UUID,
-    new_chart_slot_order: list[uuid.UUID],
+    new_order_indexes: list[int],
     session: SessionDep,
     user: UserDep,
 ):
@@ -231,27 +231,17 @@ async def update_chart_order_in_set(
             detail="You are not an organizer for this tournament",
         )
 
-    if len(new_chart_slot_order) != len(db_set.chart_slots):
+    chart_slots_by_order = {slot.order_index: slot for slot in db_set.chart_slots}
+
+    if set(new_order_indexes) != set(chart_slots_by_order):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Chart slot order does not match number of chart slots for this set",
+            detail="Chart slot order must contain each current order index exactly once",
         )
 
-    for i, chart_slot_id in enumerate(new_chart_slot_order):
-        chart_slot = next(
-            (
-                chart_slot
-                for chart_slot in db_set.chart_slots
-                if chart_slot.id == chart_slot_id
-            ),
-            None,
-        )
-        if not chart_slot:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"ChartSlot with ID {chart_slot_id} not found",
-            )
-        chart_slot.order_index = i
+    for new_index, old_index in enumerate(new_order_indexes):
+        chart_slot = chart_slots_by_order[old_index]
+        chart_slot.order_index = new_index
         session.add(chart_slot)
 
     session.commit()

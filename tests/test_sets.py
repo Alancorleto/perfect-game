@@ -568,13 +568,13 @@ def test_update_chart_order_in_set(session: Session, client: TestClient):
     )
     chart_a = create_chart_with_song_in_db(session, name="Song A")
     chart_b = create_chart_with_song_in_db(session, name="Song B")
-    slot_a = create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
-    slot_b = create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
+    create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
+    create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
         f"/sets/{set.id}/charts/order",
-        json=[str(slot_b.id), str(slot_a.id)],
+        json=[1, 0],
         headers=headers,
     )
     data = response.json()
@@ -583,26 +583,34 @@ def test_update_chart_order_in_set(session: Session, client: TestClient):
     assert [c["song"]["name"] for c in data] == ["Song B", "Song A"]
 
 
-def test_update_chart_order_in_set_wrong_count(session: Session, client: TestClient):
+def test_update_chart_order_in_set_with_three_charts(
+    session: Session, client: TestClient
+):
     _, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart = create_chart_with_song_in_db(session)
-    slot = create_chart_slot_in_db(session, set=set, chart=chart)
+    chart_a = create_chart_with_song_in_db(session, name="Song A")
+    chart_b = create_chart_with_song_in_db(session, name="Song B")
+    chart_c = create_chart_with_song_in_db(session, name="Song C")
+    create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
+    create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
+    create_chart_slot_in_db(session, set=set, chart=chart_c, order_index=2)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
         f"/sets/{set.id}/charts/order",
-        json=[str(slot.id), "00000000-0000-0000-0000-000000000000"],
+        json=[2, 0, 1],
         headers=headers,
     )
+    data = response.json()
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_200_OK
+    assert [c["song"]["name"] for c in data] == ["Song C", "Song A", "Song B"]
 
 
-def test_update_chart_order_in_set_slot_not_found(session: Session, client: TestClient):
+def test_update_chart_order_in_set_wrong_count(session: Session, client: TestClient):
     _, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
@@ -614,11 +622,32 @@ def test_update_chart_order_in_set_slot_not_found(session: Session, client: Test
 
     response = client.put(
         f"/sets/{set.id}/charts/order",
-        json=["00000000-0000-0000-0000-000000000000"],
+        json=[0, 1],
         headers=headers,
     )
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_update_chart_order_in_set_invalid_order_index(
+    session: Session, client: TestClient
+):
+    _, _, _, _, set = create_editable_set(
+        session=session,
+        organizer_email="organizer@example.com",
+        organizer_password="mypassword123",
+    )
+    chart = create_chart_with_song_in_db(session)
+    create_chart_slot_in_db(session, set=set, chart=chart)
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.put(
+        f"/sets/{set.id}/charts/order",
+        json=[1],
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 # ---------------------------------------------------------------------------
