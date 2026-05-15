@@ -19,5 +19,6 @@ class ChartSlot(SQLModel, table=True):
 
     set: Set = Relationship(back_populates="chart_slots")
     chart: Chart = Relationship()
-    score_entries: list[ScoreEntry] = Relationship(back_populates="chart_slot")
-    scores: list["Score"] = Relationship(link_model=ScoreEntry)
+    scores: list["Score"] = Relationship(
+        link_model=ScoreEntry, back_populates="chart_slot"
+    )

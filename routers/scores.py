@@ -87,17 +87,15 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
         )
 
         if any(
-            score_entry.score.player_id == score.player_id
-            for score_entry in chart_slot.score_entries
+            score.player_id == chart_slot_score.player_id
+            for chart_slot_score in chart_slot.scores
         ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A score already exists for this player, set, and order index",
             )
 
-        score_link: ScoreEntry = ScoreEntry(score=db_score, chart_slot=chart_slot)
-
-        session.add(score_link)
+        chart_slot.scores.append(db_score)
 
     session.commit()
     session.refresh(db_score)

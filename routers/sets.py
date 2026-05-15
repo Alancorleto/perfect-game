@@ -280,8 +280,8 @@ async def remove_chart_from_set(
         )
 
     # Remove score entries associated with the chart slot
-    for score_entry in chart_slot.score_entries:
-        session.delete(score_entry)
+    for score in chart_slot.scores:
+        session.delete(score)
 
     session.delete(chart_slot)
 
@@ -441,9 +441,9 @@ async def remove_player_from_set(
 
     # Remove score entries associated with the player
     for chart_slot in db_set.chart_slots:
-        for score_entry in chart_slot.score_entries:
-            if score_entry.score.player_id == player_id:
-                session.delete(score_entry)
+        for score in chart_slot.scores:
+            if score.player_id == player_id:
+                session.delete(score)
 
     session.delete(db_set_player_link)
 
