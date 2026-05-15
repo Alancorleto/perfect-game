@@ -60,7 +60,7 @@ def test_get_tournament_not_found(client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# POST /tournaments/
+# POST /tournaments
 # ---------------------------------------------------------------------------
 
 
@@ -107,6 +107,39 @@ def test_create_tournament_unauthenticated(client: TestClient):
     response = client.post("/tournaments/", json={"name": "New Tournament"})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_create_tournament_with_long_name(session: Session, client: TestClient):
+    """Test creating a tournament with an excessively long name."""
+    user = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    long_name = "T" * 300
+    response = client.post(
+        "/tournaments/",
+        json={"name": long_name},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+def test_create_tournament_with_empty_name(session: Session, client: TestClient):
+    """Test creating a tournament with an empty name."""
+    user = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.post(
+        "/tournaments/",
+        json={"name": ""},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 # ---------------------------------------------------------------------------

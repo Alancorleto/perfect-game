@@ -53,6 +53,27 @@ def test_create_user_password_too_short(client: TestClient):
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
+def test_create_user_with_empty_email(client: TestClient):
+    """Test creating a user with an empty email."""
+    response = client.post(
+        "/users",
+        json={"email": "", "password": "securepassword123"},
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+def test_create_user_with_long_email(client: TestClient):
+    """Test creating a user with an excessively long email."""
+    long_email = "a" * 300 + "@example.com"
+    response = client.post(
+        "/users",
+        json={"email": long_email, "password": "securepassword123"},
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
 # ---------------------------------------------------------------------------
 # POST /token (login)
 # ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class TournamentBase(SQLModel):
-    name: str
+    name: str = Field(min_length=3, max_length=100)
     location: str | None = None
     start_date: date | None = None
 

@@ -145,6 +145,19 @@ def test_create_chart_invalid_player_count(session: Session, client: TestClient)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
+def test_create_chart_with_invalid_level(session: Session, client: TestClient):
+    """Test creating a chart with an invalid level (e.g., negative or too high)."""
+    song_response = client.post("/songs/", json={"name": "Test Song"})
+    song_id = song_response.json()["id"]
+
+    response = client.post(
+        "/charts/",
+        json={"song_id": song_id, "mode": "single", "level": -1},
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
 # ---------------------------------------------------------------------------
 # PATCH /charts/{chart_id}
 # ---------------------------------------------------------------------------
