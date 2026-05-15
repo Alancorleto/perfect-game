@@ -162,6 +162,17 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
     assert results[0]["results"][0]["place"] == 1
 
 
+# This test verifies the score-sum format with a late player insertion in a round.
+# Steps:
+# 1. Create and authenticate an organizer.
+# 2. Create a tournament, category, round, and a score-sum set with two charts (levels 15 and 16).
+# 3. Create eight guest players and add them to the category and set.
+# 4. Start the round.
+# 5. Enter scores for the first four player pairs (players 0-3) on both charts in two-player game order.
+# 6. Insert a late player after the fourth player, add them to the category and set, and reorder set players to place the late player at index 4.
+# 7. Continue entering scores for the remaining pairs (including the late player) and the final unpaired player.
+# 8. Finish the round.
+# 9. Fetch the set results and verify that the ordering is by total score (sum of both charts) and not by input order, and that each player has results for both charts.
 def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     def create_song_chart(song_name: str, level: int) -> str:
         song_response = client.post("/songs/", json={"name": song_name})
@@ -241,7 +252,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
         "/sets/",
         json={
             "round_id": round_id,
-            "levels": "15,16",
+            "levels": "S15 & S16",
             "qualifiers_count": 4,
             "format": "score_sum",
         },
