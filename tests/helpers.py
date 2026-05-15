@@ -4,6 +4,8 @@ from sqlmodel import Session
 from models.category import Category
 from models.chart import Chart, Mode
 from models.player import Player
+from models.round import Round, RoundState
+from models.set import Set, SetFormat
 from models.song import Song
 from models.tournament import Tournament
 from models.tournament_organizer import TournamentOrganizer
@@ -98,6 +100,40 @@ def create_category_in_db(
     session.commit()
     session.refresh(category)
     return category
+
+
+def create_round_in_db(
+    session: Session,
+    category: Category,
+    name: str | None = "Test Round",
+    state: RoundState = RoundState.NOT_STARTED,
+) -> Round:
+    """Creates a round directly in the test database."""
+    round = Round(name=name, state=state, category_id=category.id)
+    session.add(round)
+    session.commit()
+    session.refresh(round)
+    return round
+
+
+def create_set_in_db(
+    session: Session,
+    round: Round,
+    levels: str | None = None,
+    qualifiers_count: int | None = None,
+    format: SetFormat = SetFormat.SCORE_SUM,
+) -> Set:
+    """Creates a set directly in the test database."""
+    set = Set(
+        round_id=round.id,
+        levels=levels,
+        qualifiers_count=qualifiers_count,
+        format=format,
+    )
+    session.add(set)
+    session.commit()
+    session.refresh(set)
+    return set
 
 
 def create_tournament_in_db(
