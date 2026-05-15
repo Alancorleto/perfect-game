@@ -21,7 +21,7 @@ class SetFormat(Enum):
 
 class SetBase(SQLModel):
     levels: str | None = None
-    qualifiers_count: int | None = Field(ge=1)
+    qualifiers_count: int | None = Field(ge=1, default=None)
     format: SetFormat = Field(default=SetFormat.SCORE_SUM)
 
 

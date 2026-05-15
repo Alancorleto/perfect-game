@@ -363,8 +363,8 @@ async def list_players_in_set(set_id: uuid.UUID, session: SessionDep):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
         )
-    players = [player_link.player for player_link in set.player_links]
-    return players
+    sorted_player_links = sorted(set.player_links, key=lambda link: link.order_index)
+    return [player_link.player for player_link in sorted_player_links]
 
 
 @router.put("/{set_id}/players/order", response_model=list[PlayerPublic])

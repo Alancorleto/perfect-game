@@ -3,9 +3,13 @@ from sqlmodel import Session
 
 from models.category import Category
 from models.chart import Chart, Mode
+from models.chart_slot import ChartSlot
 from models.player import Player
 from models.round import Round, RoundState
+from models.score import Grade, Score
+from models.score_entry import ScoreEntry
 from models.set import Set, SetFormat
+from models.set_player import SetPlayerLink
 from models.song import Song
 from models.tournament import Tournament
 from models.tournament_organizer import TournamentOrganizer
@@ -89,6 +93,11 @@ def create_chart_in_db(
     return chart
 
 
+def create_chart_with_song_in_db(session: Session, name: str = "Song", level: int = 10):
+    song = create_song_in_db(session, name=name)
+    return create_chart_in_db(session, song=song, level=level)
+
+
 def create_category_in_db(
     session: Session,
     tournament: Tournament,
@@ -134,6 +143,69 @@ def create_set_in_db(
     session.commit()
     session.refresh(set)
     return set
+
+
+def create_chart_slot_in_db(
+    session: Session,
+    set: Set,
+    chart: Chart,
+    order_index: int = 0,
+) -> ChartSlot:
+    """Creates a chart slot directly in the test database."""
+    chart_slot = ChartSlot(set_id=set.id, chart_id=chart.id, order_index=order_index)
+    session.add(chart_slot)
+    session.commit()
+    session.refresh(chart_slot)
+    return chart_slot
+
+
+def add_player_to_set_in_db(
+    session: Session,
+    set: Set,
+    player: Player,
+    order_index: int = 0,
+) -> SetPlayerLink:
+    """Adds a player to a set directly in the test database."""
+    link = SetPlayerLink(set_id=set.id, player_id=player.id, order_index=order_index)
+    session.add(link)
+    session.commit()
+    session.refresh(link)
+    return link
+
+
+def create_score_in_db(
+    session: Session,
+    player: Player,
+    chart: Chart,
+    value: int = 1000000,
+    chart_slot: ChartSlot | None = None,
+) -> Score:
+    """Creates a score directly in the test database."""
+    score = Score(
+        player_id=player.id,
+        chart_id=chart.id,
+        value=value,
+        perfect=100,
+        great=0,
+        good=0,
+        bad=0,
+        miss=0,
+        max_combo=100,
+        kcal=10,
+        grade=Grade.S,
+        stage_pass=True,
+    )
+    session.add(score)
+    session.commit()
+    session.refresh(score)
+
+    if chart_slot:
+        score_entry = ScoreEntry(chart_slot_id=chart_slot.id, score_id=score.id)
+        session.add(score_entry)
+        session.commit()
+        session.refresh(score)
+
+    return score
 
 
 def create_tournament_in_db(
