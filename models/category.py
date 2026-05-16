@@ -18,11 +18,11 @@ class CategoryBase(SQLModel):
 
 class Category(CategoryBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    tournament_id: uuid.UUID = Field(foreign_key="tournament.id")
+    tournament_id: uuid.UUID = Field(foreign_key="tournament.id", ondelete="CASCADE")
 
     players: list[Player] = Relationship(link_model=CategoryPlayerLink)
     tournament: Tournament = Relationship(back_populates="categories")
-    rounds: list["Round"] = Relationship(back_populates="category")
+    rounds: list["Round"] = Relationship(back_populates="category", cascade_delete=True)
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.tournament.can_be_edited_by(user)

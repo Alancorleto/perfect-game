@@ -9,5 +9,9 @@ if TYPE_CHECKING:
 
 
 class TournamentOrganizer(SQLModel, table=True):
-    tournament_id: uuid.UUID = Field(primary_key=True, foreign_key="tournament.id")
-    user_id: uuid.UUID = Field(primary_key=True, foreign_key="user.id")
+    tournament_id: uuid.UUID = Field(
+        primary_key=True, foreign_key="tournament.id", ondelete="CASCADE"
+    )
+    user_id: uuid.UUID = Field(
+        primary_key=True, foreign_key="user.id", ondelete="CASCADE"
+    )

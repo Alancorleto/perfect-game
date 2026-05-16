@@ -9,7 +9,7 @@ from models.user import User
 
 class PasswordResetToken(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id")
+    user_id: uuid.UUID = Field(foreign_key="user.id", ondelete="CASCADE")
     code: str = Field()
     issued_at: datetime.datetime = Field()
     expires_at: datetime.datetime = Field()

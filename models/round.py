@@ -25,11 +25,11 @@ class RoundBase(SQLModel):
 
 class Round(RoundBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    category_id: uuid.UUID = Field(foreign_key="category.id")
+    category_id: uuid.UUID = Field(foreign_key="category.id", ondelete="CASCADE")
 
     category: Category = Relationship(back_populates="rounds")
 
-    sets: list["Set"] = Relationship(back_populates="round")
+    sets: list["Set"] = Relationship(back_populates="round", cascade_delete=True)
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.category.can_be_edited_by(user)

@@ -25,9 +25,11 @@ class Player(PlayerBase, table=True):
         default_factory=uuid.uuid4,
         primary_key=True,
     )
-    user_id: uuid.UUID | None = Field(foreign_key="user.id", default=None)
+    user_id: uuid.UUID | None = Field(
+        foreign_key="user.id", default=None, ondelete="CASCADE"
+    )
     guest_tournament_id: uuid.UUID | None = Field(
-        foreign_key="tournament.id", default=None
+        foreign_key="tournament.id", default=None, ondelete="CASCADE"
     )
 
     user: User | None = Relationship(back_populates="player")

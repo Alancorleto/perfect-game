@@ -31,7 +31,7 @@ class User(UserBase, table=True):
     is_super_admin: bool = False
 
     tournaments: list["Tournament"] = Relationship(
-        back_populates="organizers", link_model=TournamentOrganizer
+        back_populates="organizers", link_model=TournamentOrganizer, cascade_delete=True
     )
     player: Optional["Player"] = Relationship(back_populates="user")
 

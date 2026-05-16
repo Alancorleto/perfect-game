@@ -9,7 +9,7 @@ from models.user import User
 
 class RefreshToken(SQLModel, table=True):
     token: str = Field(primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id")
+    user_id: uuid.UUID = Field(foreign_key="user.id", ondelete="CASCADE")
     issued_at: datetime.datetime = Field()
     expires_at: datetime.datetime = Field()
     revoked_at: datetime.datetime | None = Field()

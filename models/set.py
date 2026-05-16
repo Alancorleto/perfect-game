@@ -27,11 +27,15 @@ class SetBase(SQLModel):
 
 class Set(SetBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    round_id: uuid.UUID = Field(foreign_key="round.id")
+    round_id: uuid.UUID = Field(foreign_key="round.id", ondelete="CASCADE")
 
     round: Round = Relationship(back_populates="sets")
-    chart_slots: list["ChartSlot"] = Relationship(back_populates="set")
-    player_links: list["SetPlayerLink"] = Relationship(back_populates="set")
+    chart_slots: list["ChartSlot"] = Relationship(
+        back_populates="set", cascade_delete=True
+    )
+    player_links: list["SetPlayerLink"] = Relationship(
+        back_populates="set", cascade_delete=True
+    )
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.round.can_be_edited_by(user)

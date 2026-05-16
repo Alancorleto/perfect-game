@@ -27,7 +27,7 @@ class Chart(ChartBase, table=True):
         default_factory=uuid.uuid4,
         primary_key=True,
     )
-    song_id: uuid.UUID = Field(foreign_key="song.id")
+    song_id: uuid.UUID = Field(foreign_key="song.id", ondelete="CASCADE")
     song: Song = Relationship()
 
 

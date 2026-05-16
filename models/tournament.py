@@ -25,11 +25,18 @@ class Tournament(TournamentBase, table=True):
         default_factory=uuid.uuid4,
         primary_key=True,
     )
-    categories: list["Category"] = Relationship(back_populates="tournament")
-    organizers: list["User"] = Relationship(
-        back_populates="tournaments", link_model=TournamentOrganizer
+    categories: list["Category"] = Relationship(
+        back_populates="tournament", cascade_delete=True
     )
-    guest_players: list["Player"] = Relationship(back_populates="guest_tournament")
+    organizers: list["User"] = Relationship(
+        back_populates="tournaments",
+        link_model=TournamentOrganizer,
+        cascade_delete=True,
+    )
+    guest_players: list["Player"] = Relationship(
+        back_populates="guest_tournament",
+        cascade_delete=True,
+    )
 
     def can_be_edited_by(self, user: "User") -> bool:
         return user in self.organizers or user.is_super_admin
