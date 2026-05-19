@@ -2,6 +2,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from models.round import RoundState
 from models.set import SetFormat
 from tests.helpers import (
     add_player_to_set_in_db,
@@ -302,13 +303,50 @@ def test_update_set_invalid_format(session: Session, client: TestClient):
 # ---------------------------------------------------------------------------
 
 
-def test_delete_set(session: Session, client: TestClient):
+def test_delete_set_empty(session: Session, client: TestClient):
     _, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.delete(f"/sets/{set.id}", headers=headers)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    get_response = client.get(f"/sets/{set.id}", headers=headers)
+    assert get_response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_set_with_score(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    player = create_player_in_db(session, user=user)
+
+    _, _, _, round, set = create_editable_set(
+        session=session,
+        organizer_email="organizer@example.com",
+        organizer_password="mypassword123",
+    )
+
+    chart = create_chart_with_song_in_db(session, name="Song", level=10)
+
+    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
+
+    round.state = RoundState.IN_PROGRESS
+    session.commit()
+
+    create_score_in_db(
+        session,
+        player=player,
+        chart=chart,
+        chart_slot=chart_slot,
+        value=1_000_000,
+    )
 
     response = client.delete(f"/sets/{set.id}", headers=headers)
 

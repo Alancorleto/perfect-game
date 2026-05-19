@@ -41,8 +41,9 @@ class Set(SetBase, table=True):
         return self.round.can_be_edited_by(user)
 
     def can_be_deleted(self, user: User) -> bool:
-        return user.is_super_admin or all(
-            chart_slot.can_be_deleted(user) for chart_slot in self.chart_slots
+        return self.can_be_edited_by(user) and (
+            user.is_super_admin
+            or all(chart_slot.can_be_deleted(user) for chart_slot in self.chart_slots)
         )
 
 

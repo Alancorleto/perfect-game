@@ -357,7 +357,22 @@ def test_update_round_invalid_state(session: Session, client: TestClient):
 # ---------------------------------------------------------------------------
 
 
-def test_delete_round(session: Session, client: TestClient):
+def test_delete_round_empty(session: Session, client: TestClient):
+    _, _, _, round = create_editable_round(
+        session=session,
+        organizer_email="organizer@example.com",
+        organizer_password="mypassword123",
+    )
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    client.post(f"/rounds/{round.id}/start", headers=headers)
+
+    response = client.delete(f"/rounds/{round.id}", headers=headers)
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_delete_round_started(session: Session, client: TestClient):
     _, _, _, round = create_editable_round(
         session=session,
         organizer_email="organizer@example.com",
@@ -367,7 +382,10 @@ def test_delete_round(session: Session, client: TestClient):
 
     response = client.delete(f"/rounds/{round.id}", headers=headers)
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    get_response = client.get(f"/rounds/{round.id}", headers=headers)
+    assert get_response.status_code == status.HTTP_200_OK
 
 
 def test_delete_round_not_found(session: Session, client: TestClient):
