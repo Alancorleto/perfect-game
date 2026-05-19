@@ -279,9 +279,10 @@ async def delete_user(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    if db_user.id != logged_user.id and not logged_user.is_super_admin:
+    if not db_user.can_be_deleted(logged_user):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied",
         )
 
     session.delete(db_user)

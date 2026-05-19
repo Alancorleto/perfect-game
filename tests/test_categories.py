@@ -2,9 +2,11 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from models.round import RoundState
 from tests.helpers import (
     create_category_in_db,
     create_player_in_db,
+    create_round_in_db,
     create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
@@ -251,7 +253,7 @@ def test_update_category_unauthenticated(session: Session, client: TestClient):
 # ---------------------------------------------------------------------------
 
 
-def test_delete_category(session: Session, client: TestClient):
+def test_delete_category_empty(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -263,8 +265,21 @@ def test_delete_category(session: Session, client: TestClient):
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    get_response = client.get(f"/categories/{category.id}")
+    get_response = client.get(f"/categories/{category.id}", headers=headers)
     assert get_response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_category_with_a_started_round(session: Session, client: TestClient):
+    create_user_in_db(session, email="organizer@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    create_round_in_db(session, category=category, state=RoundState.IN_PROGRESS)
+
+    response = client.delete(f"/categories/{category.id}", headers=headers)
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_delete_category_not_found(session: Session, client: TestClient):
@@ -313,6 +328,25 @@ def test_delete_category_unauthenticated(session: Session, client: TestClient):
     response = client.delete(f"/categories/{category.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_delete_tournament_cascade(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session,
+        email="organizer@example.com",
+        password="mypassword123",
+        is_super_admin=True,
+    )
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    response = client.get(f"/categories/{category.id}")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------

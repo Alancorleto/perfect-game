@@ -98,10 +98,10 @@ async def delete_set(set_id: uuid.UUID, session: SessionDep, user: UserDep):
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
         )
 
-    if not db_set.can_be_edited_by(user):
+    if not db_set.can_be_deleted(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="Permission denied",
         )
 
     session.delete(db_set)

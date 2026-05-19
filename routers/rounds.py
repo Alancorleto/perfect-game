@@ -87,10 +87,10 @@ async def delete_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
             status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
         )
 
-    if not db_round.can_be_edited_by(user):
+    if not db_round.can_be_deleted(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="Permission denied",
         )
 
     session.delete(db_round)

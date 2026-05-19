@@ -31,9 +31,12 @@ class User(UserBase, table=True):
     is_super_admin: bool = False
 
     tournaments: list["Tournament"] = Relationship(
-        back_populates="organizers", link_model=TournamentOrganizer, cascade_delete=True
+        back_populates="organizers", link_model=TournamentOrganizer
     )
     player: Optional["Player"] = Relationship(back_populates="user")
+
+    def can_be_deleted(self, user: "User") -> bool:
+        return user.is_super_admin
 
 
 class UserPublic(UserBase):

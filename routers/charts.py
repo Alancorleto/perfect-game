@@ -61,5 +61,12 @@ async def delete_chart(chart_id: uuid.UUID, session: SessionDep):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
         )
+
+    # if not db_chart.can_be_edited_by(user):
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Permission denied",
+    #     )
+
     session.delete(db_chart)
     session.commit()

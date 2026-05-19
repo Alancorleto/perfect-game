@@ -27,6 +27,11 @@ class Category(CategoryBase, table=True):
     def can_be_edited_by(self, user: User) -> bool:
         return self.tournament.can_be_edited_by(user)
 
+    def can_be_deleted(self, user: User) -> bool:
+        return user.is_super_admin or all(
+            round.can_be_deleted(user) for round in self.rounds
+        )
+
 
 class CategoryCreate(CategoryBase):
     tournament_id: uuid.UUID

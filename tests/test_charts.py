@@ -2,7 +2,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from models.chart import Mode
+from models.chart import Chart, Mode
 from tests.helpers import create_chart_in_db, create_song_in_db
 
 # ---------------------------------------------------------------------------
@@ -218,19 +218,19 @@ def test_update_chart_invalid_mode(session: Session, client: TestClient):
 # ---------------------------------------------------------------------------
 
 
-def test_delete_chart(session: Session, client: TestClient):
-    song = create_song_in_db(session, name="Delete Song")
-    chart = create_chart_in_db(session, song=song)
-
-    response = client.delete(f"/charts/{chart.id}")
-
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    get_response = client.get(f"/charts/{chart.id}")
-    assert get_response.status_code == status.HTTP_404_NOT_FOUND
-
-
 def test_delete_chart_not_found(client: TestClient):
     response = client.delete("/charts/00000000-0000-0000-0000-000000000000")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_song_cascade(session: Session, client: TestClient):
+    song = create_song_in_db(session, name="Delete Song")
+    chart = create_chart_in_db(session, song=song)
+    chart_id = chart.id
+
+    response = client.delete(f"/songs/{song.id}")
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    get_response = client.get(f"/charts/{chart_id}")
+    assert get_response.status_code == status.HTTP_404_NOT_FOUND

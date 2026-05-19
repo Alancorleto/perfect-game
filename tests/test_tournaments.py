@@ -236,11 +236,7 @@ def test_delete_tournament(session: Session, client: TestClient):
 
     response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    # Confirm the tournament no longer exists
-    get_response = client.get(f"/tournaments/{tournament.id}")
-    assert get_response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_delete_tournament_not_found(session: Session, client: TestClient):

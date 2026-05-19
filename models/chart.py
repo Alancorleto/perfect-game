@@ -1,10 +1,14 @@
 import uuid
-from datetime import date
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.song import Song, SongPublic
+from models.user import User
+
+if TYPE_CHECKING:
+    from models.score import Score
 
 
 class Mode(Enum):
@@ -28,7 +32,14 @@ class Chart(ChartBase, table=True):
         primary_key=True,
     )
     song_id: uuid.UUID = Field(foreign_key="song.id", ondelete="CASCADE")
-    song: Song = Relationship()
+
+    song: Song = Relationship(back_populates="charts")
+
+    # This is not used but needed by SQLModel to work properly with cascade delete
+    scores: list["Score"] = Relationship(back_populates="chart", cascade_delete=True)
+
+    def can_be_deleted(self, user: User) -> bool:
+        return user.is_super_admin
 
 
 class ChartCreate(ChartBase):

@@ -312,10 +312,7 @@ def test_delete_set(session: Session, client: TestClient):
 
     response = client.delete(f"/sets/{set.id}", headers=headers)
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    get_response = client.get(f"/sets/{set.id}")
-    assert get_response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_delete_set_not_found(session: Session, client: TestClient):
@@ -370,6 +367,46 @@ def test_delete_set_unauthenticated(session: Session, client: TestClient):
     response = client.delete(f"/sets/{set.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_delete_round_cascade(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session,
+        email="organizer@example.com",
+        password="mypassword123",
+        is_super_admin=True,
+    )
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category)
+    set = create_set_in_db(session, round=round)
+
+    response = client.delete(f"/rounds/{round.id}", headers=headers)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    response = client.get(f"/sets/{set.id}")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_tournament_cascade(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session,
+        email="organizer@example.com",
+        password="mypassword123",
+        is_super_admin=True,
+    )
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category)
+    set = create_set_in_db(session, round=round)
+
+    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    response = client.get(f"/sets/{set.id}")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------

@@ -10,6 +10,8 @@ dependencies = [
     "imagekitio>=5.4.0",
     "python-multipart>=0.0.6",
     "fastapi-mail>=1.6.4",
+    "pyjwt>=2.12.1",
+    "pwdlib[argon2]>=0.3.0",
 ]
 
 [dependency-groups]

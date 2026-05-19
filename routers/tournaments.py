@@ -92,10 +92,10 @@ async def delete_tournament(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_tournament.can_be_edited_by(user):
+    if not db_tournament.can_be_deleted(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to delete this tournament",
+            detail="Permission denied",
         )
 
     session.delete(db_tournament)

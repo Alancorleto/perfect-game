@@ -63,6 +63,13 @@ async def delete_song(song_id: uuid.UUID, session: SessionDep):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Song not found"
         )
+
+    # if not db_song.can_be_deleted(user):
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Permission denied",
+    #     )
+
     session.delete(db_song)
     session.commit()
 

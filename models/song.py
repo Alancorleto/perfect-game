@@ -1,5 +1,12 @@
-from sqlmodel import SQLModel, Field
 import uuid
+from typing import TYPE_CHECKING
+
+from sqlmodel import Field, Relationship, SQLModel
+
+from models.user import User
+
+if TYPE_CHECKING:
+    from models.chart import Chart
 
 
 class SongBase(SQLModel):
@@ -12,6 +19,12 @@ class Song(SongBase, table=True):
         default_factory=uuid.uuid4,
         primary_key=True,
     )
+
+    # This is not used but needed by SQLModel to work properly with cascade delete
+    charts: list["Chart"] = Relationship(back_populates="song", cascade_delete=True)
+
+    def can_be_deleted(self, user: User) -> bool:
+        return user.is_super_admin
 
 
 class SongCreate(SongBase):

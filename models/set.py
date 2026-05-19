@@ -40,6 +40,11 @@ class Set(SetBase, table=True):
     def can_be_edited_by(self, user: User) -> bool:
         return self.round.can_be_edited_by(user)
 
+    def can_be_deleted(self, user: User) -> bool:
+        return user.is_super_admin or all(
+            chart_slot.can_be_deleted(user) for chart_slot in self.chart_slots
+        )
+
 
 class SetCreate(SetBase):
     round_id: uuid.UUID

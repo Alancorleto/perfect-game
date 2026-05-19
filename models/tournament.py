@@ -29,9 +29,7 @@ class Tournament(TournamentBase, table=True):
         back_populates="tournament", cascade_delete=True
     )
     organizers: list["User"] = Relationship(
-        back_populates="tournaments",
-        link_model=TournamentOrganizer,
-        cascade_delete=True,
+        back_populates="tournaments", link_model=TournamentOrganizer
     )
     guest_players: list["Player"] = Relationship(
         back_populates="guest_tournament",
@@ -40,6 +38,11 @@ class Tournament(TournamentBase, table=True):
 
     def can_be_edited_by(self, user: "User") -> bool:
         return user in self.organizers or user.is_super_admin
+
+    def can_be_deleted(self, user: User) -> bool:
+        return user.is_super_admin or all(
+            category.can_be_deleted(user) for category in self.categories
+        )
 
 
 class TournamentCreate(TournamentBase):

@@ -6,6 +6,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from models.chart import Chart
 from models.score_entry import ScoreEntry
 from models.set import Set
+from models.user import User
 
 if TYPE_CHECKING:
     from models.score import Score
@@ -20,5 +21,8 @@ class ChartSlot(SQLModel, table=True):
     set: Set = Relationship(back_populates="chart_slots")
     chart: Chart = Relationship()
     scores: list["Score"] = Relationship(
-        link_model=ScoreEntry, back_populates="chart_slot", cascade_delete=True
+        link_model=ScoreEntry, back_populates="chart_slot"
     )
+
+    def can_be_deleted(self, user: User) -> bool:
+        return user.is_super_admin or len(self.scores) == 0

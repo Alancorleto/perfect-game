@@ -94,7 +94,7 @@ async def delete_category(category_id: uuid.UUID, session: SessionDep, user: Use
     if not db_category.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="Permission denied",
         )
 
     session.delete(db_category)

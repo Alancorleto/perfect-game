@@ -367,10 +367,7 @@ def test_delete_round(session: Session, client: TestClient):
 
     response = client.delete(f"/rounds/{round.id}", headers=headers)
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    get_response = client.get(f"/rounds/{round.id}")
-    assert get_response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_delete_round_not_found(session: Session, client: TestClient):
@@ -422,6 +419,44 @@ def test_delete_round_unauthenticated(session: Session, client: TestClient):
     response = client.delete(f"/rounds/{round.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_delete_category_cascade(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session,
+        email="organizer@example.com",
+        password="mypassword123",
+        is_super_admin=True,
+    )
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category)
+
+    response = client.delete(f"/categories/{category.id}", headers=headers)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    response = client.get(f"/rounds/{round.id}")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_tournament_cascade(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session,
+        email="organizer@example.com",
+        password="mypassword123",
+        is_super_admin=True,
+    )
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category)
+
+    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    response = client.get(f"/rounds/{round.id}")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------

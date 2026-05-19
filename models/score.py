@@ -51,8 +51,8 @@ class Score(ScoreBase, table=True):
     player_id: uuid.UUID = Field(foreign_key="player.id", ondelete="CASCADE")
     chart_id: uuid.UUID = Field(foreign_key="chart.id", ondelete="CASCADE")
 
-    player: Player = Relationship()
-    chart: Chart = Relationship()
+    player: Player = Relationship(back_populates="scores")
+    chart: Chart = Relationship(back_populates="scores")
     chart_slot: ChartSlot | None = Relationship(
         back_populates="scores", link_model=ScoreEntry
     )
@@ -61,6 +61,9 @@ class Score(ScoreBase, table=True):
         return self.chart_slot is not None and self.chart_slot.set.can_be_edited_by(
             user
         )
+
+    def can_be_deleted(self, user: User) -> bool:
+        return user.is_super_admin
 
 
 class ScoreCreate(ScoreBase):

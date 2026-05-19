@@ -284,11 +284,7 @@ def test_delete_player(session: Session, client: TestClient):
 
     response = client.delete(f"/players/{player.id}", headers=headers)
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    # Confirm the player no longer exists
-    get_response = client.get(f"/players/{player.id}")
-    assert get_response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_delete_player_not_found(session: Session, client: TestClient):
@@ -336,6 +332,29 @@ def test_delete_player_unauthenticated(session: Session, client: TestClient):
     response = client.delete(f"/players/{player.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_delete_user_set_null(session: Session, client: TestClient):
+    create_user_in_db(
+        session,
+        email="admin@example.com",
+        password="mypassword123",
+        is_super_admin=True,
+    )
+    headers = get_auth_headers(client, "admin@example.com", "mypassword123")
+
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user, nickname="SomePlayer")
+
+    response = client.delete(f"/users/{user.id}", headers=headers)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    response = client.get(f"/players/{player.id}")
+    data = response.json()
+    assert data["user_id"] is None
 
 
 # ---------------------------------------------------------------------------

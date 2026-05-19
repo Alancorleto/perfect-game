@@ -382,11 +382,7 @@ def test_delete_user(session: Session, client: TestClient):
 
     response = client.delete(f"/users/{user.id}", headers=headers)
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    # Confirm the user no longer exists
-    get_response = client.get(f"/users/{user.id}")
-    assert get_response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_delete_user_not_found(session: Session, client: TestClient):

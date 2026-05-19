@@ -114,7 +114,8 @@ async def delete_player(
 
     if not db_player.can_be_edited_by(user):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied",
         )
 
     session.delete(db_player)

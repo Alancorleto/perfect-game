@@ -461,10 +461,7 @@ def test_delete_score(session: Session, client: TestClient):
 
     response = client.delete(f"/scores/{score.id}", headers=headers)
 
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    get_response = client.get(f"/scores/{score.id}")
-    assert get_response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_delete_score_not_found(session: Session, client: TestClient):
@@ -540,3 +537,19 @@ def test_delete_score_unauthenticated(session: Session, client: TestClient):
     response = client.delete(f"/scores/{score.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_delete_chart_cascade(session: Session, client: TestClient):
+    create_user_in_db(session, email="admin@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "admin@example.com", "mypassword123")
+    chart = create_chart_with_song_in_db(session)
+    score = create_score_in_db(
+        session, player=create_player_in_db(session), chart=chart
+    )
+
+    response = client.delete(f"/charts/{chart.id}", headers=headers)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    get_response = client.get(f"/scores/{score.id}", headers=headers)
+    assert get_response.status_code == status.HTTP_404_NOT_FOUND
