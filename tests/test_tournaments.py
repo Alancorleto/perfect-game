@@ -3,9 +3,12 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from models.round import RoundState
 from tests.helpers import (
     add_organizer_to_tournament,
+    create_category_in_db,
     create_player_in_db,
+    create_round_in_db,
     create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
@@ -227,7 +230,7 @@ def test_update_tournament_unauthenticated(session: Session, client: TestClient)
 # ---------------------------------------------------------------------------
 
 
-def test_delete_tournament(session: Session, client: TestClient):
+def test_delete_tournament_empty(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -236,6 +239,42 @@ def test_delete_tournament(session: Session, client: TestClient):
 
     response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
 
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    get_response = client.get(f"/tournaments/{tournament.id}", headers=headers)
+    assert get_response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_tournament_with_empty_category_and_round(
+    session: Session, client: TestClient
+):
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    create_round_in_db(session, category=category)
+
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    get_response = client.get(f"/tournaments/{tournament.id}", headers=headers)
+    assert get_response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_tournament_with_started_round(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    create_round_in_db(session, category=category, state=RoundState.IN_PROGRESS)
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 

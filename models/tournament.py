@@ -40,7 +40,7 @@ class Tournament(TournamentBase, table=True):
         return user in self.organizers or user.is_super_admin
 
     def can_be_deleted(self, user: User) -> bool:
-        return user.is_super_admin or all(
+        return self.can_be_edited_by(user) and all(
             category.can_be_deleted(user) for category in self.categories
         )
 
