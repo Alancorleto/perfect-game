@@ -730,7 +730,7 @@ def test_update_chart_order_in_set_invalid_order_index(
 # ---------------------------------------------------------------------------
 
 
-def test_remove_chart_from_set(session: Session, client: TestClient):
+def test_remove_chart_from_set_with_no_scores(session: Session, client: TestClient):
     _, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
@@ -751,6 +751,36 @@ def test_remove_chart_from_set(session: Session, client: TestClient):
 
     assert response.status_code == status.HTTP_200_OK
     assert [c["song"]["name"] for c in data] == ["Song B"]
+
+
+def test_remove_chart_from_set_with_score(session: Session, client: TestClient):
+    _, tournament, _, _, set = create_editable_set(
+        session=session,
+        organizer_email="organizer@example.com",
+        organizer_password="mypassword123",
+    )
+    player = create_player_in_db(session, guest_tournament=tournament)
+
+    chart = create_chart_with_song_in_db(session, name="Song")
+
+    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
+
+    create_score_in_db(
+        session,
+        player=player,
+        chart=chart,
+        chart_slot=chart_slot,
+        value=1_000_000,
+    )
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.delete(
+        f"/sets/{set.id}/charts",
+        params={"chart_order_index": 0},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_remove_chart_from_set_slot_not_found(session: Session, client: TestClient):

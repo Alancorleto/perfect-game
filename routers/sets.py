@@ -279,6 +279,12 @@ async def remove_chart_from_set(
             detail=f"ChartSlot with order index {chart_order_index} not found",
         )
 
+    if not chart_slot.can_be_deleted(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not allowed to delete this chart from the set",
+        )
+
     # Remove score entries associated with the chart slot
     for score in chart_slot.scores:
         session.delete(score)
