@@ -112,7 +112,7 @@ async def delete_player(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
         )
 
-    if not db_player.can_be_edited_by(user):
+    if not db_player.can_be_deleted(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied",
