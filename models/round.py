@@ -35,7 +35,7 @@ class Round(RoundBase, table=True):
         return self.category.can_be_edited_by(user)
 
     def can_be_deleted(self, user: User) -> bool:
-        return user.is_super_admin or (self.state == RoundState.NOT_STARTED)
+        return self.can_be_edited_by(user) and self.state == RoundState.NOT_STARTED
 
 
 class RoundCreate(RoundBase):

@@ -365,11 +365,12 @@ def test_delete_round_empty(session: Session, client: TestClient):
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    client.post(f"/rounds/{round.id}/start", headers=headers)
-
     response = client.delete(f"/rounds/{round.id}", headers=headers)
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    get_response = client.get(f"/rounds/{round.id}", headers=headers)
+    assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_delete_round_started(session: Session, client: TestClient):
@@ -380,12 +381,11 @@ def test_delete_round_started(session: Session, client: TestClient):
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
+    client.post(f"/rounds/{round.id}/start", headers=headers)
+
     response = client.delete(f"/rounds/{round.id}", headers=headers)
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-    get_response = client.get(f"/rounds/{round.id}", headers=headers)
-    assert get_response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_delete_round_not_found(session: Session, client: TestClient):
