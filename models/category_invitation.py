@@ -1,3 +1,4 @@
+import datetime
 import uuid
 from enum import Enum
 
@@ -15,6 +16,7 @@ class RequestStatus(Enum):
 
 class CategoryRequestBase(SQLModel):
     status: RequestStatus = Field(default=RequestStatus.PENDING)
+    issued_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
 
 
 class CategoryInvitation(CategoryRequestBase, table=True):

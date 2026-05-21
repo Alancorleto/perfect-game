@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from fastapi import APIRouter, HTTPException, status
@@ -210,6 +211,9 @@ async def list_category_invitations(
 
     invitations: list[CategoryInvitationPublic] = []
     for invitation in db_category.invitations:
+        if invitation.issued_at < datetime.datetime.now() - datetime.timedelta(days=1):
+            continue
+
         invitations.append(
             CategoryInvitationPublic(
                 category_id=invitation.category_id,
