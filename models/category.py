@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from models.category_invitation import CategoryInvitation, CategoryJoinRequest
 from models.category_player import CategoryPlayerLink
-from models.category_request import CategoryInvitation, CategoryJoinRequest
 from models.player import Player
 from models.tournament import Tournament
 from models.user import User

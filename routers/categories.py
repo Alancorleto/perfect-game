@@ -6,7 +6,7 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.category import Category, CategoryCreate, CategoryPublic, CategoryUpdate
-from models.category_request import CategoryInvitation, RequestStatus
+from models.category_invitation import CategoryInvitation, RequestStatus
 from models.tournament import Tournament
 from routers.players import Player, PlayerPublic
 from routers.users import UserDep

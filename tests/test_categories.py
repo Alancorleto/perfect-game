@@ -2,7 +2,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from models.category_request import CategoryInvitation, RequestStatus
+from models.category_invitation import CategoryInvitation, RequestStatus
 from models.round import RoundState
 from tests.helpers import (
     create_category_in_db,
