@@ -149,13 +149,13 @@ async def add_guest_player_to_category(
 
 
 @router.post("/{category_id}/players/bulk", response_model=list[PlayerPublic])
-async def bulk_add_players_to_category(
+async def bulk_add_guest_players_to_category(
     category_id: uuid.UUID,
     player_ids: list[uuid.UUID],
     session: SessionDep,
     user: UserDep,
 ):
-    """Bulk add players to a category"""
+    """Bulk add guest players to a category"""
     db_category = session.get(Category, category_id)
     if not db_category:
         raise HTTPException(
