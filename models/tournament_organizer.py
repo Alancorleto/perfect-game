@@ -1,11 +1,6 @@
 import uuid
-from typing import TYPE_CHECKING
 
-from sqlmodel import Field, Relationship, SQLModel
-
-if TYPE_CHECKING:
-    from models.tournament import Tournament
-    from models.user import User
+from sqlmodel import Field, SQLModel
 
 
 class TournamentOrganizer(SQLModel, table=True):
