@@ -6,7 +6,11 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.category import Category, CategoryCreate, CategoryPublic, CategoryUpdate
-from models.category_invitation import CategoryInvitation, RequestStatus
+from models.category_invitation import (
+    CategoryInvitation,
+    CategoryJoinRequest,
+    RequestStatus,
+)
 from models.tournament import Tournament
 from routers.players import Player, PlayerPublic
 from routers.users import UserDep
@@ -313,6 +317,43 @@ async def decline_category_invitation(
         )
 
     db_invitation.status = RequestStatus.DECLINED
+
+    session.commit()
+
+
+@router.post("/{category_id}/join_requests")
+async def request_join_category(
+    category_id: uuid.UUID, session: SessionDep, user: UserDep
+):
+    """Request to join a category"""
+    player = user.player
+
+    if not player:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User has no player associated",
+        )
+
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
+
+    if player in db_category.players:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Player already in category",
+        )
+
+    join_request = next(
+        (request for request in db_category.join_requests if request.player == player),
+        CategoryJoinRequest(category_id=category_id, player_id=player.id),
+    )
+
+    join_request.status = RequestStatus.PENDING
+
+    session.add(join_request)
 
     session.commit()
 

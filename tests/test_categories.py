@@ -2,7 +2,11 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from models.category_invitation import CategoryInvitation, RequestStatus
+from models.category_invitation import (
+    CategoryInvitation,
+    CategoryJoinRequest,
+    RequestStatus,
+)
 from models.round import RoundState
 from tests.helpers import (
     create_category_in_db,
@@ -831,6 +835,124 @@ def test_decline_category_invitation_already_accepted(
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+# ---------------------------------------------------------------------------
+# POST /categories/{category_id}/join_requests
+# ---------------------------------------------------------------------------
+
+
+def test_request_join_category(session: Session, client: TestClient):
+    """Test requesting to join a category"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.post(
+        f"/categories/{category.id}/join_requests",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    session.refresh(category)
+
+    assert len(category.join_requests) == 1
+
+    join_request = category.join_requests[0]
+    assert join_request.status == RequestStatus.PENDING
+    assert len(category.players) == 0
+
+
+def test_request_join_category_no_player(session: Session, client: TestClient):
+    """Test requesting to join a category without an associated player"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.post(
+        f"/categories/{category.id}/join_requests",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_request_join_category_category_not_found(session: Session, client: TestClient):
+    """Test requesting to join a non-existent category"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    create_player_in_db(session, user=user)
+
+    response = client.post(
+        "/categories/00000000-0000-0000-0000-000000000000/join_requests",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_request_join_category_player_already_in_category(
+    session: Session, client: TestClient
+):
+    """Test requesting to join a category when the player is already in it"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    category.players.append(player)
+    session.add(category)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/join_requests",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_request_join_category_existing_request_reopens(
+    session: Session, client: TestClient
+):
+    """Test requesting to join a category with an existing declined request"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    join_request = CategoryJoinRequest(
+        category_id=category.id,
+        player_id=player.id,
+        status=RequestStatus.DECLINED,
+    )
+    session.add(join_request)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/join_requests",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    session.refresh(join_request)
+    assert join_request.status == RequestStatus.PENDING
 
 
 # ---------------------------------------------------------------------------
