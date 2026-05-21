@@ -546,6 +546,62 @@ def test_invite_player_to_category_player_not_registered(
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+def test_invite_player_to_category_player_already_in_category(
+    session: Session, client: TestClient
+):
+    """Test inviting a player who is already in the category"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    player_user = create_user_in_db(
+        session, email="player@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=player_user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    category.players.append(player)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/{player.id}/",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_invite_player_to_category_invitation_declined(
+    session: Session, client: TestClient
+):
+    """Test inviting a player who has declined the invitation"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    player_user = create_user_in_db(
+        session, email="player@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=player_user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    invitation = CategoryInvitation(
+        player_id=player.id,
+        category_id=category.id,
+        status=RequestStatus.DECLINED,
+    )
+    session.add(invitation)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/{player.id}/",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    session.refresh(invitation)
+    assert invitation.status == RequestStatus.PENDING
+
+
 # ---------------------------------------------------------------------------
 # POST /categories/{category_id}/invitations/accept
 # ---------------------------------------------------------------------------

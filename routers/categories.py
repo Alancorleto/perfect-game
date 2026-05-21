@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, HTTPException, status
+from httpx import Request
 from sqlmodel import select
 
 from database import SessionDep
@@ -215,12 +216,27 @@ async def invite_player_to_category(
             detail="Player is not registered",
         )
 
+    if db_player in db_category.players:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Player is already in the category",
+        )
+
     if db_player.user == user:
         db_category.players.append(db_player)
         session.commit()
         return
 
-    db_invitation = CategoryInvitation(category_id=category_id, player_id=player_id)
+    db_invitation = next(
+        (
+            invitation
+            for invitation in db_category.invitations
+            if invitation.player_id == player_id
+        ),
+        CategoryInvitation(category_id=category_id, player_id=player_id),
+    )
+
+    db_invitation.status = RequestStatus.PENDING
     session.add(db_invitation)
 
     session.commit()
