@@ -378,6 +378,9 @@ async def list_category_join_requests(
 
     join_requests: list[CategoryJoinRequestPublic] = []
     for request in category.join_requests:
+        if request.issued_at < datetime.datetime.now() - datetime.timedelta(days=1):
+            continue
+
         join_requests.append(
             CategoryJoinRequestPublic(
                 player_id=request.player_id,
