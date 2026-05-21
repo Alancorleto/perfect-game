@@ -49,12 +49,10 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
 
     # Add the organizer to the category.
     add_organizer_response = client.post(
-        f"/categories/{category_id}/players/bulk",
-        json=[player_id],
+        f"/categories/{category_id}/invitations/{player_id}",
         headers=headers,
     )
-    assert add_organizer_response.status_code == status.HTTP_200_OK
-    assert add_organizer_response.json()[0]["id"] == player_id
+    assert add_organizer_response.status_code == status.HTTP_204_NO_CONTENT
 
     # Create a round inside the category.
     round_response = client.post(
