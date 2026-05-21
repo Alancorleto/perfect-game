@@ -936,6 +936,104 @@ def test_list_category_invitations_unauthenticated(
 
 
 # ---------------------------------------------------------------------------
+# GET /categories/{category_id}/join_requests
+# ---------------------------------------------------------------------------
+
+
+def test_list_category_join_requests(session: Session, client: TestClient):
+    """Test listing category join requests"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    joining_user = create_user_in_db(
+        session, email="joining@example.com", password="mypassword123"
+    )
+    joining_player = create_player_in_db(session, user=joining_user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    join_request = CategoryJoinRequest(
+        category_id=category.id,
+        player_id=joining_player.id,
+        status=RequestStatus.PENDING,
+    )
+    session.add(join_request)
+    session.commit()
+
+    response = client.get(
+        f"/categories/{category.id}/join_requests",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(data) == 1
+    assert data[0]["status"] == RequestStatus.PENDING.value
+    assert data[0]["category"]["id"] == str(category.id)
+    assert data[0]["player"]["id"] == str(joining_player.id)
+
+
+def test_list_category_join_requests_empty(session: Session, client: TestClient):
+    """Test listing join requests for a category without join requests"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.get(
+        f"/categories/{category.id}/join_requests",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
+
+
+def test_list_category_join_requests_not_found(session: Session, client: TestClient):
+    """Test listing join requests for a non-existent category"""
+    create_user_in_db(session, email="organizer@example.com", password="mypassword123")
+
+    response = client.get(
+        "/categories/00000000-0000-0000-0000-000000000000/join_requests",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_list_category_join_requests_unauthorized(session: Session, client: TestClient):
+    """Test listing join requests without permission"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    create_user_in_db(session, email="attacker@example.com", password="mypassword123")
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.get(
+        f"/categories/{category.id}/join_requests",
+        headers=get_auth_headers(client, "attacker@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_list_category_join_requests_unauthenticated(
+    session: Session, client: TestClient
+):
+    """Test listing join requests without authentication"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.get(f"/categories/{category.id}/join_requests")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+# ---------------------------------------------------------------------------
 # POST /categories/{category_id}/join_requests
 # ---------------------------------------------------------------------------
 

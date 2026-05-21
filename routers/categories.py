@@ -343,6 +343,28 @@ async def decline_category_invitation(
     session.commit()
 
 
+@router.get(
+    "/{category_id}/join_requests", response_model=list[CategoryJoinRequestPublic]
+)
+async def list_category_join_requests(
+    category_id: uuid.UUID, session: SessionDep, user: UserDep
+):
+    """List all join requests for a category"""
+    category = session.get(Category, category_id)
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
+
+    if not category.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to edit category",
+        )
+
+    return category.join_requests
+
+
 @router.post("/{category_id}/join_requests")
 async def request_join_category(
     category_id: uuid.UUID, session: SessionDep, user: UserDep
