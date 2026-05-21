@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 class CategoryBase(SQLModel):
     name: str
+    auto_accept_join_requests: bool = Field(default=False)
 
 
 class Category(CategoryBase, table=True):

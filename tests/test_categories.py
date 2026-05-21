@@ -1,3 +1,5 @@
+from venv import create
+
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -1063,20 +1065,28 @@ def test_request_join_category(session: Session, client: TestClient):
     assert len(category.players) == 0
 
 
-def test_request_join_category_no_player(session: Session, client: TestClient):
-    """Test requesting to join a category without an associated player"""
+def test_request_join_category_auto_accept(session: Session, client: TestClient):
+    """Test requesting to join a category with auto-accept enabled"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=user)
-    category = create_category_in_db(session, tournament=tournament)
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament, auto_accept=True)
 
     response = client.post(
         f"/categories/{category.id}/join_requests",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    session.refresh(category)
+    assert len(category.players) == 1
+    assert category.players[0] == player
+    assert len(category.join_requests) == 0
 
 
 def test_request_join_category_category_not_found(session: Session, client: TestClient):

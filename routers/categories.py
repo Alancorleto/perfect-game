@@ -390,6 +390,11 @@ async def request_join_category(
             detail="Player already in category",
         )
 
+    if db_category.auto_accept_join_requests:
+        db_category.players.append(player)
+        session.commit()
+        return
+
     join_request = next(
         (request for request in db_category.join_requests if request.player == player),
         CategoryJoinRequest(category_id=category_id, player_id=player.id),

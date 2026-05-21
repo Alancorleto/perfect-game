@@ -102,9 +102,14 @@ def create_category_in_db(
     session: Session,
     tournament: Tournament,
     name: str = "Test Category",
+    auto_accept_join_requests: bool = False,
 ) -> Category:
     """Creates a category directly in the test database."""
-    category = Category(name=name, tournament_id=tournament.id)
+    category = Category(
+        name=name,
+        tournament_id=tournament.id,
+        auto_accept_join_requests=auto_accept_join_requests,
+    )
     session.add(category)
     session.commit()
     session.refresh(category)
