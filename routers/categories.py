@@ -208,7 +208,17 @@ async def list_category_invitations(
             detail="You are not authorized to view this category's invitations",
         )
 
-    return db_category.invitations
+    invitations: list[CategoryInvitationPublic] = []
+    for invitation in db_category.invitations:
+        invitations.append(
+            CategoryInvitationPublic(
+                category_id=invitation.category_id,
+                player=invitation.player,
+                status=invitation.status,
+            )
+        )
+
+    return invitations
 
 
 @router.post(
@@ -362,10 +372,20 @@ async def list_category_join_requests(
             detail="Not authorized to edit category",
         )
 
-    return category.join_requests
+    join_requests: list[CategoryJoinRequestPublic] = []
+    for request in category.join_requests:
+        join_requests.append(
+            CategoryJoinRequestPublic(
+                player_id=request.player_id,
+                category=request.category,
+                status=request.status,
+            )
+        )
+
+    return join_requests
 
 
-@router.post("/{category_id}/join_requests")
+@router.post("/{category_id}/join_requests", status_code=status.HTTP_204_NO_CONTENT)
 async def request_join_category(
     category_id: uuid.UUID, session: SessionDep, user: UserDep
 ):

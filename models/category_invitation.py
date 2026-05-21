@@ -1,12 +1,10 @@
 import uuid
 from enum import Enum
-from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
-if TYPE_CHECKING:
-    from models.category import Category
-    from models.player import Player
+from models.category import Category
+from models.player import Player
 
 
 class RequestStatus(Enum):
@@ -27,13 +25,14 @@ class CategoryInvitation(CategoryRequestBase, table=True):
         primary_key=True, foreign_key="player.id", ondelete="CASCADE"
     )
 
-    category: "Category" = Relationship(back_populates="invitations")
-    player: "Player" = Relationship()
+    category: Category = Relationship(back_populates="invitations")
+    player: Player = Relationship(back_populates="category_invitations")
 
 
-class CategoryInvitationPublic(CategoryRequestBase):
-    category: "Category"
-    player: "Player"
+class CategoryInvitationPublic(SQLModel):
+    category_id: uuid.UUID
+    player: Player
+    status: RequestStatus = Field(default=RequestStatus.PENDING)
 
 
 class CategoryJoinRequest(CategoryRequestBase, table=True):
@@ -44,10 +43,11 @@ class CategoryJoinRequest(CategoryRequestBase, table=True):
         primary_key=True, foreign_key="player.id", ondelete="CASCADE"
     )
 
-    category: "Category" = Relationship(back_populates="join_requests")
-    player: "Player" = Relationship()
+    category: Category = Relationship(back_populates="join_requests")
+    player: Player = Relationship(back_populates="category_join_requests")
 
 
 class CategoryJoinRequestPublic(CategoryRequestBase):
-    category: "Category"
-    player: "Player"
+    player_id: uuid.UUID
+    category: Category
+    status: RequestStatus = Field(default=RequestStatus.PENDING)

@@ -872,7 +872,7 @@ def test_list_category_invitations(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 1
     assert data[0]["status"] == RequestStatus.PENDING.value
-    assert data[0]["category"]["id"] == str(category.id)
+    assert data[0]["category_id"] == str(category.id)
     assert data[0]["player"]["id"] == str(invited_player.id)
 
 
@@ -971,7 +971,7 @@ def test_list_category_join_requests(session: Session, client: TestClient):
     assert len(data) == 1
     assert data[0]["status"] == RequestStatus.PENDING.value
     assert data[0]["category"]["id"] == str(category.id)
-    assert data[0]["player"]["id"] == str(joining_player.id)
+    assert data[0]["player_id"] == str(joining_player.id)
 
 
 def test_list_category_join_requests_empty(session: Session, client: TestClient):
@@ -1054,7 +1054,7 @@ def test_request_join_category(session: Session, client: TestClient):
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     session.refresh(category)
 
@@ -1075,7 +1075,9 @@ def test_request_join_category_auto_accept(session: Session, client: TestClient)
     )
     player = create_player_in_db(session, user=user)
     tournament = create_tournament_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, tournament=tournament, auto_accept=True)
+    category = create_category_in_db(
+        session, tournament=tournament, auto_accept_join_requests=True
+    )
 
     response = client.post(
         f"/categories/{category.id}/join_requests",
@@ -1155,7 +1157,7 @@ def test_request_join_category_existing_request_reopens(
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     session.refresh(join_request)
     assert join_request.status == RequestStatus.PENDING

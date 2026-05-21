@@ -7,6 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from models.user import User
 
 if TYPE_CHECKING:
+    from models.category import CategoryInvitation, CategoryJoinRequest
     from models.score import Score
     from models.tournament import Tournament
 
@@ -40,6 +41,12 @@ class Player(PlayerBase, table=True):
 
     # This is not used but needed by SQLModel to work properly with cascade delete
     scores: list["Score"] = Relationship(back_populates="player", cascade_delete=True)
+    category_invitations: list["CategoryInvitation"] = Relationship(
+        back_populates="player", cascade_delete=True
+    )
+    category_join_requests: list["CategoryJoinRequest"] = Relationship(
+        back_populates="player", cascade_delete=True
+    )
 
     def can_be_edited_by(self, user: User) -> bool:
         return (

@@ -3,13 +3,13 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from models.category_invitation import CategoryInvitation, CategoryJoinRequest
 from models.category_player import CategoryPlayerLink
 from models.player import Player
 from models.tournament import Tournament
 from models.user import User
 
 if TYPE_CHECKING:
+    from models.category_invitation import CategoryInvitation, CategoryJoinRequest
     from models.round import Round
 
 
@@ -26,10 +26,10 @@ class Category(CategoryBase, table=True):
     tournament: Tournament = Relationship(back_populates="categories")
     rounds: list["Round"] = Relationship(back_populates="category", cascade_delete=True)
 
-    invitations: list[CategoryInvitation] = Relationship(
+    invitations: list["CategoryInvitation"] = Relationship(
         back_populates="category", cascade_delete=True
     )
-    join_requests: list[CategoryJoinRequest] = Relationship(
+    join_requests: list["CategoryJoinRequest"] = Relationship(
         back_populates="category", cascade_delete=True
     )
 
