@@ -8,7 +8,9 @@ from database import SessionDep
 from models.category import Category, CategoryCreate, CategoryPublic, CategoryUpdate
 from models.category_invitation import (
     CategoryInvitation,
+    CategoryInvitationPublic,
     CategoryJoinRequest,
+    CategoryJoinRequestPublic,
     RequestStatus,
 )
 from models.tournament import Tournament
@@ -187,6 +189,26 @@ async def bulk_add_players_to_category(
     session.refresh(db_category)
 
     return db_category.players
+
+
+@router.get("/{category_id}/invitations", response_model=list[CategoryInvitationPublic])
+async def list_category_invitations(
+    category_id: uuid.UUID, session: SessionDep, user: UserDep
+):
+    """List all invitations for a category"""
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
+
+    if not db_category.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to view this category's invitations",
+        )
+
+    return db_category.invitations
 
 
 @router.post(

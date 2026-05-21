@@ -838,6 +838,104 @@ def test_decline_category_invitation_already_accepted(
 
 
 # ---------------------------------------------------------------------------
+# GET /categories/{category_id}/invitations
+# ---------------------------------------------------------------------------
+
+
+def test_list_category_invitations(session: Session, client: TestClient):
+    """Test listing category invitations"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    invited_user = create_user_in_db(
+        session, email="invited@example.com", password="mypassword123"
+    )
+    invited_player = create_player_in_db(session, user=invited_user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    invitation = CategoryInvitation(
+        category_id=category.id,
+        player_id=invited_player.id,
+        status=RequestStatus.PENDING,
+    )
+    session.add(invitation)
+    session.commit()
+
+    response = client.get(
+        f"/categories/{category.id}/invitations",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(data) == 1
+    assert data[0]["status"] == RequestStatus.PENDING.value
+    assert data[0]["category"]["id"] == str(category.id)
+    assert data[0]["player"]["id"] == str(invited_player.id)
+
+
+def test_list_category_invitations_empty(session: Session, client: TestClient):
+    """Test listing invitations for a category without invitations"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.get(
+        f"/categories/{category.id}/invitations",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
+
+
+def test_list_category_invitations_not_found(session: Session, client: TestClient):
+    """Test listing invitations for a non-existent category"""
+    create_user_in_db(session, email="organizer@example.com", password="mypassword123")
+
+    response = client.get(
+        "/categories/00000000-0000-0000-0000-000000000000/invitations",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_list_category_invitations_unauthorized(session: Session, client: TestClient):
+    """Test listing invitations without permission"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    create_user_in_db(session, email="attacker@example.com", password="mypassword123")
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.get(
+        f"/categories/{category.id}/invitations",
+        headers=get_auth_headers(client, "attacker@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_list_category_invitations_unauthenticated(
+    session: Session, client: TestClient
+):
+    """Test listing invitations without authentication"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.get(f"/categories/{category.id}/invitations")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+# ---------------------------------------------------------------------------
 # POST /categories/{category_id}/join_requests
 # ---------------------------------------------------------------------------
 

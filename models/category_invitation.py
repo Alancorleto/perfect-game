@@ -31,6 +31,11 @@ class CategoryInvitation(CategoryRequestBase, table=True):
     player: "Player" = Relationship()
 
 
+class CategoryInvitationPublic(CategoryRequestBase):
+    category: "Category"
+    player: "Player"
+
+
 class CategoryJoinRequest(CategoryRequestBase, table=True):
     category_id: uuid.UUID = Field(
         primary_key=True, foreign_key="category.id", ondelete="CASCADE"
@@ -41,3 +46,8 @@ class CategoryJoinRequest(CategoryRequestBase, table=True):
 
     category: "Category" = Relationship(back_populates="join_requests")
     player: "Player" = Relationship()
+
+
+class CategoryJoinRequestPublic(CategoryRequestBase):
+    category: "Category"
+    player: "Player"
