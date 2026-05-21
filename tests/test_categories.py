@@ -706,6 +706,134 @@ def test_accept_category_invitation_already_accepted(
 
 
 # ---------------------------------------------------------------------------
+# POST /categories/{category_id}/invitations/decline
+# ---------------------------------------------------------------------------
+
+
+def test_decline_category_invitation(session: Session, client: TestClient):
+    """Test declining a category invitation"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+    invitation = CategoryInvitation(category_id=category.id, player_id=player.id)
+    session.add(invitation)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/decline",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    session.refresh(invitation)
+    assert invitation.status == RequestStatus.DECLINED
+    session.refresh(category)
+    assert len(category.players) == 0
+
+
+def test_decline_category_invitation_no_player(session: Session, client: TestClient):
+    """Test declining an invitation without an associated player"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/decline",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_decline_category_invitation_category_not_found(
+    session: Session, client: TestClient
+):
+    """Test declining an invitation for a non-existent category"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    create_player_in_db(session, user=user)
+
+    response = client.post(
+        "/categories/00000000-0000-0000-0000-000000000000/invitations/decline",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_decline_category_invitation_not_found(session: Session, client: TestClient):
+    """Test declining a non-existent invitation"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/decline",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_decline_category_invitation_already_declined(
+    session: Session, client: TestClient
+):
+    """Test declining an already declined invitation"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+    invitation = CategoryInvitation(
+        category_id=category.id, player_id=player.id, status=RequestStatus.DECLINED
+    )
+    session.add(invitation)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/decline",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_decline_category_invitation_already_accepted(
+    session: Session, client: TestClient
+):
+    """Test declining an already accepted invitation"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+    invitation = CategoryInvitation(
+        category_id=category.id, player_id=player.id, status=RequestStatus.ACCEPTED
+    )
+    session.add(invitation)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/decline",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+# ---------------------------------------------------------------------------
 # GET /categories/{category_id}/players
 # ---------------------------------------------------------------------------
 
