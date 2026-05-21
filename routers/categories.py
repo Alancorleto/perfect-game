@@ -5,6 +5,7 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.category import Category, CategoryCreate, CategoryPublic, CategoryUpdate
+from models.category_request import CategoryInvitation, RequestStatus
 from models.tournament import Tournament
 from routers.players import Player, PlayerPublic
 from routers.users import UserDep
@@ -101,6 +102,45 @@ async def delete_category(category_id: uuid.UUID, session: SessionDep, user: Use
     session.commit()
 
 
+@router.post("/{category_id}/players/guest", response_model=list[PlayerPublic])
+async def add_guest_player_to_category(
+    category_id: uuid.UUID,
+    player_id: uuid.UUID,
+    session: SessionDep,
+    user: UserDep,
+):
+    """Add a guest player to a category"""
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
+
+    if not db_category.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied",
+        )
+
+    db_player = session.get(Player, player_id)
+    if not db_player:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
+        )
+
+    if db_player.user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Player is already registered",
+        )
+
+    db_category.players.append(db_player)
+    session.commit()
+    session.refresh(db_category)
+
+    return db_category.players
+
+
 @router.post("/{category_id}/players/bulk", response_model=list[PlayerPublic])
 async def bulk_add_players_to_category(
     category_id: uuid.UUID,
@@ -128,6 +168,13 @@ async def bulk_add_players_to_category(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Player with ID {player_id} not found",
             )
+
+        if db_player.user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Player with ID {player_id} is already registered",
+            )
+
         db_category.players.append(db_player)
 
     session.add(db_category)
@@ -135,6 +182,83 @@ async def bulk_add_players_to_category(
     session.refresh(db_category)
 
     return db_category.players
+
+
+@router.post(
+    "/{category_id}/invitations/{player_id}/", status_code=status.HTTP_204_NO_CONTENT
+)
+async def invite_player_to_category(
+    category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
+):
+    """Invite a player to a category"""
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
+
+    if not db_category.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to edit this category",
+        )
+
+    db_player = session.get(Player, player_id)
+    if not db_player:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
+        )
+
+    if not db_player.user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Player is not registered",
+        )
+
+    if db_player.user == user:
+        db_category.players.append(db_player)
+        session.commit()
+        return
+
+    db_invitation = CategoryInvitation(category_id=category_id, player_id=player_id)
+    session.add(db_invitation)
+
+    session.commit()
+
+
+@router.post("/{category_id}/invitations/accept")
+async def accept_category_invitation(
+    category_id: uuid.UUID, session: SessionDep, user: UserDep
+):
+    player = user.player
+    if not player:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User has no player associated",
+        )
+
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
+
+    db_invitation = session.get(CategoryInvitation, (category_id, player.id))
+    if not db_invitation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found"
+        )
+
+    if db_invitation.status == RequestStatus.ACCEPTED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invitation already accepted",
+        )
+
+    db_invitation.status = RequestStatus.ACCEPTED
+
+    db_category.players.append(player)
+    session.commit()
 
 
 @router.get("/{category_id}/players", response_model=list[PlayerPublic])

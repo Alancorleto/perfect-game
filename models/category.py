@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.category_player import CategoryPlayerLink
+from models.category_request import CategoryInvitation, CategoryJoinRequest
 from models.player import Player
 from models.tournament import Tournament
 from models.user import User
@@ -23,6 +24,13 @@ class Category(CategoryBase, table=True):
     players: list[Player] = Relationship(link_model=CategoryPlayerLink)
     tournament: Tournament = Relationship(back_populates="categories")
     rounds: list["Round"] = Relationship(back_populates="category", cascade_delete=True)
+
+    invitations: list[CategoryInvitation] = Relationship(
+        back_populates="category", cascade_delete=True
+    )
+    join_requests: list[CategoryJoinRequest] = Relationship(
+        back_populates="category", cascade_delete=True
+    )
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.tournament.can_be_edited_by(user)

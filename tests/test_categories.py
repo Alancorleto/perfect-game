@@ -2,6 +2,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from models.category_request import CategoryInvitation, RequestStatus
 from models.round import RoundState
 from tests.helpers import (
     create_category_in_db,
@@ -436,6 +437,216 @@ def test_bulk_add_players_unauthenticated(session: Session, client: TestClient):
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+# ---------------------------------------------------------------------------
+# POST /categories/{category_id}/invitations/{player_id}/
+# ---------------------------------------------------------------------------
+
+
+def test_invite_player_to_category(session: Session, client: TestClient):
+    """Test inviting a player to a category"""
+    organizer_user = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer_user)
+    category = create_category_in_db(session, tournament=tournament)
+
+    player_user = create_user_in_db(
+        session, email="player@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, nickname="PlayerA", user=player_user)
+
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/{player.id}/",
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    session.refresh(category)
+    assert len(category.invitations) == 1
+    assert category.invitations[0].player_id == player.id
+
+
+def test_invite_player_to_category_organizer(session: Session, client: TestClient):
+    """Test inviting an organizer to their own category"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+    player = create_player_in_db(session, user=user)
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/{player.id}/",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    session.refresh(category)
+    assert len(category.players) == 1
+    assert category.players[0].id == player.id
+
+
+def test_invite_player_to_category_category_not_found(
+    session: Session, client: TestClient
+):
+    """Test inviting a player to a non-existent category"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+
+    response = client.post(
+        f"/categories/00000000-0000-0000-0000-000000000000/invitations/{player.id}/",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_invite_player_to_category_player_not_found(
+    session: Session, client: TestClient
+):
+    """Test inviting a non-existent player to a category"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/00000000-0000-0000-0000-000000000000/",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_invite_player_to_category_player_not_registered(
+    session: Session, client: TestClient
+):
+    """Test inviting a player without a user to a category"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+    player = create_player_in_db(session, user=None)
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/{player.id}/",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+# ---------------------------------------------------------------------------
+# POST /categories/{category_id}/invitations/accept
+# ---------------------------------------------------------------------------
+
+
+def test_accept_category_invitation(session: Session, client: TestClient):
+    """Test accepting a category invitation"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+    invitation = CategoryInvitation(category_id=category.id, player_id=player.id)
+    session.add(invitation)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/accept",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    session.refresh(category)
+    assert len(category.players) == 1
+    assert category.players[0].id == player.id
+
+
+def test_accept_category_invitation_no_player(session: Session, client: TestClient):
+    """Test accepting an invitation without an associated player"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/accept",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_accept_category_invitation_category_not_found(
+    session: Session, client: TestClient
+):
+    """Test accepting an invitation for a non-existent category"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    create_player_in_db(session, user=user)
+
+    response = client.post(
+        "/categories/00000000-0000-0000-0000-000000000000/invitations/accept",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_accept_category_invitation_not_found(session: Session, client: TestClient):
+    """Test accepting a non-existent invitation"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/accept",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_accept_category_invitation_already_accepted(
+    session: Session, client: TestClient
+):
+    """Test accepting an already accepted invitation"""
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=user)
+    category = create_category_in_db(session, tournament=tournament)
+    invitation = CategoryInvitation(
+        category_id=category.id, player_id=player.id, status=RequestStatus.ACCEPTED
+    )
+    session.add(invitation)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/invitations/accept",
+        headers=get_auth_headers(client, "user@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 # ---------------------------------------------------------------------------
