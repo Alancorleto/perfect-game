@@ -358,6 +358,60 @@ async def request_join_category(
     session.commit()
 
 
+@router.post("/{category_id}/join_requests/{player_id}/accept")
+async def accept_category_join_request(
+    category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
+):
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
+
+    if not db_category.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to edit this category",
+        )
+
+    player = session.get(Player, player_id)
+    if not player:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
+        )
+
+    if player in db_category.players:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Player is already in the category",
+        )
+
+    join_request = next(
+        (
+            request
+            for request in db_category.join_requests
+            if request.player_id == player_id
+        ),
+        None,
+    )
+    if not join_request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Join request not found"
+        )
+
+    if join_request.status != RequestStatus.PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Join request is not pending",
+        )
+
+    join_request.status = RequestStatus.ACCEPTED
+
+    db_category.players.append(player)
+
+    session.commit()
+
+
 @router.get("/{category_id}/players", response_model=list[PlayerPublic])
 async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
     """List all players in a category"""

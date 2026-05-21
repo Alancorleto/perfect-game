@@ -956,6 +956,212 @@ def test_request_join_category_existing_request_reopens(
 
 
 # ---------------------------------------------------------------------------
+# POST /categories/{category_id}/join_requests/{player_id}/accept
+# ---------------------------------------------------------------------------
+
+
+def test_accept_category_join_request(session: Session, client: TestClient):
+    """Test accepting a category join request"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    join_request = CategoryJoinRequest(
+        category_id=category.id, player_id=player.id, status=RequestStatus.PENDING
+    )
+    session.add(join_request)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    session.refresh(join_request)
+    assert join_request.status == RequestStatus.ACCEPTED
+    session.refresh(category)
+    assert player in category.players
+
+
+def test_accept_category_join_request_unauthorized(
+    session: Session, client: TestClient
+):
+    """Test accepting a category join request without permission"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    attacker = create_user_in_db(
+        session, email="attacker@example.com", password="mypassword123"
+    )
+    player_user = create_user_in_db(
+        session, email="player@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=player_user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    join_request = CategoryJoinRequest(category_id=category.id, player_id=player.id)
+    session.add(join_request)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        headers=get_auth_headers(client, attacker.email, "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    session.refresh(join_request)
+    assert join_request.status == RequestStatus.PENDING
+
+
+def test_accept_category_join_request_category_not_found(
+    session: Session, client: TestClient
+):
+    """Test accepting a join request for a non-existent category"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    player_user = create_user_in_db(
+        session, email="player@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=player_user)
+    create_tournament_in_db(session, organizer=organizer)
+
+    response = client.post(
+        f"/categories/00000000-0000-0000-0000-000000000000/join_requests/{player.id}/accept",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_accept_category_join_request_player_not_found(
+    session: Session, client: TestClient
+):
+    """Test accepting a join request for a non-existent player"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.post(
+        f"/categories/{category.id}/join_requests/00000000-0000-0000-0000-000000000000/accept",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_accept_category_join_request_player_already_in_category(
+    session: Session, client: TestClient
+):
+    """Test accepting a join request when the player is already in the category"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    user = create_user_in_db(
+        session, email="player@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    category.players.append(player)
+    session.add(category)
+    session.commit()
+    join_request = CategoryJoinRequest(category_id=category.id, player_id=player.id)
+    session.add(join_request)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_accept_category_join_request_not_found(session: Session, client: TestClient):
+    """Test accepting a non-existent join request"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    player_user = create_user_in_db(
+        session, email="player@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=player_user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+
+    response = client.post(
+        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_accept_category_join_request_not_pending_accepted(
+    session: Session, client: TestClient
+):
+    """Test accepting a join request that is already accepted"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    user = create_user_in_db(
+        session, email="player@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    join_request = CategoryJoinRequest(
+        category_id=category.id, player_id=player.id, status=RequestStatus.ACCEPTED
+    )
+    session.add(join_request)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_accept_category_join_request_not_pending_declined(
+    session: Session, client: TestClient
+):
+    """Test accepting a join request that is declined"""
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    user = create_user_in_db(
+        session, email="player@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user=user)
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    join_request = CategoryJoinRequest(
+        category_id=category.id, player_id=player.id, status=RequestStatus.DECLINED
+    )
+    session.add(join_request)
+    session.commit()
+
+    response = client.post(
+        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+# ---------------------------------------------------------------------------
 # GET /categories/{category_id}/players
 # ---------------------------------------------------------------------------
 
