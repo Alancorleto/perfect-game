@@ -1,13 +1,12 @@
 import uuid
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.user import User
 
 if TYPE_CHECKING:
-    from models.chart_slot import ChartSlot
     from models.score import Score
 
 

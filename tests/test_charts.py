@@ -56,6 +56,227 @@ def test_list_charts_empty(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
+# GET /charts/titles
+# ---------------------------------------------------------------------------
+
+
+def test_fuzzy_search_titles_exact_match(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    chart = create_chart_in_db(session, creator=user, song_name="My Song")
+    chart.title_url = "https://example.com/my-song.png"
+    session.add(chart)
+    session.commit()
+
+    response = client.get(
+        "/charts/titles",
+        params={"search": "My Song"},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == ["https://example.com/my-song.png"]
+
+
+def test_fuzzy_search_titles_is_case_and_punctuation_insensitive(
+    session: Session, client: TestClient
+):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    chart = create_chart_in_db(
+        session,
+        creator=user,
+        song_name="Canción del Corazón!",
+    )
+    chart.title_url = "https://example.com/cancion.png"
+    session.add(chart)
+    session.commit()
+
+    response = client.get(
+        "/charts/titles",
+        params={"search": "cancion del corazon!!!"},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == ["https://example.com/cancion.png"]
+
+
+def test_fuzzy_search_titles_query_parameter_case_and_punctuation_insensitive(
+    session: Session, client: TestClient
+):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    chart = create_chart_in_db(
+        session,
+        creator=user,
+        song_name="cancion del corazon",
+    )
+    chart.title_url = "https://example.com/cancion.png"
+    session.add(chart)
+    session.commit()
+
+    response = client.get(
+        "/charts/titles",
+        params={"search": "Canción del Corazón!"},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == ["https://example.com/cancion.png"]
+
+
+def test_fuzzy_search_titles_matches_approximate_typos(
+    session: Session, client: TestClient
+):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    chart = create_chart_in_db(session, creator=user, song_name="My Song")
+    chart.title_url = "https://example.com/my-song.png"
+    session.add(chart)
+    session.commit()
+
+    response = client.get(
+        "/charts/titles",
+        params={"search": "my sng"},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == ["https://example.com/my-song.png"]
+
+
+def test_fuzzy_search_titles_orders_results_by_best_match_first(
+    session: Session, client: TestClient
+):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    exact = create_chart_in_db(session, creator=user, song_name="My Song")
+    exact.title_url = "https://example.com/exact.png"
+    session.add(exact)
+
+    close = create_chart_in_db(session, creator=user, song_name="My Sng")
+    close.title_url = "https://example.com/close.png"
+    session.add(close)
+
+    more_distant = create_chart_in_db(session, creator=user, song_name="My Long Song")
+    more_distant.title_url = "https://example.com/distant.png"
+    session.add(more_distant)
+
+    session.commit()
+
+    response = client.get(
+        "/charts/titles",
+        params={"search": "My Song"},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == [
+        "https://example.com/exact.png",
+        "https://example.com/close.png",
+        "https://example.com/distant.png",
+    ]
+
+
+def test_fuzzy_search_titles_excludes_charts_without_title_url(
+    session: Session, client: TestClient
+):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    chart_with_title = create_chart_in_db(
+        session, creator=user, song_name="Song With Title"
+    )
+    chart_with_title.title_url = "https://example.com/with-title.png"
+    session.add(chart_with_title)
+
+    chart_without_title = create_chart_in_db(
+        session, creator=user, song_name="Song Without Title"
+    )
+    session.add(chart_without_title)
+    session.commit()
+
+    response = client.get(
+        "/charts/titles",
+        params={"search": "song"},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == ["https://example.com/with-title.png"]
+
+
+def test_fuzzy_search_titles_returns_empty_list_when_no_match(
+    session: Session, client: TestClient
+):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    chart = create_chart_in_db(
+        session, creator=user, song_name="Completely Different Song"
+    )
+    chart.title_url = "https://example.com/different.png"
+    session.add(chart)
+    session.commit()
+
+    response = client.get(
+        "/charts/titles",
+        params={"search": "zzzzzzzz"},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
+
+
+def test_fuzzy_search_titles_does_not_match_title_url_contents(
+    session: Session, client: TestClient
+):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    chart = create_chart_in_db(
+        session,
+        creator=user,
+        song_name="Unrelated Song",
+    )
+    chart.title_url = "https://example.com/my-song.png"
+    session.add(chart)
+    session.commit()
+
+    response = client.get(
+        "/charts/titles",
+        params={"search": "my song"},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
+
+
+# ---------------------------------------------------------------------------
 # GET /charts/{chart_id}
 # ---------------------------------------------------------------------------
 

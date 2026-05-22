@@ -1,7 +1,9 @@
+import re
+import unicodedata
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, status
+from fastapi import APIRouter, File, HTTPException, Query, status
 from sqlmodel import select
 
 from database import SessionDep
@@ -17,6 +19,31 @@ async def list_charts(session: SessionDep):
     """List all charts"""
     charts = session.exec(select(Chart)).all()
     return charts
+
+
+@router.get("/titles", response_model=list[str])
+async def fuzzy_search_titles(
+    session: SessionDep, search: str = Query(min_length=1)
+) -> list[str]:
+    """Return chart title URLs that approximately match a song name."""
+    SIMILARITY_SCORE_THRESHOLD = 0.55
+
+    song_name = search
+    normalized_song_name = _normalize_search_text(song_name)
+    if not normalized_song_name:
+        return []
+
+    charts = session.exec(select(Chart).where(Chart.title_url.is_not(None))).all()
+
+    ranked_titles: list[tuple[float, str]] = []
+    for chart in charts:
+        chart_song_name = _normalize_search_text(chart.song_name)
+        score = _string_similarity(normalized_song_name, chart_song_name)
+        if score >= SIMILARITY_SCORE_THRESHOLD and chart.title_url is not None:
+            ranked_titles.append((score, chart.title_url))
+
+    ranked_titles.sort(key=lambda item: item[0], reverse=True)
+    return [title_url for _, title_url in ranked_titles]
 
 
 @router.get("/{chart_id}", response_model=ChartPublic)
@@ -110,3 +137,53 @@ async def upload_chart_title(
     session.refresh(db_chart)
 
     return db_chart
+
+
+def _string_similarity(left: str, right: str) -> float:
+    if not left and not right:
+        return 1.0
+    if not left or not right:
+        return 0.0
+
+    if left in right or right in left:
+        return 1.0
+
+    max_length = max(len(left), len(right))
+    distance = _levenshtein_distance(left, right)
+    return max(0.0, 1.0 - (distance / max_length))
+
+
+def _levenshtein_distance(left: str, right: str) -> int:
+    if left == right:
+        return 0
+    if not left:
+        return len(right)
+    if not right:
+        return len(left)
+
+    if len(left) < len(right):
+        left, right = right, left
+
+    previous_row = list(range(len(right) + 1))
+    for left_index, left_char in enumerate(left, start=1):
+        current_row = [left_index]
+        for right_index, right_char in enumerate(right, start=1):
+            insertion_cost = previous_row[right_index] + 1
+            deletion_cost = current_row[right_index - 1] + 1
+            substitution_cost = previous_row[right_index - 1]
+            if left_char != right_char:
+                substitution_cost += 1
+
+            current_row.append(min(insertion_cost, deletion_cost, substitution_cost))
+        previous_row = current_row
+
+    return previous_row[-1]
+
+
+def _normalize_search_text(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text)
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    normalized = normalized.casefold()
+    normalized = re.sub(r"[^a-z0-9\s]", " ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized.strip()
