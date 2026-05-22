@@ -95,7 +95,7 @@ async def delete_chart(chart_id: uuid.UUID, session: SessionDep, user: UserDep):
 async def upload_chart_title(
     chart_id: uuid.UUID, title_file: Annotated[bytes, File()], session: SessionDep
 ):
-    """Upload a song title"""
+    """Upload a chart title"""
     db_chart = session.get(Chart, chart_id)
     if not db_chart:
         raise HTTPException(

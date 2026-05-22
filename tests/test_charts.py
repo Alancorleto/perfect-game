@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock, patch
+
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -317,6 +319,44 @@ def test_delete_chart_not_found(session: Session, client: TestClient):
 
     response = client.delete(
         "/charts/00000000-0000-0000-0000-000000000000", headers=headers
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+# ---------------------------------------------------------------------------
+# POST /charts/{chart_id}/title
+# ---------------------------------------------------------------------------
+
+
+def test_upload_chart_title(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    chart = create_chart_in_db(session, song_name="Test Song", creator=user)
+
+    with patch(
+        "routers.charts.upload_image",
+        new=AsyncMock(return_value="https://example.com/chart-title.png"),
+    ):
+        response = client.post(
+            f"/charts/{chart.id}/title",
+            files={"title_file": ("title.png", b"fake image bytes", "image/png")},
+            headers=headers,
+        )
+
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["title_url"] == "https://example.com/chart-title.png"
+
+
+def test_upload_chart_title_not_found(client: TestClient):
+    response = client.post(
+        "/charts/00000000-0000-0000-0000-000000000000/title",
+        files={"title_file": ("title.png", b"fake image bytes", "image/png")},
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
