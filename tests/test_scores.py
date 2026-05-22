@@ -5,8 +5,8 @@ from sqlmodel import Session
 from tests.helpers import (
     add_player_to_set_in_db,
     create_category_in_db,
+    create_chart_in_db,
     create_chart_slot_in_db,
-    create_chart_with_song_in_db,
     create_player_in_db,
     create_round_in_db,
     create_score_in_db,
@@ -46,7 +46,7 @@ def create_editable_score_context(session: Session):
     round = create_round_in_db(session, category=category)
     set = create_set_in_db(session, round=round)
     player = create_player_in_db(session, nickname="PlayerA")
-    chart = create_chart_with_song_in_db(session, name="Song A")
+    chart = create_chart_in_db(session, creator=organizer, song_name="Song A")
     add_player_to_set_in_db(session, set=set, player=player)
     chart_slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
     score = create_score_in_db(
@@ -61,10 +61,13 @@ def create_editable_score_context(session: Session):
 
 
 def test_list_scores(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
-    chart_a = create_chart_with_song_in_db(session, name="Song A")
-    chart_b = create_chart_with_song_in_db(session, name="Song B")
+    chart_a = create_chart_in_db(session, creator=user, song_name="Song A")
+    chart_b = create_chart_in_db(session, creator=user, song_name="Song B")
     create_score_in_db(session, player=player_a, chart=chart_a, value=900000)
     create_score_in_db(session, player=player_b, chart=chart_b, value=850000)
 
@@ -94,8 +97,11 @@ def test_list_scores_empty(client: TestClient):
 
 
 def test_get_score(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
     player = create_player_in_db(session, nickname="PlayerA")
-    chart = create_chart_with_song_in_db(session, name="Song A")
+    chart = create_chart_in_db(session, creator=user, song_name="Song A")
     score = create_score_in_db(session, player=player, chart=chart, value=900000)
 
     response = client.get(f"/scores/{score.id}")
@@ -120,9 +126,11 @@ def test_get_score_not_found(client: TestClient):
 
 
 def test_create_score(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
     player = create_player_in_db(session, nickname="PlayerA")
-    chart = create_chart_with_song_in_db(session, name="Song A")
+    chart = create_chart_in_db(session, creator=user, song_name="Song A")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
@@ -165,8 +173,10 @@ def test_create_score_in_set(session: Session, client: TestClient):
 
 
 def test_create_score_player_not_found(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
-    chart = create_chart_with_song_in_db(session)
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    chart = create_chart_in_db(session, creator=user)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
@@ -193,9 +203,11 @@ def test_create_score_chart_not_found(session: Session, client: TestClient):
 
 
 def test_create_score_set_not_found(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
     player = create_player_in_db(session)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=user)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
@@ -213,13 +225,15 @@ def test_create_score_set_not_found(session: Session, client: TestClient):
 
 
 def test_create_score_in_set_unauthorized(session: Session, client: TestClient):
-    create_user_in_db(session, email="attacker@example.com", password="mypassword123")
+    attacker = create_user_in_db(
+        session, email="attacker@example.com", password="mypassword123"
+    )
     tournament = create_tournament_in_db(session)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
     set = create_set_in_db(session, round=round)
     player = create_player_in_db(session)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=attacker)
     add_player_to_set_in_db(session, set=set, player=player)
     create_chart_slot_in_db(session, set=set, chart=chart)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
@@ -253,7 +267,10 @@ def test_create_score_player_not_in_set(session: Session, client: TestClient):
 
 def test_create_score_chart_not_in_set(session: Session, client: TestClient):
     _, _, _, _, set, player, _, _, _ = create_editable_score_context(session)
-    other_chart = create_chart_with_song_in_db(session, name="Other Song")
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    other_chart = create_chart_in_db(session, creator=organizer, song_name="Other Song")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
@@ -285,8 +302,11 @@ def test_create_score_duplicate_for_player_and_order_index(
 
 
 def test_create_score_unauthenticated(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
     player = create_player_in_db(session)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=user)
 
     response = client.post(
         "/scores/",
@@ -297,9 +317,11 @@ def test_create_score_unauthenticated(session: Session, client: TestClient):
 
 
 def test_create_score_invalid_negative_value(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
     player = create_player_in_db(session)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=user)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
@@ -312,9 +334,11 @@ def test_create_score_invalid_negative_value(session: Session, client: TestClien
 
 
 def test_create_score_invalid_grade(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
     player = create_player_in_db(session)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=user)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
@@ -362,13 +386,15 @@ def test_update_score_not_found(session: Session, client: TestClient):
 
 
 def test_update_score_unauthorized(session: Session, client: TestClient):
-    create_user_in_db(session, email="attacker@example.com", password="mypassword123")
+    attacker = create_user_in_db(
+        session, email="attacker@example.com", password="mypassword123"
+    )
     tournament = create_tournament_in_db(session)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
     set = create_set_in_db(session, round=round)
     player = create_player_in_db(session)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=attacker)
     chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
     score = create_score_in_db(
         session, player=player, chart=chart, chart_slot=chart_slot
@@ -385,7 +411,7 @@ def test_update_score_unauthorized(session: Session, client: TestClient):
 
 
 def test_update_score_as_super_admin(session: Session, client: TestClient):
-    create_user_in_db(
+    admin = create_user_in_db(
         session,
         email="admin@example.com",
         password="mypassword123",
@@ -396,7 +422,7 @@ def test_update_score_as_super_admin(session: Session, client: TestClient):
     round = create_round_in_db(session, category=category)
     set = create_set_in_db(session, round=round)
     player = create_player_in_db(session)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=admin)
     chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
     score = create_score_in_db(
         session, player=player, chart=chart, chart_slot=chart_slot
@@ -414,9 +440,11 @@ def test_update_score_as_super_admin(session: Session, client: TestClient):
 
 
 def test_update_score_unlinked_score_forbidden(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
     player = create_player_in_db(session)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=user)
     score = create_score_in_db(session, player=player, chart=chart)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
@@ -477,13 +505,15 @@ def test_delete_score_not_found(session: Session, client: TestClient):
 
 
 def test_delete_score_unauthorized(session: Session, client: TestClient):
-    create_user_in_db(session, email="attacker@example.com", password="mypassword123")
+    attacker = create_user_in_db(
+        session, email="attacker@example.com", password="mypassword123"
+    )
     tournament = create_tournament_in_db(session)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
     set = create_set_in_db(session, round=round)
     player = create_player_in_db(session)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=attacker)
     chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
     score = create_score_in_db(
         session, player=player, chart=chart, chart_slot=chart_slot
@@ -496,7 +526,7 @@ def test_delete_score_unauthorized(session: Session, client: TestClient):
 
 
 def test_delete_score_as_super_admin(session: Session, client: TestClient):
-    create_user_in_db(
+    admin = create_user_in_db(
         session,
         email="admin@example.com",
         password="mypassword123",
@@ -507,7 +537,7 @@ def test_delete_score_as_super_admin(session: Session, client: TestClient):
     round = create_round_in_db(session, category=category)
     set = create_set_in_db(session, round=round)
     player = create_player_in_db(session)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=admin)
     chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
     score = create_score_in_db(
         session, player=player, chart=chart, chart_slot=chart_slot
@@ -520,9 +550,11 @@ def test_delete_score_as_super_admin(session: Session, client: TestClient):
 
 
 def test_delete_score_unlinked_score_forbidden(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
     player = create_player_in_db(session)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=user)
     score = create_score_in_db(session, player=player, chart=chart)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
@@ -540,9 +572,14 @@ def test_delete_score_unauthenticated(session: Session, client: TestClient):
 
 
 def test_delete_chart_cascade(session: Session, client: TestClient):
-    create_user_in_db(session, email="admin@example.com", password="mypassword123")
+    admin = create_user_in_db(
+        session,
+        email="admin@example.com",
+        password="mypassword123",
+        is_super_admin=True,
+    )
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=admin)
     score = create_score_in_db(
         session, player=create_player_in_db(session), chart=chart
     )

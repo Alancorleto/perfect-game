@@ -77,20 +77,16 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
     assert set_response.status_code == status.HTTP_200_OK
     set_id = set_response.json()["id"]
 
-    # Create a song that will be used by the chart.
-    song_response = client.post("/songs/", json={"name": "E2E Song"})
-    assert song_response.status_code == status.HTTP_200_OK
-    song_id = song_response.json()["id"]
-
     # Create a chart for the song.
     chart_response = client.post(
         "/charts/",
         json={
-            "song_id": song_id,
+            "song_name": "E2E Song",
             "mode": "single",
             "level": 15,
             "player_count": 1,
         },
+        headers=headers,
     )
     assert chart_response.status_code == status.HTTP_200_OK
     chart_id = chart_response.json()["id"]
@@ -173,17 +169,15 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
 # 9. Fetch the set results and verify that the ordering is by total score (sum of both charts) and not by input order, and that each player has results for both charts.
 def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     def create_song_chart(song_name: str, level: int) -> str:
-        song_response = client.post("/songs/", json={"name": song_name})
-        assert song_response.status_code == status.HTTP_200_OK
-
         chart_response = client.post(
             "/charts/",
             json={
-                "song_id": song_response.json()["id"],
+                "song_name": song_name,
                 "mode": "single",
                 "level": level,
                 "player_count": 1,
             },
+            headers=headers,
         )
         assert chart_response.status_code == status.HTTP_200_OK
         return chart_response.json()["id"]

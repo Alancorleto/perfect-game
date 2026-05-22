@@ -7,8 +7,8 @@ from models.set import SetFormat
 from tests.helpers import (
     add_player_to_set_in_db,
     create_category_in_db,
+    create_chart_in_db,
     create_chart_slot_in_db,
-    create_chart_with_song_in_db,
     create_player_in_db,
     create_round_in_db,
     create_score_in_db,
@@ -333,7 +333,7 @@ def test_delete_set_with_score(session: Session, client: TestClient):
         organizer_password="mypassword123",
     )
 
-    chart = create_chart_with_song_in_db(session, name="Song", level=10)
+    chart = create_chart_in_db(session, creator=user, song_name="Song", level=10)
 
     chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
 
@@ -453,13 +453,13 @@ def test_delete_tournament_cascade(session: Session, client: TestClient):
 
 
 def test_list_charts_for_set(session: Session, client: TestClient):
-    _, _, _, _, set = create_editable_set(
+    organizer, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_with_song_in_db(session, name="Song A")
-    chart_b = create_chart_with_song_in_db(session, name="Song B")
+    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
+    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
     create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
     create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
 
@@ -468,7 +468,7 @@ def test_list_charts_for_set(session: Session, client: TestClient):
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 2
-    names = [c["song"]["name"] for c in data]
+    names = [c["song_name"] for c in data]
     assert names[0] == "Song A"
     assert names[1] == "Song B"
 
@@ -498,13 +498,13 @@ def test_list_charts_for_set_not_found(client: TestClient):
 
 
 def test_add_chart_to_set(session: Session, client: TestClient):
-    _, _, _, _, set = create_editable_set(
+    organizer, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_with_song_in_db(session, name="Song A")
-    chart_b = create_chart_with_song_in_db(session, name="Song B")
+    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
+    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
     create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -516,12 +516,14 @@ def test_add_chart_to_set(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert [c["song"]["name"] for c in data] == ["Song A", "Song B"]
+    assert [c["song_name"] for c in data] == ["Song A", "Song B"]
 
 
 def test_add_chart_to_set_not_found(session: Session, client: TestClient):
-    chart = create_chart_with_song_in_db(session)
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    chart = create_chart_in_db(session, creator=user)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
@@ -534,12 +536,14 @@ def test_add_chart_to_set_not_found(session: Session, client: TestClient):
 
 
 def test_add_chart_to_set_unauthorized(session: Session, client: TestClient):
-    create_user_in_db(session, email="attacker@example.com", password="mypassword123")
+    attacker = create_user_in_db(
+        session, email="attacker@example.com", password="mypassword123"
+    )
     tournament = create_tournament_in_db(session)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
     set = create_set_in_db(session, round=round)
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=attacker)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
@@ -574,7 +578,10 @@ def test_add_chart_to_set_unauthenticated(session: Session, client: TestClient):
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart = create_chart_with_song_in_db(session)
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    chart = create_chart_in_db(session, creator=user)
 
     response = client.post(
         f"/sets/{set.id}/charts",
@@ -590,13 +597,13 @@ def test_add_chart_to_set_unauthenticated(session: Session, client: TestClient):
 
 
 def test_replace_chart_in_set(session: Session, client: TestClient):
-    _, _, _, _, set = create_editable_set(
+    organizer, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    old_chart = create_chart_with_song_in_db(session, name="Old Song")
-    new_chart = create_chart_with_song_in_db(session, name="New Song")
+    old_chart = create_chart_in_db(session, creator=organizer, song_name="Old Song")
+    new_chart = create_chart_in_db(session, creator=organizer, song_name="New Song")
     create_chart_slot_in_db(session, set=set, chart=old_chart, order_index=0)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -609,16 +616,16 @@ def test_replace_chart_in_set(session: Session, client: TestClient):
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 1
-    assert data[0]["song"]["name"] == "New Song"
+    assert data[0]["song_name"] == "New Song"
 
 
 def test_replace_chart_in_set_slot_not_found(session: Session, client: TestClient):
-    _, _, _, _, set = create_editable_set(
+    organizer, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    new_chart = create_chart_with_song_in_db(session, name="New Song")
+    new_chart = create_chart_in_db(session, creator=organizer, song_name="New Song")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
@@ -636,13 +643,13 @@ def test_replace_chart_in_set_slot_not_found(session: Session, client: TestClien
 
 
 def test_update_chart_order_in_set(session: Session, client: TestClient):
-    _, _, _, _, set = create_editable_set(
+    organizer, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_with_song_in_db(session, name="Song A")
-    chart_b = create_chart_with_song_in_db(session, name="Song B")
+    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
+    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
     create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
     create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
@@ -655,20 +662,20 @@ def test_update_chart_order_in_set(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert [c["song"]["name"] for c in data] == ["Song B", "Song A"]
+    assert [c["song_name"] for c in data] == ["Song B", "Song A"]
 
 
 def test_update_chart_order_in_set_with_three_charts(
     session: Session, client: TestClient
 ):
-    _, _, _, _, set = create_editable_set(
+    organizer, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_with_song_in_db(session, name="Song A")
-    chart_b = create_chart_with_song_in_db(session, name="Song B")
-    chart_c = create_chart_with_song_in_db(session, name="Song C")
+    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
+    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
+    chart_c = create_chart_in_db(session, creator=organizer, song_name="Song C")
     create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
     create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
     create_chart_slot_in_db(session, set=set, chart=chart_c, order_index=2)
@@ -682,16 +689,16 @@ def test_update_chart_order_in_set_with_three_charts(
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert [c["song"]["name"] for c in data] == ["Song C", "Song A", "Song B"]
+    assert [c["song_name"] for c in data] == ["Song C", "Song A", "Song B"]
 
 
 def test_update_chart_order_in_set_wrong_count(session: Session, client: TestClient):
-    _, _, _, _, set = create_editable_set(
+    organizer, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=organizer)
     create_chart_slot_in_db(session, set=set, chart=chart)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -707,12 +714,12 @@ def test_update_chart_order_in_set_wrong_count(session: Session, client: TestCli
 def test_update_chart_order_in_set_invalid_order_index(
     session: Session, client: TestClient
 ):
-    _, _, _, _, set = create_editable_set(
+    organizer, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart = create_chart_with_song_in_db(session)
+    chart = create_chart_in_db(session, creator=organizer)
     create_chart_slot_in_db(session, set=set, chart=chart)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -731,13 +738,13 @@ def test_update_chart_order_in_set_invalid_order_index(
 
 
 def test_remove_chart_from_set_with_no_scores(session: Session, client: TestClient):
-    _, _, _, _, set = create_editable_set(
+    organizer, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_with_song_in_db(session, name="Song A")
-    chart_b = create_chart_with_song_in_db(session, name="Song B")
+    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
+    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
     create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
     create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
@@ -750,18 +757,18 @@ def test_remove_chart_from_set_with_no_scores(session: Session, client: TestClie
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert [c["song"]["name"] for c in data] == ["Song B"]
+    assert [c["song_name"] for c in data] == ["Song B"]
 
 
 def test_remove_chart_from_set_with_score(session: Session, client: TestClient):
-    _, tournament, _, _, set = create_editable_set(
+    organizer, tournament, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
     player = create_player_in_db(session, guest_tournament=tournament)
 
-    chart = create_chart_with_song_in_db(session, name="Song")
+    chart = create_chart_in_db(session, creator=organizer, song_name="Song")
 
     chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
 
@@ -784,13 +791,13 @@ def test_remove_chart_from_set_with_score(session: Session, client: TestClient):
 
 
 def test_remove_chart_from_set_slot_not_found(session: Session, client: TestClient):
-    _, _, _, _, set = create_editable_set(
+    organizer, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_with_song_in_db(session, name="Song A")
-    chart_b = create_chart_with_song_in_db(session, name="Song B")
+    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
+    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
     create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
     create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
@@ -1086,15 +1093,15 @@ def test_remove_player_from_set_unauthorized(session: Session, client: TestClien
 
 
 def test_get_set_results_score_sum(session: Session, client: TestClient):
-    _, _, _, round, _ = create_editable_set(
+    organizer, _, _, round, _ = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
     set = create_set_in_db(session, round=round, format=SetFormat.SCORE_SUM)
 
-    chart_a = create_chart_with_song_in_db(session, name="Song A")
-    chart_b = create_chart_with_song_in_db(session, name="Song B")
+    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
+    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
 
     slot_a = create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
     slot_b = create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
@@ -1129,13 +1136,13 @@ def test_get_set_results_score_sum(session: Session, client: TestClient):
 
 
 def test_get_set_results_battle(session: Session, client: TestClient):
-    _, _, _, round, _ = create_editable_set(
+    organizer, _, _, round, _ = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
     set = create_set_in_db(session, round=round, format=SetFormat.BATTLE)
-    chart = create_chart_with_song_in_db(session, name="Battle Song")
+    chart = create_chart_in_db(session, creator=organizer, song_name="Battle Song")
     slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
 
     player_a = create_player_in_db(session, nickname="PlayerA")
@@ -1165,13 +1172,13 @@ def test_get_set_results_battle(session: Session, client: TestClient):
 def test_get_set_results_battle_tie_scores_no_points(
     session: Session, client: TestClient
 ):
-    _, _, _, round, _ = create_editable_set(
+    organizer, _, _, round, _ = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
     set = create_set_in_db(session, round=round, format=SetFormat.BATTLE)
-    chart = create_chart_with_song_in_db(session, name="Tie Song")
+    chart = create_chart_in_db(session, creator=organizer, song_name="Tie Song")
     slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
 
     player_a = create_player_in_db(session, nickname="PlayerA")

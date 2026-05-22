@@ -10,7 +10,6 @@ from models.score import Grade, Score
 from models.score_entry import ScoreEntry
 from models.set import Set, SetFormat
 from models.set_player import SetPlayerLink
-from models.song import Song
 from models.tournament import Tournament
 from models.tournament_organizer import TournamentOrganizer
 from models.user import User
