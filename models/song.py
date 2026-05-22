@@ -21,7 +21,7 @@ class Song(SongBase, table=True):
     )
 
     # This is not used but needed by SQLModel to work properly with cascade delete
-    charts: list["Chart"] = Relationship(back_populates="song", cascade_delete=True)
+    # charts: list["Chart"] = Relationship(back_populates="song", cascade_delete=True)
 
     def can_be_deleted(self, user: User) -> bool:
         return user.is_super_admin

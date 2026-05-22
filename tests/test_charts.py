@@ -2,8 +2,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from models.chart import Chart, Mode
-from tests.helpers import create_chart_in_db, create_song_in_db
+from models.chart import Mode
+from tests.helpers import create_chart_in_db, create_user_in_db, get_auth_headers
 
 # ---------------------------------------------------------------------------
 # GET /charts/
@@ -11,26 +11,43 @@ from tests.helpers import create_chart_in_db, create_song_in_db
 
 
 def test_list_charts(session: Session, client: TestClient):
-    song_a = create_song_in_db(session, name="Song A")
-    song_b = create_song_in_db(session, name="Song B")
-    create_chart_in_db(session, song=song_a, mode=Mode.SINGLE, level=10)
-    create_chart_in_db(session, song=song_b, mode=Mode.DOUBLE, level=15)
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+    create_chart_in_db(
+        session,
+        creator=user,
+        song_name="Song A",
+        mode=Mode.SINGLE,
+        level=10,
+    )
+    create_chart_in_db(
+        session,
+        creator=user,
+        song_name="Song B",
+        mode=Mode.DOUBLE,
+        level=15,
+    )
 
-    response = client.get("/charts/")
+    response = client.get("/charts/", headers=headers)
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 2
     levels = [c["level"] for c in data]
-    song_names = [c["song"]["name"] for c in data]
+    song_names = [c["song_name"] for c in data]
     assert 10 in levels
     assert 15 in levels
     assert "Song A" in song_names
     assert "Song B" in song_names
 
 
-def test_list_charts_empty(client: TestClient):
-    response = client.get("/charts/")
+def test_list_charts_empty(session: Session, client: TestClient):
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.get("/charts/", headers=headers)
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
@@ -42,12 +59,20 @@ def test_list_charts_empty(client: TestClient):
 
 
 def test_get_chart(session: Session, client: TestClient):
-    song = create_song_in_db(session, name="My Song")
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
     chart = create_chart_in_db(
-        session, song=song, mode=Mode.DOUBLE, level=18, player_count=2
+        session,
+        creator=user,
+        song_name="My Song",
+        mode=Mode.DOUBLE,
+        level=18,
+        player_count=2,
     )
 
-    response = client.get(f"/charts/{chart.id}")
+    response = client.get(f"/charts/{chart.id}", headers=headers)
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -55,12 +80,16 @@ def test_get_chart(session: Session, client: TestClient):
     assert data["mode"] == "double"
     assert data["level"] == 18
     assert data["player_count"] == 2
-    assert data["song"]["id"] == str(song.id)
-    assert data["song"]["name"] == "My Song"
+    assert data["song_name"] == "My Song"
 
 
-def test_get_chart_not_found(client: TestClient):
-    response = client.get("/charts/00000000-0000-0000-0000-000000000000")
+def test_get_chart_not_found(session: Session, client: TestClient):
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.get(
+        "/charts/00000000-0000-0000-0000-000000000000", headers=headers
+    )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -71,16 +100,18 @@ def test_get_chart_not_found(client: TestClient):
 
 
 def test_create_chart(session: Session, client: TestClient):
-    song = create_song_in_db(session, name="New Chart Song")
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
         "/charts/",
         json={
-            "song_id": str(song.id),
+            "song_name": "New Chart Song",
             "mode": "single_performance",
             "level": 20,
             "player_count": 1,
         },
+        headers=headers,
     )
     data = response.json()
 
@@ -89,57 +120,68 @@ def test_create_chart(session: Session, client: TestClient):
     assert data["mode"] == "single_performance"
     assert data["level"] == 20
     assert data["player_count"] == 1
-    assert data["song"]["id"] == str(song.id)
-    assert data["song"]["name"] == "New Chart Song"
+    assert data["song_name"] == "New Chart Song"
 
 
 def test_create_chart_with_defaults(session: Session, client: TestClient):
-    song = create_song_in_db(session, name="Default Chart Song")
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
-    response = client.post("/charts/", json={"song_id": str(song.id)})
+    response = client.post(
+        "/charts/", json={"song_name": "Default Chart Song"}, headers=headers
+    )
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert data["mode"] == "single"
     assert data["level"] == 1
     assert data["player_count"] == 1
-    assert data["song"]["id"] == str(song.id)
+    assert data["song_name"] == "Default Chart Song"
 
 
-def test_create_chart_missing_song_id(client: TestClient):
-    response = client.post("/charts/", json={"level": 10})
+def test_create_chart_missing_song_id(session: Session, client: TestClient):
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.post("/charts/", json={"level": 10}, headers=headers)
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_chart_invalid_mode(session: Session, client: TestClient):
-    song = create_song_in_db(session, name="Invalid Mode Song")
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
         "/charts/",
-        json={"song_id": str(song.id), "mode": "invalid", "level": 10},
+        json={"song_name": "Invalid Mode Song", "mode": "invalid", "level": 10},
+        headers=headers,
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_chart_invalid_level(session: Session, client: TestClient):
-    song = create_song_in_db(session, name="Invalid Level Song")
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
         "/charts/",
-        json={"song_id": str(song.id), "level": 0},
+        json={"song_name": "Invalid Level Song", "level": 0},
+        headers=headers,
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_chart_invalid_player_count(session: Session, client: TestClient):
-    song = create_song_in_db(session, name="Invalid Player Count Song")
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
         "/charts/",
-        json={"song_id": str(song.id), "player_count": 0},
+        json={"song_name": "Invalid Player Count Song", "player_count": 0},
+        headers=headers,
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
@@ -147,12 +189,13 @@ def test_create_chart_invalid_player_count(session: Session, client: TestClient)
 
 def test_create_chart_with_invalid_level(session: Session, client: TestClient):
     """Test creating a chart with an invalid level (e.g., negative or too high)."""
-    song_response = client.post("/songs/", json={"name": "Test Song"})
-    song_id = song_response.json()["id"]
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
         "/charts/",
-        json={"song_id": song_id, "mode": "single", "level": -1},
+        json={"song_name": "Invalid Level Song", "mode": "single", "level": -1},
+        headers=headers,
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
@@ -164,12 +207,22 @@ def test_create_chart_with_invalid_level(session: Session, client: TestClient):
 
 
 def test_update_chart(session: Session, client: TestClient):
-    song = create_song_in_db(session, name="Update Song")
-    chart = create_chart_in_db(session, song=song, mode=Mode.SINGLE, level=8)
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+    chart = create_chart_in_db(
+        session,
+        creator=user,
+        song_name="Update Song",
+        mode=Mode.SINGLE,
+        level=8,
+    )
 
     response = client.patch(
         f"/charts/{chart.id}",
         json={"mode": "double_performance", "level": 17, "player_count": 2},
+        headers=headers,
     )
     data = response.json()
 
@@ -177,16 +230,24 @@ def test_update_chart(session: Session, client: TestClient):
     assert data["mode"] == "double_performance"
     assert data["level"] == 17
     assert data["player_count"] == 2
-    assert data["song"]["id"] == str(song.id)
+    assert data["song_name"] == "Update Song"
 
 
 def test_update_chart_partial(session: Session, client: TestClient):
-    song = create_song_in_db(session, name="Partial Update Song")
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
     chart = create_chart_in_db(
-        session, song=song, mode=Mode.COOP, level=12, player_count=3
+        session,
+        creator=user,
+        song_name="Partial Update Song",
+        mode=Mode.COOP,
+        level=12,
+        player_count=3,
     )
 
-    response = client.patch(f"/charts/{chart.id}", json={"level": 16})
+    response = client.patch(f"/charts/{chart.id}", json={"level": 16}, headers=headers)
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -195,20 +256,29 @@ def test_update_chart_partial(session: Session, client: TestClient):
     assert data["player_count"] == 3
 
 
-def test_update_chart_not_found(client: TestClient):
+def test_update_chart_not_found(session: Session, client: TestClient):
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
     response = client.patch(
         "/charts/00000000-0000-0000-0000-000000000000",
         json={"level": 12},
+        headers=headers,
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_update_chart_invalid_mode(session: Session, client: TestClient):
-    song = create_song_in_db(session, name="Invalid Update Song")
-    chart = create_chart_in_db(session, song=song)
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+    chart = create_chart_in_db(session, creator=user, song_name="Invalid Update Song")
 
-    response = client.patch(f"/charts/{chart.id}", json={"mode": "invalid"})
+    response = client.patch(
+        f"/charts/{chart.id}", json={"mode": "invalid"}, headers=headers
+    )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
@@ -218,19 +288,35 @@ def test_update_chart_invalid_mode(session: Session, client: TestClient):
 # ---------------------------------------------------------------------------
 
 
-def test_delete_chart_not_found(client: TestClient):
-    response = client.delete("/charts/00000000-0000-0000-0000-000000000000")
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_delete_song_cascade(session: Session, client: TestClient):
-    song = create_song_in_db(session, name="Delete Song")
-    chart = create_chart_in_db(session, song=song)
+def test_delete_chart(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session,
+        email="admin@example.com",
+        password="mypassword123",
+        is_super_admin=True,
+    )
+    headers = get_auth_headers(client, "admin@example.com", "mypassword123")
+    chart = create_chart_in_db(session, creator=user, song_name="Delete Chart")
     chart_id = chart.id
 
-    response = client.delete(f"/songs/{song.id}")
+    response = client.delete(f"/charts/{chart_id}", headers=headers)
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    get_response = client.get(f"/charts/{chart_id}")
+    get_response = client.get(f"/charts/{chart_id}", headers=headers)
     assert get_response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_chart_not_found(session: Session, client: TestClient):
+    create_user_in_db(
+        session,
+        email="admin@example.com",
+        password="mypassword123",
+        is_super_admin=True,
+    )
+    headers = get_auth_headers(client, "admin@example.com", "mypassword123")
+
+    response = client.delete(
+        "/charts/00000000-0000-0000-0000-000000000000", headers=headers
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND

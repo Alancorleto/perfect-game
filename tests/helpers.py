@@ -60,42 +60,26 @@ def create_player_in_db(
     return player
 
 
-def create_song_in_db(
-    session: Session,
-    name: str = "Test Song",
-    title_url: str | None = None,
-) -> Song:
-    """Creates a song directly in the test database."""
-    song = Song(name=name, title_url=title_url)
-    session.add(song)
-    session.commit()
-    session.refresh(song)
-    return song
-
-
 def create_chart_in_db(
     session: Session,
-    song: Song,
+    creator: User,
+    song_name: str = "Song",
     mode: Mode = Mode.SINGLE,
     level: int = 1,
     player_count: int = 1,
 ) -> Chart:
     """Creates a chart directly in the test database."""
     chart = Chart(
-        song_id=song.id,
+        song_name=song_name,
         mode=mode,
         level=level,
         player_count=player_count,
+        creator_id=creator.id,
     )
     session.add(chart)
     session.commit()
     session.refresh(chart)
     return chart
-
-
-def create_chart_with_song_in_db(session: Session, name: str = "Song", level: int = 10):
-    song = create_song_in_db(session, name=name)
-    return create_chart_in_db(session, song=song, level=level)
 
 
 def create_category_in_db(
