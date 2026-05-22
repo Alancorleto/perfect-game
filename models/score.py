@@ -4,9 +4,8 @@ from enum import Enum
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.chart import Chart, ChartPublic
-from models.chart_slot import ChartSlot
+from models.chart_slot import ChartSlot, ChartSlotPublic
 from models.player import Player, PlayerPublic
-from models.score_entry import ScoreEntry
 from models.user import User
 
 
@@ -50,12 +49,11 @@ class Score(ScoreBase, table=True):
     )
     player_id: uuid.UUID = Field(foreign_key="player.id", ondelete="CASCADE")
     chart_id: uuid.UUID = Field(foreign_key="chart.id", ondelete="CASCADE")
+    chart_slot_id: uuid.UUID = Field(foreign_key="chartslot.id", ondelete="CASCADE")
 
     player: Player = Relationship(back_populates="scores")
     chart: Chart = Relationship(back_populates="scores")
-    chart_slot: ChartSlot | None = Relationship(
-        back_populates="scores", link_model=ScoreEntry
-    )
+    chart_slot: ChartSlot = Relationship(back_populates="scores")
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.chart_slot is not None and self.chart_slot.set.can_be_edited_by(
@@ -69,8 +67,7 @@ class Score(ScoreBase, table=True):
 class ScoreCreate(ScoreBase):
     player_id: uuid.UUID
     chart_id: uuid.UUID
-    set_id: uuid.UUID | None = None
-    order_index: int | None = None
+    chart_slot_id: uuid.UUID
 
 
 class ScorePublic(ScoreBase):
@@ -78,6 +75,7 @@ class ScorePublic(ScoreBase):
 
     player: PlayerPublic
     chart: ChartPublic
+    chart_slot: ChartSlotPublic
 
 
 class ScoreUpdate(SQLModel):

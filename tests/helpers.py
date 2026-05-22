@@ -167,13 +167,14 @@ def create_score_in_db(
     session: Session,
     player: Player,
     chart: Chart,
+    chart_slot: ChartSlot,
     value: int = 1000000,
-    chart_slot: ChartSlot | None = None,
 ) -> Score:
     """Creates a score directly in the test database."""
     score = Score(
         player_id=player.id,
         chart_id=chart.id,
+        chart_slot_id=chart_slot.id,
         value=value,
         perfect=100,
         great=0,
@@ -189,11 +190,12 @@ def create_score_in_db(
     session.commit()
     session.refresh(score)
 
-    if chart_slot:
-        score_entry = ScoreEntry(chart_slot_id=chart_slot.id, score_id=score.id)
-        session.add(score_entry)
-        session.commit()
-        session.refresh(score)
+    score_entry = ScoreEntry(
+        chart_slot_id=chart_slot.id, chart_id=chart.id, score_id=score.id
+    )
+    session.add(score_entry)
+    session.commit()
+    session.refresh(score)
 
     return score
 

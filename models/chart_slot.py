@@ -24,5 +24,15 @@ class ChartSlot(SQLModel, table=True):
         link_model=ScoreEntry, back_populates="chart_slot"
     )
 
+    def can_be_edited_by(self, user: User) -> bool:
+        return self.set.can_be_edited_by(user)
+
     def can_be_deleted(self, user: User) -> bool:
         return user.is_super_admin or len(self.scores) == 0
+
+
+class ChartSlotPublic(SQLModel):
+    id: uuid.UUID
+    set_id: uuid.UUID
+    chart_id: uuid.UUID | None
+    order_index: int

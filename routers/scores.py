@@ -5,9 +5,9 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.chart import Chart
+from models.chart_slot import ChartSlot
 from models.player import Player
 from models.score import Score, ScoreCreate, ScorePublic, ScoreUpdate
-from models.set import Set
 from routers.users import UserDep
 
 router = APIRouter(prefix="/scores", tags=["scores"])
@@ -46,63 +46,49 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
             status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
         )
 
-    db_score = Score.model_validate(score)
-    session.add(db_score)
-
-    if score.set_id is not None and score.order_index is not None:
-        db_set = session.get(Set, score.set_id)
-        if not db_set:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
-            )
-
-        if not db_set.can_be_edited_by(user):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not an organizer for this tournament",
-            )
-
-        if not any(link.player_id == score.player_id for link in db_set.player_links):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Player is not in the set",
-            )
-
-        if score.chart not in db_set.charts:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Chart {score.chart} is not in the set",
-            )
-
-        chart_slot = next(
-            chart_slot
-            for chart_slot in db_set.chart_slots
-            if chart_slot.order_index == score.order_index
+    db_chart_slot = session.get(ChartSlot, score.chart_slot_id)
+    if not db_chart_slot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chart slot not found"
         )
 
-        if not chart_slot:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Column with index {score.order_index} is not in the set",
-            )
+    if not db_chart_slot.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
+        )
 
-        if chart_slot.chart is not None and chart_slot.chart != score.chart:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Chart {score.chart} does not correspond with column {score.order_index}",
-            )
+    if not any(
+        link.player_id == score.player_id for link in db_chart_slot.set.player_links
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Player is not in the set",
+        )
 
-        if any(
-            score.player_id == chart_slot_score.player_id
-            for chart_slot_score in chart_slot.scores
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A score already exists for this player, set, and order index",
-            )
+    if db_chart not in db_chart_slot.set.charts:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chart {db_chart} is not in the set",
+        )
 
-        chart_slot.scores.append(db_score)
+    if db_chart_slot.chart is not None and db_chart_slot.chart != db_chart:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chart {db_chart} does not correspond with column {db_chart_slot.order_index}",
+        )
 
+    if any(
+        score.player_id == chart_slot_score.player_id
+        for chart_slot_score in db_chart_slot.scores
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A score already exists for this player and chart slot",
+        )
+
+    db_score = Score.model_validate(score)
+    session.add(db_score)
     session.commit()
     session.refresh(db_score)
     return db_score
