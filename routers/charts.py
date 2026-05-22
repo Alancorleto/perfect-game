@@ -60,10 +60,7 @@ async def get_chart(chart_id: uuid.UUID, session: SessionDep):
 @router.post("/", response_model=ChartPublic)
 async def create_chart(chart: ChartCreate, session: SessionDep, user: UserDep):
     """Create a new chart"""
-
-    chart_data = chart.model_dump()
-    chart_data["creator_id"] = user.id
-    db_chart = Chart.model_validate(chart_data)
+    db_chart = Chart.model_validate(chart)
 
     session.add(db_chart)
     session.commit()

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
+from models.chart import Chart
 from models.round import Round
 from models.user import User
 
@@ -36,6 +37,7 @@ class Set(SetBase, table=True):
     player_links: list["SetPlayerLink"] = Relationship(
         back_populates="set", cascade_delete=True
     )
+    charts: list[Chart] = Relationship(back_populates="set")
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.round.can_be_edited_by(user)

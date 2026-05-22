@@ -122,7 +122,7 @@ async def list_charts_for_set(set_id: uuid.UUID, session: SessionDep):
 
 @router.post("/{set_id}/charts", response_model=list[ChartPublic])
 async def add_chart_to_set(
-    set_id: uuid.UUID, chart_id: uuid.UUID, session: SessionDep, user: UserDep
+    set_id: uuid.UUID, chart_id: uuid.UUID | None, session: SessionDep, user: UserDep
 ):
     """Add a chart to a set"""
     db_set = session.get(Set, set_id)

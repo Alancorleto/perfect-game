@@ -8,6 +8,7 @@ from models.user import User
 
 if TYPE_CHECKING:
     from models.score import Score
+    from models.set import Set
 
 
 class Mode(Enum):
@@ -32,26 +33,27 @@ class Chart(ChartBase, table=True):
         default_factory=uuid.uuid4,
         primary_key=True,
     )
-    creator_id: uuid.UUID = Field(foreign_key="user.id")
+    set_id: uuid.UUID = Field(foreign_key="set.id")
 
-    creator: User = Relationship()
+    set: "Set" = Relationship(back_populates="charts")
 
     # This is not used but needed by SQLModel to work properly with cascade delete
     scores: list["Score"] = Relationship(back_populates="chart", cascade_delete=True)
 
     def can_be_edited_by(self, user: User) -> bool:
-        return user.is_super_admin or user == self.creator
+        return user.is_super_admin or self.set.can_be_edited_by(user)
 
     def can_be_deleted(self, user: User) -> bool:
         return user.is_super_admin
 
 
 class ChartCreate(ChartBase):
-    pass
+    set_id: uuid.UUID
 
 
 class ChartPublic(ChartBase):
     id: uuid.UUID
+    set_id: uuid.UUID
 
 
 class ChartUpdate(SQLModel):

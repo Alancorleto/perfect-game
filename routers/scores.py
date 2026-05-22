@@ -7,7 +7,6 @@ from database import SessionDep
 from models.chart import Chart
 from models.player import Player
 from models.score import Score, ScoreCreate, ScorePublic, ScoreUpdate
-from models.score_entry import ScoreEntry
 from models.set import Set
 from routers.users import UserDep
 
@@ -50,7 +49,6 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
     db_score = Score.model_validate(score)
     session.add(db_score)
 
-    # Add the score to an existing set if set_id and order_index are provided.
     if score.set_id is not None and score.order_index is not None:
         db_set = session.get(Set, score.set_id)
         if not db_set:
@@ -70,14 +68,10 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
                 detail="Player is not in the set",
             )
 
-        if not any(
-            chart_slot.chart_id == score.chart_id
-            and chart_slot.order_index == score.order_index
-            for chart_slot in db_set.chart_slots
-        ):
+        if score.chart not in db_set.charts:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Chart with index {score.order_index} is not in the set",
+                detail=f"Chart {score.chart} is not in the set",
             )
 
         chart_slot = next(
@@ -85,6 +79,18 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
             for chart_slot in db_set.chart_slots
             if chart_slot.order_index == score.order_index
         )
+
+        if not chart_slot:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Column with index {score.order_index} is not in the set",
+            )
+
+        if chart_slot.chart is not None and chart_slot.chart != score.chart:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Chart {score.chart} does not correspond with column {score.order_index}",
+            )
 
         if any(
             score.player_id == chart_slot_score.player_id

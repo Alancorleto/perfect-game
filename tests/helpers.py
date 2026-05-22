@@ -61,11 +61,12 @@ def create_player_in_db(
 
 def create_chart_in_db(
     session: Session,
-    creator: User,
+    set: Set,
     song_name: str = "Song",
     mode: Mode = Mode.SINGLE,
     level: int = 1,
     player_count: int = 1,
+    title_url: str | None = None,
 ) -> Chart:
     """Creates a chart directly in the test database."""
     chart = Chart(
@@ -73,7 +74,8 @@ def create_chart_in_db(
         mode=mode,
         level=level,
         player_count=player_count,
-        creator_id=creator.id,
+        set_id=set.id,
+        title_url=title_url,
     )
     session.add(chart)
     session.commit()
