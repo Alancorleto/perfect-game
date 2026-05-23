@@ -2,6 +2,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from models import chart_slot
 from models.round import RoundState
 from models.set import SetFormat
 from tests.helpers import (
@@ -505,13 +506,17 @@ def test_update_chart_order_in_set(session: Session, client: TestClient):
     )
     chart_a = create_chart_in_db(session, set=set, song_name="Song A")
     chart_b = create_chart_in_db(session, set=set, song_name="Song B")
-    create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
-    create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
+    chart_slot_a = create_chart_slot_in_db(
+        session, set=set, chart=chart_a, order_index=0
+    )
+    chart_slot_b = create_chart_slot_in_db(
+        session, set=set, chart=chart_b, order_index=1
+    )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
         f"/sets/{set.id}/chart_slots/order",
-        json=[1, 0],
+        json=[str(chart_slot_b.id), str(chart_slot_a.id)],
         headers=headers,
     )
     data = response.json()
@@ -531,14 +536,20 @@ def test_update_chart_order_in_set_with_three_charts(
     chart_a = create_chart_in_db(session, set=set, song_name="Song A")
     chart_b = create_chart_in_db(session, set=set, song_name="Song B")
     chart_c = create_chart_in_db(session, set=set, song_name="Song C")
-    create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
-    create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
-    create_chart_slot_in_db(session, set=set, chart=chart_c, order_index=2)
+    chart_slot_a = create_chart_slot_in_db(
+        session, set=set, chart=chart_a, order_index=0
+    )
+    chart_slot_b = create_chart_slot_in_db(
+        session, set=set, chart=chart_b, order_index=1
+    )
+    chart_slot_c = create_chart_slot_in_db(
+        session, set=set, chart=chart_c, order_index=2
+    )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
         f"/sets/{set.id}/chart_slots/order",
-        json=[2, 0, 1],
+        json=[str(chart_slot_c.id), str(chart_slot_a.id), str(chart_slot_b.id)],
         headers=headers,
     )
     data = response.json()
@@ -554,19 +565,19 @@ def test_update_chart_order_in_set_wrong_count(session: Session, client: TestCli
         organizer_password="mypassword123",
     )
     chart = create_chart_in_db(session, set=set)
-    create_chart_slot_in_db(session, set=set, chart=chart)
+    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
         f"/sets/{set.id}/chart_slots/order",
-        json=[0, 1],
+        json=[str(chart_slot.id), str(chart_slot.id)],
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_update_chart_order_in_set_invalid_order_index(
+def test_update_chart_order_in_set_fewer_chart_slots(
     session: Session, client: TestClient
 ):
     organizer, _, _, _, set = create_editable_set(
@@ -574,13 +585,16 @@ def test_update_chart_order_in_set_invalid_order_index(
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart = create_chart_in_db(session, set=set)
-    create_chart_slot_in_db(session, set=set, chart=chart)
+    chart_a = create_chart_in_db(session, set=set)
+    chart_slot_a = create_chart_slot_in_db(session, set=set, chart=chart_a)
+    chart_b = create_chart_in_db(session, set=set)
+    create_chart_slot_in_db(session, set=set, chart=chart_b)
+
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
         f"/sets/{set.id}/chart_slots/order",
-        json=[1],
+        json=[str(chart_slot_a.id)],
         headers=headers,
     )
 

@@ -1,4 +1,5 @@
 import uuid
+from xxlimited import new
 
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
@@ -122,7 +123,7 @@ async def list_chart_slots_for_set(set_id: uuid.UUID, session: SessionDep):
 @router.put("/{set_id}/chart_slots/order", response_model=list[ChartSlotPublic])
 async def update_chart_slot_order_in_set(
     set_id: uuid.UUID,
-    new_order_indexes: list[int],
+    new_order: list[uuid.UUID],
     session: SessionDep,
     user: UserDep,
 ):
@@ -138,16 +139,22 @@ async def update_chart_slot_order_in_set(
             detail="You are not an organizer for this tournament",
         )
 
-    chart_slots_by_order = {slot.order_index: slot for slot in db_set.chart_slots}
-
-    if set(new_order_indexes) != set(chart_slots_by_order):
+    if len(set(new_order)) != len(new_order):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Chart slot order must contain each current order index exactly once",
+            detail="Chart slot order must not contain duplicate ids",
         )
 
-    for new_index, old_index in enumerate(new_order_indexes):
-        chart_slot = chart_slots_by_order[old_index]
+    chart_slots_dict = {slot.id: slot for slot in db_set.chart_slots}
+
+    if set(new_order) != set(chart_slots_dict.keys()):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Chart slot order must have the same ids as the current chart slots",
+        )
+
+    for new_index, chart_slot_id in enumerate(new_order):
+        chart_slot = chart_slots_dict[chart_slot_id]
         chart_slot.order_index = new_index
         session.add(chart_slot)
 
