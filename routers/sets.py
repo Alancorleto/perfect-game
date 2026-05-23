@@ -4,8 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
-from models.chart import Chart, ChartPublic
-from models.chart_slot import ChartSlot
+from models.chart_slot import ChartSlot, ChartSlotPublic
 from models.player import Player, PlayerPublic
 from models.round import Round
 from models.set import (
@@ -108,8 +107,8 @@ async def delete_set(set_id: uuid.UUID, session: SessionDep, user: UserDep):
     session.commit()
 
 
-@router.get("/{set_id}/charts", response_model=list[ChartPublic])
-async def list_charts_for_set(set_id: uuid.UUID, session: SessionDep):
+@router.get("/{set_id}/chart_slots", response_model=list[ChartSlotPublic])
+async def list_chart_slots_for_set(set_id: uuid.UUID, session: SessionDep):
     """Get all charts for a set"""
     db_set = session.get(Set, set_id)
     if not db_set:
@@ -117,103 +116,11 @@ async def list_charts_for_set(set_id: uuid.UUID, session: SessionDep):
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
         )
 
-    return [chart_slot.chart for chart_slot in db_set.chart_slots]
+    return db_set.chart_slots
 
 
-@router.post("/{set_id}/charts", response_model=list[ChartPublic])
-async def add_chart_to_set(
-    set_id: uuid.UUID, chart_id: uuid.UUID | None, session: SessionDep, user: UserDep
-):
-    """Add a chart to a set"""
-    db_set = session.get(Set, set_id)
-    if not db_set:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
-        )
-
-    if not db_set.can_be_edited_by(user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
-        )
-
-    db_chart = session.get(Chart, chart_id)
-    if not db_chart:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
-        )
-
-    order_index = len(db_set.chart_slots)
-
-    chart_slot = ChartSlot(
-        set=db_set,
-        chart=db_chart,
-        order_index=order_index,
-    )
-
-    db_set.chart_slots.append(chart_slot)
-
-    session.add(chart_slot)
-    session.commit()
-    session.refresh(chart_slot)
-
-    sorted_chart_slots = sorted(db_set.chart_slots, key=lambda c: c.order_index)
-
-    return [chart_slot.chart for chart_slot in sorted_chart_slots]
-
-
-@router.put("/{set_id}/charts", response_model=list[ChartPublic])
-async def replace_chart_in_set(
-    set_id: uuid.UUID,
-    chart_order_index: int,
-    new_chart_id: uuid.UUID,
-    session: SessionDep,
-    user: UserDep,
-):
-    db_set = session.get(Set, set_id)
-    if not db_set:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
-        )
-
-    if not db_set.can_be_edited_by(user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
-        )
-
-    db_chart = session.get(Chart, new_chart_id)
-    if not db_chart:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
-        )
-
-    chart_slot = next(
-        (
-            chart_slot
-            for chart_slot in db_set.chart_slots
-            if chart_slot.order_index == chart_order_index
-        ),
-        None,
-    )
-    if not chart_slot:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chart slot not found"
-        )
-
-    chart_slot.chart = db_chart
-
-    session.add(chart_slot)
-    session.commit()
-    session.refresh(db_set)
-
-    sorted_chart_slots = sorted(db_set.chart_slots, key=lambda c: c.order_index)
-
-    return [chart_slot.chart for chart_slot in sorted_chart_slots]
-
-
-@router.put("/{set_id}/charts/order", response_model=list[ChartPublic])
-async def update_chart_order_in_set(
+@router.put("/{set_id}/chart_slots/order", response_model=list[ChartSlotPublic])
+async def update_chart_slot_order_in_set(
     set_id: uuid.UUID,
     new_order_indexes: list[int],
     session: SessionDep,
@@ -249,59 +156,7 @@ async def update_chart_order_in_set(
 
     sorted_chart_slots = sorted(db_set.chart_slots, key=lambda c: c.order_index)
 
-    return [chart_slot.chart for chart_slot in sorted_chart_slots]
-
-
-@router.delete("/{set_id}/charts", response_model=list[ChartPublic])
-async def remove_chart_from_set(
-    set_id: uuid.UUID, chart_order_index: int, session: SessionDep, user: UserDep
-):
-    """Remove a chart from a set."""
-    db_set = session.get(Set, set_id)
-    if not db_set:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
-        )
-
-    if not db_set.can_be_edited_by(user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
-        )
-
-    chart_slot = next(
-        (slot for slot in db_set.chart_slots if slot.order_index == chart_order_index),
-        None,
-    )
-    if not chart_slot:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"ChartSlot with order index {chart_order_index} not found",
-        )
-
-    if not chart_slot.can_be_deleted(user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not allowed to delete this chart from the set",
-        )
-
-    # Remove score entries associated with the chart slot
-    for score in chart_slot.scores:
-        session.delete(score)
-
-    session.delete(chart_slot)
-
-    for slot in db_set.chart_slots:
-        if slot.order_index > chart_order_index:
-            slot.order_index -= 1
-            session.add(slot)
-
-    session.commit()
-    session.refresh(db_set)
-
-    sorted_chart_slots = sorted(db_set.chart_slots, key=lambda c: c.order_index)
-
-    return [chart_slot.chart for chart_slot in sorted_chart_slots]
+    return sorted_chart_slots
 
 
 @router.post("/{set_id}/players/bulk", response_model=list[PlayerPublic])

@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from models.chart import Chart
-from models.score_entry import ScoreEntry
+from models.chart import Chart, ChartPublic
+from models.round import RoundState
 from models.set import Set
 from models.user import User
 
@@ -16,19 +16,30 @@ class ChartSlot(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     set_id: uuid.UUID = Field(foreign_key="set.id", ondelete="CASCADE")
     chart_id: uuid.UUID | None = Field(foreign_key="chart.id", ondelete="SET NULL")
-    order_index: int = Field(ge=0)
+    order_index: int = Field(ge=0, default=0)
 
     set: Set = Relationship(back_populates="chart_slots")
     chart: Chart | None = Relationship()
     scores: list["Score"] = Relationship(
-        link_model=ScoreEntry, back_populates="chart_slot"
+        back_populates="chart_slot", cascade_delete=True
     )
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.set.can_be_edited_by(user)
 
     def can_be_deleted(self, user: User) -> bool:
-        return user.is_super_admin or len(self.scores) == 0
+        return user.is_super_admin or (
+            self.can_be_edited_by(user) and self.set.round.state != RoundState.FINISHED
+        )
+
+
+class ChartSlotCreate(SQLModel):
+    set_id: uuid.UUID
+    chart_id: uuid.UUID | None = None
+
+
+class ChartSlotUpdate(SQLModel):
+    chart_id: uuid.UUID | None = None
 
 
 class ChartSlotPublic(SQLModel):
@@ -36,3 +47,5 @@ class ChartSlotPublic(SQLModel):
     set_id: uuid.UUID
     chart_id: uuid.UUID | None
     order_index: int
+
+    chart: ChartPublic | None = None

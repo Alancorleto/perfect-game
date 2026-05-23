@@ -333,7 +333,7 @@ def test_delete_set_with_score(session: Session, client: TestClient):
         organizer_password="mypassword123",
     )
 
-    chart = create_chart_in_db(session, creator=user, song_name="Song", level=10)
+    chart = create_chart_in_db(session, set=set, song_name="Song", level=10)
 
     chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
 
@@ -452,23 +452,23 @@ def test_delete_tournament_cascade(session: Session, client: TestClient):
 # ---------------------------------------------------------------------------
 
 
-def test_list_charts_for_set(session: Session, client: TestClient):
+def test_list_chart_slots_for_set(session: Session, client: TestClient):
     organizer, _, _, _, set = create_editable_set(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
-    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
+    chart_a = create_chart_in_db(session, set=set, song_name="Song A")
+    chart_b = create_chart_in_db(session, set=set, song_name="Song B")
     create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
     create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
 
-    response = client.get(f"/sets/{set.id}/charts")
+    response = client.get(f"/sets/{set.id}/chart_slots")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 2
-    names = [c["song_name"] for c in data]
+    names = [c["chart"]["song_name"] for c in data]
     assert names[0] == "Song A"
     assert names[1] == "Song B"
 
@@ -480,159 +480,14 @@ def test_list_charts_for_set_empty(session: Session, client: TestClient):
         organizer_password="mypassword123",
     )
 
-    response = client.get(f"/sets/{set.id}/charts")
+    response = client.get(f"/sets/{set.id}/chart_slots")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
 def test_list_charts_for_set_not_found(client: TestClient):
-    response = client.get("/sets/00000000-0000-0000-0000-000000000000/charts")
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-# ---------------------------------------------------------------------------
-# POST /sets/{set_id}/charts
-# ---------------------------------------------------------------------------
-
-
-def test_add_chart_to_set(session: Session, client: TestClient):
-    organizer, _, _, _, set = create_editable_set(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
-    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
-    create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(
-        f"/sets/{set.id}/charts",
-        params={"chart_id": str(chart_b.id)},
-        headers=headers,
-    )
-    data = response.json()
-
-    assert response.status_code == status.HTTP_200_OK
-    assert [c["song_name"] for c in data] == ["Song A", "Song B"]
-
-
-def test_add_chart_to_set_not_found(session: Session, client: TestClient):
-    user = create_user_in_db(
-        session, email="user@example.com", password="mypassword123"
-    )
-    chart = create_chart_in_db(session, creator=user)
-    headers = get_auth_headers(client, "user@example.com", "mypassword123")
-
-    response = client.post(
-        "/sets/00000000-0000-0000-0000-000000000000/charts",
-        params={"chart_id": str(chart.id)},
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_add_chart_to_set_unauthorized(session: Session, client: TestClient):
-    attacker = create_user_in_db(
-        session, email="attacker@example.com", password="mypassword123"
-    )
-    tournament = create_tournament_in_db(session)
-    category = create_category_in_db(session, tournament=tournament)
-    round = create_round_in_db(session, category=category)
-    set = create_set_in_db(session, round=round)
-    chart = create_chart_in_db(session, creator=attacker)
-    headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
-
-    response = client.post(
-        f"/sets/{set.id}/charts",
-        params={"chart_id": str(chart.id)},
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-def test_add_chart_to_set_chart_not_found(session: Session, client: TestClient):
-    _, _, _, _, set = create_editable_set(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(
-        f"/sets/{set.id}/charts",
-        params={"chart_id": "00000000-0000-0000-0000-000000000000"},
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_add_chart_to_set_unauthenticated(session: Session, client: TestClient):
-    _, _, _, _, set = create_editable_set(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    user = create_user_in_db(
-        session, email="user@example.com", password="mypassword123"
-    )
-    chart = create_chart_in_db(session, creator=user)
-
-    response = client.post(
-        f"/sets/{set.id}/charts",
-        params={"chart_id": str(chart.id)},
-    )
-
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-
-# ---------------------------------------------------------------------------
-# PUT /sets/{set_id}/charts
-# ---------------------------------------------------------------------------
-
-
-def test_replace_chart_in_set(session: Session, client: TestClient):
-    organizer, _, _, _, set = create_editable_set(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    old_chart = create_chart_in_db(session, creator=organizer, song_name="Old Song")
-    new_chart = create_chart_in_db(session, creator=organizer, song_name="New Song")
-    create_chart_slot_in_db(session, set=set, chart=old_chart, order_index=0)
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.put(
-        f"/sets/{set.id}/charts",
-        params={"chart_order_index": 0, "new_chart_id": str(new_chart.id)},
-        headers=headers,
-    )
-    data = response.json()
-
-    assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 1
-    assert data[0]["song_name"] == "New Song"
-
-
-def test_replace_chart_in_set_slot_not_found(session: Session, client: TestClient):
-    organizer, _, _, _, set = create_editable_set(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    new_chart = create_chart_in_db(session, creator=organizer, song_name="New Song")
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.put(
-        f"/sets/{set.id}/charts",
-        params={"chart_order_index": 0, "new_chart_id": str(new_chart.id)},
-        headers=headers,
-    )
+    response = client.get("/sets/00000000-0000-0000-0000-000000000000/chart_slots")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -648,21 +503,21 @@ def test_update_chart_order_in_set(session: Session, client: TestClient):
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
-    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
+    chart_a = create_chart_in_db(session, set=set, song_name="Song A")
+    chart_b = create_chart_in_db(session, set=set, song_name="Song B")
     create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
     create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/sets/{set.id}/charts/order",
+        f"/sets/{set.id}/chart_slots/order",
         json=[1, 0],
         headers=headers,
     )
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert [c["song_name"] for c in data] == ["Song B", "Song A"]
+    assert [c["chart"]["song_name"] for c in data] == ["Song B", "Song A"]
 
 
 def test_update_chart_order_in_set_with_three_charts(
@@ -673,23 +528,23 @@ def test_update_chart_order_in_set_with_three_charts(
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
-    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
-    chart_c = create_chart_in_db(session, creator=organizer, song_name="Song C")
+    chart_a = create_chart_in_db(session, set=set, song_name="Song A")
+    chart_b = create_chart_in_db(session, set=set, song_name="Song B")
+    chart_c = create_chart_in_db(session, set=set, song_name="Song C")
     create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
     create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
     create_chart_slot_in_db(session, set=set, chart=chart_c, order_index=2)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/sets/{set.id}/charts/order",
+        f"/sets/{set.id}/chart_slots/order",
         json=[2, 0, 1],
         headers=headers,
     )
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert [c["song_name"] for c in data] == ["Song C", "Song A", "Song B"]
+    assert [c["chart"]["song_name"] for c in data] == ["Song C", "Song A", "Song B"]
 
 
 def test_update_chart_order_in_set_wrong_count(session: Session, client: TestClient):
@@ -698,12 +553,12 @@ def test_update_chart_order_in_set_wrong_count(session: Session, client: TestCli
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart = create_chart_in_db(session, creator=organizer)
+    chart = create_chart_in_db(session, set=set)
     create_chart_slot_in_db(session, set=set, chart=chart)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/sets/{set.id}/charts/order",
+        f"/sets/{set.id}/chart_slots/order",
         json=[0, 1],
         headers=headers,
     )
@@ -719,96 +574,17 @@ def test_update_chart_order_in_set_invalid_order_index(
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart = create_chart_in_db(session, creator=organizer)
+    chart = create_chart_in_db(session, set=set)
     create_chart_slot_in_db(session, set=set, chart=chart)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/sets/{set.id}/charts/order",
+        f"/sets/{set.id}/chart_slots/order",
         json=[1],
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
-# ---------------------------------------------------------------------------
-# DELETE /sets/{set_id}/charts
-# ---------------------------------------------------------------------------
-
-
-def test_remove_chart_from_set_with_no_scores(session: Session, client: TestClient):
-    organizer, _, _, _, set = create_editable_set(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
-    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
-    create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
-    create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.delete(
-        f"/sets/{set.id}/charts",
-        params={"chart_order_index": 0},
-        headers=headers,
-    )
-    data = response.json()
-
-    assert response.status_code == status.HTTP_200_OK
-    assert [c["song_name"] for c in data] == ["Song B"]
-
-
-def test_remove_chart_from_set_with_score(session: Session, client: TestClient):
-    organizer, tournament, _, _, set = create_editable_set(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    player = create_player_in_db(session, guest_tournament=tournament)
-
-    chart = create_chart_in_db(session, creator=organizer, song_name="Song")
-
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
-
-    create_score_in_db(
-        session,
-        player=player,
-        chart=chart,
-        chart_slot=chart_slot,
-        value=1_000_000,
-    )
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.delete(
-        f"/sets/{set.id}/charts",
-        params={"chart_order_index": 0},
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-def test_remove_chart_from_set_slot_not_found(session: Session, client: TestClient):
-    organizer, _, _, _, set = create_editable_set(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
-    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
-    create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
-    create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.delete(
-        f"/sets/{set.id}/charts",
-        params={"chart_order_index": 2},
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
@@ -1100,8 +876,8 @@ def test_get_set_results_score_sum(session: Session, client: TestClient):
     )
     set = create_set_in_db(session, round=round, format=SetFormat.SCORE_SUM)
 
-    chart_a = create_chart_in_db(session, creator=organizer, song_name="Song A")
-    chart_b = create_chart_in_db(session, creator=organizer, song_name="Song B")
+    chart_a = create_chart_in_db(session, set=set, song_name="Song A")
+    chart_b = create_chart_in_db(session, set=set, song_name="Song B")
 
     slot_a = create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
     slot_b = create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
@@ -1142,7 +918,7 @@ def test_get_set_results_battle(session: Session, client: TestClient):
         organizer_password="mypassword123",
     )
     set = create_set_in_db(session, round=round, format=SetFormat.BATTLE)
-    chart = create_chart_in_db(session, creator=organizer, song_name="Battle Song")
+    chart = create_chart_in_db(session, set=set, song_name="Battle Song")
     slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
 
     player_a = create_player_in_db(session, nickname="PlayerA")
@@ -1178,7 +954,7 @@ def test_get_set_results_battle_tie_scores_no_points(
         organizer_password="mypassword123",
     )
     set = create_set_in_db(session, round=round, format=SetFormat.BATTLE)
-    chart = create_chart_in_db(session, creator=organizer, song_name="Tie Song")
+    chart = create_chart_in_db(session, set=set, song_name="Tie Song")
     slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
 
     player_a = create_player_in_db(session, nickname="PlayerA")

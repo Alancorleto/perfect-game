@@ -7,7 +7,6 @@ from models.chart_slot import ChartSlot
 from models.player import Player
 from models.round import Round, RoundState
 from models.score import Grade, Score
-from models.score_entry import ScoreEntry
 from models.set import Set, SetFormat
 from models.set_player import SetPlayerLink
 from models.tournament import Tournament
@@ -190,10 +189,7 @@ def create_score_in_db(
     session.commit()
     session.refresh(score)
 
-    score_entry = ScoreEntry(
-        chart_slot_id=chart_slot.id, chart_id=chart.id, score_id=score.id
-    )
-    session.add(score_entry)
+    session.add(score)
     session.commit()
     session.refresh(score)
 

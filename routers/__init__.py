@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from sqlalchemy.event import api
 
 from routers.categories import router as category_router
+from routers.chart_slots import router as chart_slot_router
 from routers.charts import router as chart_router
 from routers.players import router as player_router
 from routers.rounds import router as round_router
@@ -19,3 +20,4 @@ api_router.include_router(category_router)
 api_router.include_router(round_router)
 api_router.include_router(set_router)
 api_router.include_router(score_router)
+api_router.include_router(chart_slot_router)

@@ -548,11 +548,9 @@ def test_delete_chart_slot_cascade(session: Session, client: TestClient):
     )
 
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
-    response = client.delete(
-        f"/sets/{set.id}/charts", params={"chart_order_index": 0}, headers=headers
-    )
+    response = client.delete(f"/chart_slots/{chart_slot.id}", headers=headers)
 
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
     get_response = client.get(f"/scores/{score.id}", headers=headers)
     assert get_response.status_code == status.HTTP_404_NOT_FOUND
