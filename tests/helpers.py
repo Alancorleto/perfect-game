@@ -107,7 +107,12 @@ def create_round_in_db(
     state: RoundState = RoundState.NOT_STARTED,
 ) -> Round:
     """Creates a round directly in the test database."""
-    round = Round(name=name, state=state, category_id=category.id)
+    round = Round(
+        name=name,
+        state=state,
+        category_id=category.id,
+        order_index=len(category.rounds),
+    )
     session.add(round)
     session.commit()
     session.refresh(round)

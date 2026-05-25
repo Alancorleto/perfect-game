@@ -47,6 +47,8 @@ async def create_round(round: RoundCreate, session: SessionDep, user: UserDep):
 
     db_round = Round.model_validate(round)
 
+    db_round.order_index = len(category.rounds)
+
     session.add(db_round)
     session.commit()
     session.refresh(db_round)
@@ -93,7 +95,15 @@ async def delete_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
             detail="Permission denied",
         )
 
+    round_order_index = db_round.order_index
+    db_category = db_round.category
+
     session.delete(db_round)
+
+    for round in db_category.rounds:
+        if round.order_index > round_order_index:
+            round.order_index -= 1
+
     session.commit()
 
 

@@ -106,6 +106,7 @@ def test_create_round(session: Session, client: TestClient):
     assert data["name"] == "New Round"
     assert data["state"] == "not_started"
     assert data["category_id"] == str(category.id)
+    assert data["order_index"] == 0
 
 
 def test_create_round_with_state(session: Session, client: TestClient):
@@ -371,6 +372,28 @@ def test_delete_round_empty(session: Session, client: TestClient):
 
     get_response = client.get(f"/rounds/{round.id}", headers=headers)
     assert get_response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_round_decreases_order_index(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session,
+        email="organizer@example.com",
+        password="mypassword123",
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    round_a = create_round_in_db(session, category=category)
+    round_b = create_round_in_db(session, category=category)
+    round_c = create_round_in_db(session, category=category)
+
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+    response = client.delete(f"/rounds/{round_b.id}", headers=headers)
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    session.refresh(round_a)
+    assert round_a.order_index == 0
+    session.refresh(round_c)
+    assert round_c.order_index == 1
 
 
 def test_delete_round_started(session: Session, client: TestClient):

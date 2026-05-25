@@ -21,6 +21,7 @@ class RoundState(Enum):
 class RoundBase(SQLModel):
     name: str | None = None
     state: RoundState = Field(default=RoundState.NOT_STARTED)
+    order_index: int = Field(default=0)
 
 
 class Round(RoundBase, table=True):

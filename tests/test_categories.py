@@ -1,5 +1,3 @@
-from venv import create
-
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -1723,3 +1721,168 @@ def test_remove_player_from_category_unauthenticated(
     response = client.delete(f"/categories/{category.id}/players/{player.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+# ---------------------------------------------------------------------------
+# POST /categories/{category_id}/rounds/order
+# ---------------------------------------------------------------------------
+
+
+def test_change_round_order(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    round_a = create_round_in_db(session, category=category, name="Round A")
+    round_b = create_round_in_db(session, category=category, name="Round B")
+    round_c = create_round_in_db(session, category=category, name="Round C")
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.put(
+        f"/categories/{category.id}/rounds/order",
+        json=[str(round_c.id), str(round_a.id), str(round_b.id)],
+        headers=headers,
+    )
+    data = response.json()
+
+    session.refresh(round_a)
+    session.refresh(round_b)
+    session.refresh(round_c)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(data) == 3
+    assert round_a.order_index == 1
+    assert round_b.order_index == 2
+    assert round_c.order_index == 0
+    assert {round["id"]: round["order_index"] for round in data} == {
+        str(round_a.id): 1,
+        str(round_b.id): 2,
+        str(round_c.id): 0,
+    }
+
+
+def test_change_round_order_as_super_admin(session: Session, client: TestClient):
+    create_user_in_db(
+        session,
+        email="admin@example.com",
+        password="mypassword123",
+        is_super_admin=True,
+    )
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    round_a = create_round_in_db(session, category=category, name="Round A")
+    round_b = create_round_in_db(session, category=category, name="Round B")
+    headers = get_auth_headers(client, "admin@example.com", "mypassword123")
+
+    response = client.put(
+        f"/categories/{category.id}/rounds/order",
+        json=[str(round_b.id), str(round_a.id)],
+        headers=headers,
+    )
+
+    session.refresh(round_a)
+    session.refresh(round_b)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert round_a.order_index == 1
+    assert round_b.order_index == 0
+
+
+def test_change_round_order_category_not_found(session: Session, client: TestClient):
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.put(
+        "/categories/00000000-0000-0000-0000-000000000000/rounds/order",
+        json=["00000000-0000-0000-0000-000000000000"],
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_change_round_order_unauthorized(session: Session, client: TestClient):
+    create_user_in_db(session, email="attacker@example.com", password="mypassword123")
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    round_a = create_round_in_db(session, category=category)
+    headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
+
+    response = client.put(
+        f"/categories/{category.id}/rounds/order",
+        json=[str(round_a.id)],
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_change_round_order_unauthenticated(session: Session, client: TestClient):
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    round_a = create_round_in_db(session, category=category)
+
+    response = client.put(
+        f"/categories/{category.id}/rounds/order",
+        json=[str(round_a.id)],
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_change_round_order_round_count_mismatch(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    round_a = create_round_in_db(session, category=category)
+    create_round_in_db(session, category=category)
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.put(
+        f"/categories/{category.id}/rounds/order",
+        json=[str(round_a.id)],
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_change_round_order_round_set_mismatch(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    round_a = create_round_in_db(session, category=category)
+    create_round_in_db(session, category=category)
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.put(
+        f"/categories/{category.id}/rounds/order",
+        json=[str(round_a.id), "00000000-0000-0000-0000-000000000000"],
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_change_round_order_round_repeated_round(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    round_a = create_round_in_db(session, category=category)
+    create_round_in_db(session, category=category)
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.put(
+        f"/categories/{category.id}/rounds/order",
+        json=[str(round_a.id), str(round_a.id)],
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST

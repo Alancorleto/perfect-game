@@ -16,6 +16,7 @@ from models.category_invitation import (
 )
 from models.tournament import Tournament
 from routers.players import Player, PlayerPublic
+from routers.rounds import RoundPublic
 from routers.users import UserDep
 
 router = APIRouter(prefix="/categories", tags=["categories"])
@@ -585,3 +586,53 @@ async def remove_player_from_category(
     session.refresh(db_category)
 
     return db_category.players
+
+
+@router.put("/{category_id}/rounds/order", response_model=list[RoundPublic])
+async def change_round_order(
+    category_id: uuid.UUID,
+    round_order: list[uuid.UUID],
+    session: SessionDep,
+    user: UserDep,
+):
+    """Change the order of rounds within a category."""
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
+
+    if not db_category.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
+        )
+
+    existing_rounds = {round.id: round for round in db_category.rounds}
+
+    if len(round_order) != len(existing_rounds):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Round order must match the number of rounds in the category",
+        )
+
+    if set(round_order) != set(existing_rounds.keys()):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Round order must have the same rounds as the category",
+        )
+
+    for new_index, round_id in enumerate(round_order):
+        round = existing_rounds[round_id]
+        if not round:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+            )
+
+        round.order_index = new_index
+        session.add(round)
+
+    session.commit()
+    session.refresh(db_category)
+
+    return db_category.rounds
