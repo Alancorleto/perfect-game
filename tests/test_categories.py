@@ -1729,7 +1729,8 @@ def test_remove_player_from_category_unauthenticated(
 
 
 def test_list_rounds_in_category(session: Session, client: TestClient):
-    category = create_category_in_db(session)
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
     create_round_in_db(session, category=category, name="Round A")
     create_round_in_db(session, category=category, name="Round B")
     create_round_in_db(session, category=category, name="Round C")
@@ -1744,7 +1745,8 @@ def test_list_rounds_in_category(session: Session, client: TestClient):
 
 
 def test_list_rounds_in_category_correct_order(session: Session, client: TestClient):
-    category = create_category_in_db(session)
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
     round_a = create_round_in_db(session, category=category, name="Round A")
     round_b = create_round_in_db(session, category=category, name="Round B")
     round_c = create_round_in_db(session, category=category, name="Round C")

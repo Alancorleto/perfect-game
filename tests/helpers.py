@@ -132,6 +132,7 @@ def create_set_in_db(
         levels=levels,
         qualifiers_count=qualifiers_count,
         format=format,
+        order_index=len(round.sets),
     )
     session.add(set)
     session.commit()

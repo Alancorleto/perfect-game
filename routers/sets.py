@@ -40,6 +40,9 @@ async def create_set(set: SetCreate, session: SessionDep, user: UserDep):
         )
 
     db_set = Set.model_validate(set)
+
+    db_set.order_index = len(round.sets)
+
     session.add(db_set)
     session.commit()
     session.refresh(db_set)
@@ -104,7 +107,15 @@ async def delete_set(set_id: uuid.UUID, session: SessionDep, user: UserDep):
             detail="Permission denied",
         )
 
+    set_order_index = db_set.order_index
+    db_round = db_set.round
+
     session.delete(db_set)
+
+    for set in db_round.sets:
+        if set.order_index > set_order_index:
+            set.order_index -= 1
+
     session.commit()
 
 

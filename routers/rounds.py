@@ -115,7 +115,50 @@ async def list_sets_in_round(round_id: uuid.UUID, session: SessionDep):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
         )
-    return db_round.sets
+    return sorted(db_round.sets, key=lambda set: set.order_index)
+
+
+@router.put("/{round_id}/sets/{set_id}/order", response_model=list[SetPublic])
+async def change_set_order_in_round(
+    round_id: uuid.UUID,
+    new_set_order: list[uuid.UUID],
+    session: SessionDep,
+    user: UserDep,
+):
+    db_round = session.get(Round, round_id)
+
+    if not db_round:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
+
+    if not db_round.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to edit this round",
+        )
+
+    if len(new_set_order) != len(db_round.sets):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The number of sets in the order does not match the number of sets in the round",
+        )
+
+    existing_sets = {db_set.id: db_set for db_set in db_round.sets}
+
+    if set(new_set_order) != set(existing_sets.keys()):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The set order does not match the sets in the round",
+        )
+
+    for new_index, set_id in enumerate(new_set_order):
+        db_set = existing_sets[set_id]
+        db_set.order_index = new_index
+
+    session.commit()
+
+    return sorted(db_round.sets, key=lambda set: set.order_index)
 
 
 @router.post("/{round_id}/start", response_model=RoundPublic)

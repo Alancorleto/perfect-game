@@ -24,6 +24,7 @@ class SetBase(SQLModel):
     levels: str | None = None
     qualifiers_count: int | None = Field(ge=1, default=None)
     format: SetFormat = Field(default=SetFormat.SCORE_SUM)
+    order_index: int = Field(default=0)
 
 
 class Set(SetBase, table=True):
@@ -59,7 +60,7 @@ class SetUpdate(SetBase):
     format: SetFormat | None = Field(default=SetFormat.SCORE_SUM)
 
 
-class SetPublic(BaseModel):
+class SetPublic(SetBase):
     id: uuid.UUID
     round_id: uuid.UUID
 
