@@ -5,6 +5,7 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.category import Category
+from models.player import PlayerPublic
 from models.round import Round, RoundCreate, RoundPublic, RoundState, RoundUpdate
 from models.set import SetPublic
 from routers.users import UserDep
@@ -328,3 +329,22 @@ async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep, user: Us
     session.refresh(db_round)
 
     return db_round
+
+
+# Get qualifying players
+@router.get("/{round_id}/qualifying-players", response_model=list[PlayerPublic])
+async def get_qualifying_players_in_round(
+    round_id: uuid.UUID, session: SessionDep, user: UserDep
+):
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
+
+    qualifying_players = []
+
+    for db_set in sorted(db_round.sets, key=lambda s: s.order_index):
+        qualifying_players.extend(db_set.get_qualifying_players())
+
+    return qualifying_players

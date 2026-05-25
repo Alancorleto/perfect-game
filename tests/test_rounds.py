@@ -3,9 +3,15 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from models.round import RoundState
+from models.set import SetFormat
 from tests.helpers import (
+    add_player_to_set_in_db,
     create_category_in_db,
+    create_chart_in_db,
+    create_chart_slot_in_db,
+    create_player_in_db,
     create_round_in_db,
+    create_score_in_db,
     create_set_in_db,
     create_tournament_in_db,
     create_user_in_db,
@@ -23,6 +29,51 @@ def create_editable_round(
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
     return organizer, tournament, category, round
+
+
+def create_qualifying_set_with_players(
+    session: Session,
+    round,
+    *,
+    format: SetFormat = SetFormat.SCORE_SUM,
+    qualifiers_count: int,
+    players_scores: list[tuple[str, int]],
+    set_order_index: int | None = None,
+):
+    set = create_set_in_db(
+        session,
+        round=round,
+        qualifiers_count=qualifiers_count,
+        format=format,
+    )
+
+    if set_order_index is not None:
+        set.order_index = set_order_index
+        session.add(set)
+        session.commit()
+
+    chart = create_chart_in_db(session, set=set)
+    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
+
+    players = []
+    for player_order_index, (nickname, score_value) in enumerate(players_scores):
+        player = create_player_in_db(session, nickname=nickname)
+        add_player_to_set_in_db(
+            session,
+            set=set,
+            player=player,
+            order_index=player_order_index,
+        )
+        create_score_in_db(
+            session,
+            player=player,
+            chart=chart,
+            chart_slot=chart_slot,
+            value=score_value,
+        )
+        players.append(player)
+
+    return set, chart, chart_slot, players
 
 
 # ---------------------------------------------------------------------------
@@ -985,3 +1036,127 @@ def test_cancel_round_finish_when_not_finished(session: Session, client: TestCli
     response = client.post(f"/rounds/{round.id}/cancel-finish", headers=headers)
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+# ---------------------------------------------------------------------------
+# GET /rounds/{round_id}/qualifying-players
+# ---------------------------------------------------------------------------
+
+
+def test_get_qualifying_players_in_round(session: Session, client: TestClient):
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category)
+
+    set_a, _, _, set_a_players = create_qualifying_set_with_players(
+        session,
+        round,
+        qualifiers_count=1,
+        players_scores=[
+            ("Set A Player 1", 1000000),
+            ("Set A Player 2", 950000),
+        ],
+    )
+
+    set_b, _, _, set_b_players = create_qualifying_set_with_players(
+        session,
+        round,
+        qualifiers_count=2,
+        players_scores=[
+            ("Set B Player 1", 900000),
+            ("Set B Player 2", 800000),
+            ("Set B Player 3", 1000000),
+        ],
+    )
+
+    response = client.get(f"/rounds/{round.id}/qualifying-players", headers=headers)
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert [player["nickname"] for player in data] == [
+        set_a_players[0].nickname,
+        set_b_players[2].nickname,
+        set_b_players[0].nickname,
+    ]
+    assert [player["id"] for player in data] == [
+        str(set_a_players[0].id),
+        str(set_b_players[2].id),
+        str(set_b_players[0].id),
+    ]
+    assert len(data) == 3
+
+
+def test_get_qualifying_players_in_round_two_battles(
+    session: Session, client: TestClient
+):
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category)
+
+    set_a, _, _, set_a_players = create_qualifying_set_with_players(
+        session,
+        round,
+        format=SetFormat.BATTLE,
+        qualifiers_count=1,
+        players_scores=[
+            ("Set A Player 1", 950000),
+            ("Set A Player 2", 1000000),
+        ],
+    )
+
+    set_b, _, _, set_b_players = create_qualifying_set_with_players(
+        session,
+        round,
+        format=SetFormat.BATTLE,
+        qualifiers_count=1,
+        players_scores=[
+            ("Set B Player 1", 900000),
+            ("Set B Player 2", 800000),
+        ],
+    )
+
+    response = client.get(f"/rounds/{round.id}/qualifying-players", headers=headers)
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert [player["nickname"] for player in data] == [
+        set_a_players[1].nickname,
+        set_b_players[0].nickname,
+    ]
+    assert [player["id"] for player in data] == [
+        str(set_a_players[1].id),
+        str(set_b_players[0].id),
+    ]
+    assert len(data) == 2
+
+
+def test_get_qualifying_players_in_round_not_found(
+    session: Session, client: TestClient
+):
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.get(
+        "/rounds/00000000-0000-0000-0000-000000000000/qualifying-players",
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_get_qualifying_players_in_round_unauthenticated(
+    session: Session, client: TestClient
+):
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category)
+
+    response = client.get(f"/rounds/{round.id}/qualifying-players")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED

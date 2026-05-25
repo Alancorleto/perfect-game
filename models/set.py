@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.chart import Chart
+from models.player import Player
 from models.round import Round
 from models.user import User
 
@@ -18,6 +19,32 @@ class SetFormat(Enum):
     SCORE_SUM = "score_sum"
     BATTLE = "battle"
     CUSTOM_SET = "custom_set"
+
+
+class Result(BaseModel):
+    player_id: uuid.UUID
+    player_order_index: int
+    set_id: uuid.UUID
+    chart_order_index: int
+    score_id: uuid.UUID | None = None
+    score: int = 0
+    place: int = -1
+    is_tie: bool = False
+
+
+class PlayerResults(BaseModel):
+    player_id: uuid.UUID
+    player: Player
+    order_index: int
+    results: list[Result] = []
+    total_score: int = 0
+    place: int = -1
+    is_tie: bool = False
+
+
+class ChartResults(BaseModel):
+    chart_slot_id: uuid.UUID
+    results: list[Result] = []
 
 
 class SetBase(SQLModel):
@@ -49,6 +76,37 @@ class Set(SetBase, table=True):
             or all(chart_slot.can_be_deleted(user) for chart_slot in self.chart_slots)
         )
 
+    def get_results(self) -> list[PlayerResults]:
+        chart_slots = sorted(
+            self.chart_slots, key=lambda chart_slot: chart_slot.order_index
+        )
+
+        chart_results_list: list[ChartResults] = []
+        for chart_slot in chart_slots:
+            chart_results = _populate_chart_results(chart_slot)
+            chart_results_list.append(chart_results)
+
+        player_results_list: list[PlayerResults] = []
+        for player_link in self.player_links:
+            player_results = _populate_player_results(player_link, chart_results_list)
+            player_results_list.append(player_results)
+
+        _sort_player_results(player_results_list)
+
+        return player_results_list
+
+    def get_qualifying_players(self) -> list[Player]:
+        player_results_list = self.get_results()
+        filtered_player_results = [
+            player_results
+            for player_results in player_results_list
+            if player_results.place <= self.qualifiers_count
+        ]
+        qualifying_players = [
+            player_results.player for player_results in filtered_player_results
+        ]
+        return qualifying_players
+
 
 class SetCreate(SetBase):
     round_id: uuid.UUID
@@ -65,26 +123,115 @@ class SetPublic(SetBase):
     round_id: uuid.UUID
 
 
-class Result(BaseModel):
-    player_id: uuid.UUID
-    player_order_index: int
-    set_id: uuid.UUID
-    chart_order_index: int
-    score_id: uuid.UUID | None = None
-    score: int = 0
-    place: int = -1
-    is_tie: bool = False
+def _populate_chart_results(chart_slot: "ChartSlot") -> ChartResults:
+    chart_results = ChartResults(chart_slot_id=chart_slot.id, results=[])
+
+    for score in chart_slot.scores:
+        player_order_index = next(
+            set_player.order_index
+            for set_player in chart_slot.set.player_links
+            if set_player.player_id == score.player_id
+        )
+        result = Result(
+            player_id=score.player_id,
+            player_order_index=player_order_index,
+            set_id=chart_slot.set_id,
+            chart_order_index=chart_slot.order_index,
+            score=score.value,
+            score_id=score.id,
+        )
+
+        chart_results.results.append(result)
+
+    _sort_chart_results(chart_results)
+
+    return chart_results
 
 
-class PlayerResults(BaseModel):
-    player_id: uuid.UUID
-    order_index: int
-    results: list[Result] = []
-    total_score: int = 0
-    place: int = -1
-    is_tie: bool = False
+def _sort_chart_results(chart_results: ChartResults):
+    chart_results.results.sort(key=lambda r: (-r.score, r.player_order_index))
+
+    if len(chart_results.results) > 0:
+        chart_results.results[0].place = 1
+
+    # Handle ties
+    for i in range(1, len(chart_results.results)):
+        result = chart_results.results[i]
+        previous_result = chart_results.results[i - 1]
+
+        if result.score == previous_result.score:
+            result.is_tie = True
+            previous_result.is_tie = True
+            result.place = previous_result.place
+        else:
+            result.place = i + 1
 
 
-class ChartResults(BaseModel):
-    chart_slot_id: uuid.UUID
-    results: list[Result] = []
+def _populate_player_results(
+    player_link: "SetPlayerLink", chart_results_list: list[ChartResults]
+) -> list[PlayerResults]:
+    player = player_link.player
+    set = player_link.set
+
+    player_results = PlayerResults(
+        player_id=player_link.player_id,
+        player=player,
+        order_index=player_link.order_index,
+    )
+
+    for chart_order_index, chart_results in enumerate(chart_results_list):
+        result = _try_get_player_result(player.id, chart_results.results)
+
+        if not result:
+            result = Result(
+                player_id=player.id,
+                player_order_index=player_link.order_index,
+                set_id=set.id,
+                chart_order_index=chart_order_index,
+                place=len(chart_results.results) + 1,
+            )
+
+        player_results.results.append(result)
+
+    _calculate_player_total_score(player_results, set.format)
+
+    return player_results
+
+
+def _try_get_player_result(player_id: uuid.UUID, results: list[Result]) -> Result:
+    for result in results:
+        if result.player_id == player_id:
+            return result
+    return None
+
+
+def _calculate_player_total_score(player_results: PlayerResults, set_format: SetFormat):
+    if set_format == SetFormat.SCORE_SUM:
+        for result in player_results.results:
+            player_results.total_score += result.score
+
+    elif set_format == SetFormat.BATTLE:
+        for result in player_results.results:
+            if result.place == 1 and not result.is_tie and result.score_id is not None:
+                player_results.total_score += 1
+
+
+def _sort_player_results(results: list[PlayerResults]) -> list[PlayerResults]:
+    results.sort(key=lambda x: (-x.total_score, x.order_index))
+
+    if len(results) > 0:
+        results[0].place = 1
+
+    # Handle ties
+    for i in range(1, len(results)):
+        result = results[i]
+        previous_result = results[i - 1]
+
+        if result.total_score == previous_result.total_score:
+            result.is_tie = True
+            previous_result.is_tie = True
+            result.place = previous_result.place
+        else:
+            result.place = i + 1
+
+    return results
