@@ -588,8 +588,22 @@ async def remove_player_from_category(
     return db_category.players
 
 
+@router.get("/{category_id}/rounds", response_model=list[RoundPublic])
+async def list_rounds_in_category(
+    category_id: uuid.UUID,
+    session: SessionDep,
+):
+    db_category = session.get(Category, category_id)
+    if not db_category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+        )
+
+    return sorted(db_category.rounds, key=lambda r: r.order_index)
+
+
 @router.put("/{category_id}/rounds/order", response_model=list[RoundPublic])
-async def change_round_order(
+async def change_round_order_in_category(
     category_id: uuid.UUID,
     round_order: list[uuid.UUID],
     session: SessionDep,

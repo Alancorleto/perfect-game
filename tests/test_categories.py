@@ -1724,7 +1724,47 @@ def test_remove_player_from_category_unauthenticated(
 
 
 # ---------------------------------------------------------------------------
-# POST /categories/{category_id}/rounds/order
+# GET /categories/{category_id}/rounds
+# ---------------------------------------------------------------------------
+
+
+def test_list_rounds_in_category(session: Session, client: TestClient):
+    category = create_category_in_db(session)
+    create_round_in_db(session, category=category, name="Round A")
+    create_round_in_db(session, category=category, name="Round B")
+    create_round_in_db(session, category=category, name="Round C")
+
+    response = client.get(f"/categories/{category.id}/rounds")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()) == 3
+    assert response.json()[0]["name"] == "Round A"
+    assert response.json()[1]["name"] == "Round B"
+    assert response.json()[2]["name"] == "Round C"
+
+
+def test_list_rounds_in_category_correct_order(session: Session, client: TestClient):
+    category = create_category_in_db(session)
+    round_a = create_round_in_db(session, category=category, name="Round A")
+    round_b = create_round_in_db(session, category=category, name="Round B")
+    round_c = create_round_in_db(session, category=category, name="Round C")
+
+    round_a.order_index = 1
+    round_b.order_index = 2
+    round_c.order_index = 0
+    session.commit()
+
+    response = client.get(f"/categories/{category.id}/rounds")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(response.json()) == 3
+    assert response.json()[0]["name"] == "Round C"
+    assert response.json()[1]["name"] == "Round A"
+    assert response.json()[2]["name"] == "Round B"
+
+
+# ---------------------------------------------------------------------------
+# PUT /categories/{category_id}/rounds/order
 # ---------------------------------------------------------------------------
 
 
