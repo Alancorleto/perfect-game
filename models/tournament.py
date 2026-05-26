@@ -1,8 +1,7 @@
 import uuid
-from datetime import date
+from datetime import date, time
 from typing import TYPE_CHECKING
 
-from fastapi.routing import get_request_handler
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.tournament_organizer import TournamentOrganizer
@@ -16,8 +15,11 @@ if TYPE_CHECKING:
 
 class TournamentBase(SQLModel):
     name: str = Field(min_length=3, max_length=100)
+    description: str | None = None
     location: str | None = None
     start_date: date | None = None
+    start_time: time | None = None
+    logo_url: str | None = None
 
 
 class Tournament(TournamentBase, table=True):
@@ -55,5 +57,6 @@ class TournamentPublic(TournamentBase):
 
 class TournamentUpdate(SQLModel):
     name: str | None = None
+    description: str | None = None
     location: str | None = None
     start_date: date | None = None
