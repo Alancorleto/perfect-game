@@ -75,7 +75,7 @@ def test_create_tournament(session: Session, client: TestClient):
 
     response = client.post(
         "/tournaments/",
-        json={"name": "New Tournament"},
+        json={"name": "New Tournament", "country_code": "AR"},
         headers=headers,
     )
     data = response.json()
@@ -83,6 +83,7 @@ def test_create_tournament(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_200_OK
     assert data["name"] == "New Tournament"
     assert data["id"] is not None
+    assert data["country_code"] == "AR"
 
 
 def test_create_tournament_creator_becomes_organizer(
@@ -93,7 +94,7 @@ def test_create_tournament_creator_becomes_organizer(
 
     create_response = client.post(
         "/tournaments/",
-        json={"name": "New Tournament"},
+        json={"name": "New Tournament", "country_code": "AR"},
         headers=headers,
     )
     tournament_id = create_response.json()["id"]
@@ -109,7 +110,10 @@ def test_create_tournament_creator_becomes_organizer(
 
 
 def test_create_tournament_unauthenticated(client: TestClient):
-    response = client.post("/tournaments/", json={"name": "New Tournament"})
+    response = client.post(
+        "/tournaments/",
+        json={"name": "New Tournament", "country_code": "AR"},
+    )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -124,7 +128,7 @@ def test_create_tournament_with_long_name(session: Session, client: TestClient):
     long_name = "T" * 300
     response = client.post(
         "/tournaments/",
-        json={"name": long_name},
+        json={"name": long_name, "country_code": "AR"},
         headers=headers,
     )
 
@@ -140,7 +144,7 @@ def test_create_tournament_with_empty_name(session: Session, client: TestClient)
 
     response = client.post(
         "/tournaments/",
-        json={"name": ""},
+        json={"name": "", "country_code": "AR"},
         headers=headers,
     )
 

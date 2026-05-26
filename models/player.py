@@ -11,15 +11,20 @@ if TYPE_CHECKING:
     from models.score import Score
     from models.tournament import Tournament
 
+NICKNAME_MAX_LENGTH = 30
+NAME_MAX_LENGTH = 50
+TEAM_NAME_MAX_LENGTH = 50
+CITY_MAX_LENGTH = 50
+
 
 class PlayerBase(SQLModel):
-    nickname: str
-    name: str | None = None
-    team_name: str | None = None
-    birth_date: date | None = None
-    country_code: str | None = None
-    city: str | None = None
-    profile_picture_url: str | None = None
+    nickname: str = Field(max_length=NICKNAME_MAX_LENGTH)
+    country_code: str = Field(min_length=2, max_length=2)
+    name: str | None = Field(default=None, max_length=NAME_MAX_LENGTH)
+    team_name: str | None = Field(default=None, max_length=TEAM_NAME_MAX_LENGTH)
+    birth_date: date | None = Field(default=None)
+    city: str | None = Field(default=None, max_length=CITY_MAX_LENGTH)
+    profile_picture_url: str | None = Field(default=None)
 
 
 class Player(PlayerBase, table=True):
@@ -73,10 +78,9 @@ class PlayerPublic(PlayerBase):
 
 
 class PlayerUpdate(SQLModel):
-    nickname: str | None = None
-    name: str | None = None
-    team_name: str | None = None
-    birth_date: date | None = None
-    country_code: str | None = None
-    city: str | None = None
-    profile_picture_url: str | None = None
+    nickname: str | None = Field(default=None, max_length=NICKNAME_MAX_LENGTH)
+    country_code: str | None = Field(default=None, min_length=2, max_length=2)
+    name: str | None = Field(default=None, max_length=NAME_MAX_LENGTH)
+    team_name: str | None = Field(default=None, max_length=TEAM_NAME_MAX_LENGTH)
+    birth_date: date | None = Field(default=None)
+    city: str | None = Field(default=None, max_length=CITY_MAX_LENGTH)

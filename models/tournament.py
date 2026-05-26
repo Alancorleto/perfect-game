@@ -12,9 +12,13 @@ if TYPE_CHECKING:
     from models.player import Player
     from models.user import User
 
+NAME_MIN_LENGTH = 3
+NAME_MAX_LENGTH = 100
+
 
 class TournamentBase(SQLModel):
-    name: str = Field(min_length=3, max_length=100)
+    name: str = Field(min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
+    country_code: str = Field(min_length=2, max_length=2)
     description: str | None = None
     location: str | None = None
     start_date: date | None = None
@@ -56,7 +60,11 @@ class TournamentPublic(TournamentBase):
 
 
 class TournamentUpdate(SQLModel):
-    name: str | None = None
-    description: str | None = None
-    location: str | None = None
-    start_date: date | None = None
+    name: str | None = Field(
+        default=None, min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH
+    )
+    country_code: str | None = Field(default=None, min_length=2, max_length=2)
+    description: str | None = Field(default=None)
+    location: str | None = Field(default=None)
+    start_date: date | None = Field(default=None)
+    start_time: time | None = Field(default=None)

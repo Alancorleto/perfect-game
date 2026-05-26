@@ -20,7 +20,8 @@ class RoundState(Enum):
 
 
 class RoundBase(SQLModel):
-    name: str | None = None
+    name: str | None = Field(default=None, max_length=50)
+    levels: str | None = Field(default=None, max_length=30)
     state: RoundState = Field(default=RoundState.NOT_STARTED)
     order_index: int = Field(default=0)
 

@@ -51,7 +51,6 @@ def test_create_set(session: Session, client: TestClient):
         "/sets/",
         json={
             "round_id": str(round.id),
-            "levels": "10-15",
             "qualifiers_count": 4,
             "format": "score_sum",
         },
@@ -211,7 +210,7 @@ def test_update_set(session: Session, client: TestClient):
 
     response = client.patch(
         f"/sets/{set.id}",
-        json={"levels": "12-18", "qualifiers_count": 2, "format": "custom_set"},
+        json={"qualifiers_count": 2, "format": "custom_set"},
         headers=headers,
     )
 
@@ -225,7 +224,7 @@ def test_update_set_not_found(session: Session, client: TestClient):
 
     response = client.patch(
         "/sets/00000000-0000-0000-0000-000000000000",
-        json={"levels": "12-18"},
+        json={"qualifiers_count": 2, "format": "custom_set"},
         headers=headers,
     )
 
@@ -242,7 +241,7 @@ def test_update_set_unauthorized(session: Session, client: TestClient):
 
     response = client.patch(
         f"/sets/{set.id}",
-        json={"levels": "12-18"},
+        json={"qualifiers_count": 2, "format": "custom_set"},
         headers=headers,
     )
 
@@ -264,7 +263,7 @@ def test_update_set_as_super_admin(session: Session, client: TestClient):
 
     response = client.patch(
         f"/sets/{set.id}",
-        json={"levels": "12-18"},
+        json={"qualifiers_count": 2, "format": "custom_set"},
         headers=headers,
     )
 
@@ -277,7 +276,9 @@ def test_update_set_unauthenticated(session: Session, client: TestClient):
     round = create_round_in_db(session, category=category)
     set = create_set_in_db(session, round=round)
 
-    response = client.patch(f"/sets/{set.id}", json={"levels": "12-18"})
+    response = client.patch(
+        f"/sets/{set.id}", json={"qualifiers_count": 2, "format": "custom_set"}
+    )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 

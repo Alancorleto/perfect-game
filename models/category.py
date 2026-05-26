@@ -1,6 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
+from pydantic import computed_field
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.category_player import CategoryPlayerLink
@@ -14,8 +15,8 @@ if TYPE_CHECKING:
 
 
 class CategoryBase(SQLModel):
-    name: str
-    auto_accept_join_requests: bool = Field(default=False)
+    name: str = Field(max_length=50)
+    auto_accept_join_requests: bool = Field(default=True)
 
 
 class Category(CategoryBase, table=True):

@@ -23,7 +23,7 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
     # Create the organizer's player profile.
     player_response = client.post(
         "/players/",
-        json={"nickname": "E2EPlayer"},
+        json={"nickname": "E2EPlayer", "country_code": "AR"},
         headers=headers,
     )
     assert player_response.status_code == status.HTTP_200_OK
@@ -32,7 +32,7 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
     # Create the tournament owned by the organizer.
     tournament_response = client.post(
         "/tournaments/",
-        json={"name": "E2E Tournament"},
+        json={"name": "E2E Tournament", "country_code": "AR"},
         headers=headers,
     )
     assert tournament_response.status_code == status.HTTP_200_OK
@@ -216,7 +216,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     # Create one tournament, one category, one round, and one score-sum set.
     tournament_response = client.post(
         "/tournaments/",
-        json={"name": "Late Insert Tournament"},
+        json={"name": "Late Insert Tournament", "country_code": "AR"},
         headers=headers,
     )
     assert tournament_response.status_code == status.HTTP_200_OK
@@ -276,7 +276,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     for index in range(1, 9):
         player_response = client.post(
             f"/players/guest/{tournament_id}",
-            json={"nickname": f"Player {index}"},
+            json={"nickname": f"Player {index}", "country_code": "AR"},
             headers=headers,
         )
         assert player_response.status_code == status.HTTP_200_OK
@@ -333,7 +333,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     # After player 4 has both scores, add a new player and move them to order index 4.
     late_player_response = client.post(
         f"/players/guest/{tournament_id}",
-        json={"nickname": "Late Player"},
+        json={"nickname": "Late Player", "country_code": "AR"},
         headers=headers,
     )
     assert late_player_response.status_code == status.HTTP_200_OK

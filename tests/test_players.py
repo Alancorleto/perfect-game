@@ -74,7 +74,7 @@ def test_create_player(session: Session, client: TestClient):
 
     response = client.post(
         "/players/",
-        json={"nickname": "NewPlayer"},
+        json={"nickname": "NewPlayer", "country_code": "AR"},
         headers=headers,
     )
     data = response.json()
@@ -82,10 +82,13 @@ def test_create_player(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_200_OK
     assert data["nickname"] == "NewPlayer"
     assert data["id"] is not None
+    assert data["country_code"] == "AR"
 
 
 def test_create_player_unauthenticated(client: TestClient):
-    response = client.post("/players/", json={"nickname": "NewPlayer"})
+    response = client.post(
+        "/players/", json={"nickname": "NewPlayer", "country_code": "AR"}
+    )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -99,7 +102,7 @@ def test_create_player_already_has_player(session: Session, client: TestClient):
 
     response = client.post(
         "/players/",
-        json={"nickname": "AnotherPlayer"},
+        json={"nickname": "AnotherPlayer", "country_code": "AR"},
         headers=headers,
     )
 
@@ -120,7 +123,7 @@ def test_create_guest_player(session: Session, client: TestClient):
 
     response = client.post(
         f"/players/guest/{tournament.id}",
-        json={"nickname": "GuestPlayer"},
+        json={"nickname": "GuestPlayer", "country_code": "AR"},
         headers=headers,
     )
     data = response.json()
@@ -128,6 +131,7 @@ def test_create_guest_player(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_200_OK
     assert data["nickname"] == "GuestPlayer"
     assert data["id"] is not None
+    assert data["country_code"] == "AR"
 
 
 def test_create_guest_player_tournament_not_found(session: Session, client: TestClient):
@@ -136,7 +140,7 @@ def test_create_guest_player_tournament_not_found(session: Session, client: Test
 
     response = client.post(
         "/players/guest/00000000-0000-0000-0000-000000000000",
-        json={"nickname": "GuestPlayer"},
+        json={"nickname": "GuestPlayer", "country_code": "AR"},
         headers=headers,
     )
 
@@ -150,7 +154,7 @@ def test_create_guest_player_not_organizer(session: Session, client: TestClient)
 
     response = client.post(
         f"/players/guest/{tournament.id}",
-        json={"nickname": "GuestPlayer"},
+        json={"nickname": "GuestPlayer", "country_code": "AR"},
         headers=headers,
     )
 
@@ -162,7 +166,7 @@ def test_create_guest_player_unauthenticated(session: Session, client: TestClien
 
     response = client.post(
         f"/players/guest/{tournament.id}",
-        json={"nickname": "GuestPlayer"},
+        json={"nickname": "GuestPlayer", "country_code": "AR"},
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
