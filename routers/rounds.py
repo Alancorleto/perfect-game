@@ -162,6 +162,32 @@ async def change_set_order_in_round(
     return sorted(db_round.sets, key=lambda set: set.order_index)
 
 
+@router.delete("/{round_id}/scores", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_all_scores_in_round(
+    round_id: uuid.UUID, session: SessionDep, user: UserDep
+):
+    """Delete all scores in a round."""
+    db_round = session.get(Round, round_id)
+    if not db_round:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
+        )
+
+    if not db_round.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this tournament",
+        )
+
+    for db_set in db_round.sets:
+        for db_chart_slot in db_set.chart_slots:
+            db_chart_slot.scores = []
+
+    session.add(db_round)
+    session.commit()
+    session.refresh(db_round)
+
+
 @router.post("/{round_id}/start", response_model=RoundPublic)
 async def start_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Start a round"""
@@ -182,6 +208,23 @@ async def start_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Round has already been started",
         )
+
+    if db_round.order_index > 0:
+        db_category = db_round.category
+        sorted_rounds = sorted(db_category.rounds, key=lambda r: r.order_index)
+        previous_round = sorted_rounds[db_round.order_index - 1]
+
+        if not previous_round:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Previous round not found",
+            )
+
+        if previous_round.state != RoundState.FINISHED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Previous round must be finished before starting this round",
+            )
 
     db_round.state = RoundState.IN_PROGRESS
     session.add(db_round)
@@ -210,6 +253,14 @@ async def cancel_round_start(round_id: uuid.UUID, session: SessionDep, user: Use
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Round is not in progress"
         )
+
+    for db_set in db_round.sets:
+        for chart_slot in db_set.chart_slots:
+            if len(chart_slot.scores) > 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot cancel round with scores",
+                )
 
     db_round.state = RoundState.NOT_STARTED
     session.add(db_round)
@@ -323,6 +374,16 @@ async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep, user: Us
             status_code=status.HTTP_400_BAD_REQUEST, detail="Round is not finished"
         )
 
+    db_category = db_round.category
+    if db_round.order_index < len(db_category.rounds) - 1:
+        sorted_rounds = sorted(db_category.rounds, key=lambda r: r.order_index)
+        next_round = sorted_rounds[db_round.order_index + 1]
+        if next_round.state != RoundState.NOT_STARTED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Can't cancel this round if next round is already started",
+            )
+
     db_round.state = RoundState.IN_PROGRESS
     session.add(db_round)
     session.commit()
@@ -331,7 +392,6 @@ async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep, user: Us
     return db_round
 
 
-# Get qualifying players
 @router.get("/{round_id}/qualifying-players", response_model=list[PlayerPublic])
 async def get_qualifying_players_in_round(
     round_id: uuid.UUID, session: SessionDep, user: UserDep

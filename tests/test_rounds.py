@@ -31,7 +31,7 @@ def create_editable_round(
     return organizer, tournament, category, round
 
 
-def create_qualifying_set_with_players(
+def create_set_with_players(
     session: Session,
     round,
     *,
@@ -783,6 +783,116 @@ def test_change_set_order_in_round_incorrect_set(session: Session, client: TestC
 
 
 # ---------------------------------------------------------------------------
+# DELETE /rounds/{round_id}/scores
+# ---------------------------------------------------------------------------
+
+
+def test_delete_all_scores_in_round(session: Session, client: TestClient):
+    _, _, _, round = create_editable_round(
+        session=session,
+        organizer_email="organizer@example.com",
+        organizer_password="mypassword123",
+    )
+    set, _, _, _ = create_set_with_players(
+        session=session,
+        round=round,
+        format=SetFormat.SCORE_SUM,
+        qualifiers_count=1,
+        players_scores=[
+            ("player1", 100),
+            ("player2", 200),
+            ("player3", 300),
+        ],
+    )
+
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+    response = client.delete(f"/rounds/{round.id}/scores", headers=headers)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    session.refresh(set)
+
+    assert set.chart_slots[0].scores == []
+
+
+def test_delete_all_scores_in_round_empty_set(session: Session, client: TestClient):
+    _, _, _, round = create_editable_round(
+        session=session,
+        organizer_email="organizer@example.com",
+        organizer_password="mypassword123",
+    )
+    set, _, _, _ = create_set_with_players(
+        session=session,
+        round=round,
+        format=SetFormat.SCORE_SUM,
+        qualifiers_count=1,
+        players_scores=[],
+    )
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+    response = client.delete(f"/rounds/{round.id}/scores", headers=headers)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    session.refresh(set)
+    assert set.chart_slots[0].scores == []
+
+
+def test_delete_all_scores_in_round_not_found(session: Session, client: TestClient):
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.delete(
+        "/rounds/00000000-0000-0000-0000-000000000000/scores",
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_all_scores_in_round_unauthorized(session: Session, client: TestClient):
+    create_user_in_db(session, email="attacker@example.com", password="mypassword123")
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category)
+    headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
+
+    response = client.delete(f"/rounds/{round.id}/scores", headers=headers)
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_delete_all_scores_in_round_as_super_admin(
+    session: Session, client: TestClient
+):
+    create_user_in_db(
+        session,
+        email="admin@example.com",
+        password="mypassword123",
+        is_super_admin=True,
+    )
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category)
+    headers = get_auth_headers(client, "admin@example.com", "mypassword123")
+
+    response = client.delete(f"/rounds/{round.id}/scores", headers=headers)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+def test_delete_all_scores_in_round_unauthenticated(
+    session: Session, client: TestClient
+):
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category)
+
+    response = client.delete(f"/rounds/{round.id}/scores")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+# ---------------------------------------------------------------------------
 # POST /rounds/{round_id}/start
 # ---------------------------------------------------------------------------
 
@@ -1051,7 +1161,7 @@ def test_get_qualifying_players_in_round(session: Session, client: TestClient):
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
 
-    set_a, _, _, set_a_players = create_qualifying_set_with_players(
+    set_a, _, _, set_a_players = create_set_with_players(
         session,
         round,
         qualifiers_count=1,
@@ -1061,7 +1171,7 @@ def test_get_qualifying_players_in_round(session: Session, client: TestClient):
         ],
     )
 
-    set_b, _, _, set_b_players = create_qualifying_set_with_players(
+    set_b, _, _, set_b_players = create_set_with_players(
         session,
         round,
         qualifiers_count=2,
@@ -1099,7 +1209,7 @@ def test_get_qualifying_players_in_round_two_battles(
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
 
-    set_a, _, _, set_a_players = create_qualifying_set_with_players(
+    set_a, _, _, set_a_players = create_set_with_players(
         session,
         round,
         format=SetFormat.BATTLE,
@@ -1110,7 +1220,7 @@ def test_get_qualifying_players_in_round_two_battles(
         ],
     )
 
-    set_b, _, _, set_b_players = create_qualifying_set_with_players(
+    set_b, _, _, set_b_players = create_set_with_players(
         session,
         round,
         format=SetFormat.BATTLE,
