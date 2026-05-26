@@ -1026,9 +1026,9 @@ def test_list_possible_players_for_set_first_round_excludes_current_players(
     player_b = create_player_in_db(session, nickname="PlayerB")
     player_c = create_player_in_db(session, nickname="PlayerC")
 
-    category.players.append(player_a)
-    category.players.append(player_b)
-    category.players.append(player_c)
+    category.add_player(player_a)
+    category.add_player(player_b)
+    category.add_player(player_c)
     session.add(category)
     session.commit()
 
@@ -1052,8 +1052,8 @@ def test_list_possible_players_for_set_first_round_empty_when_all_are_in_set(
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
 
-    category.players.append(player_a)
-    category.players.append(player_b)
+    category.add_player(player_a)
+    category.add_player(player_b)
     session.add(category)
     session.commit()
 
@@ -1081,9 +1081,9 @@ def test_list_possible_players_for_set_second_round_uses_previous_qualifiers(
     player_b = create_player_in_db(session, nickname="PlayerB")
     player_c = create_player_in_db(session, nickname="PlayerC")
 
-    category.players.append(player_a)
-    category.players.append(player_b)
-    category.players.append(player_c)
+    category.add_player(player_a)
+    category.add_player(player_b)
+    category.add_player(player_c)
     session.add(category)
     session.commit()
 
@@ -1121,8 +1121,8 @@ def test_list_possible_players_for_set_second_round_excludes_players_already_in_
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
 
-    category.players.append(player_a)
-    category.players.append(player_b)
+    category.add_player(player_a)
+    category.add_player(player_b)
     session.add(category)
     session.commit()
 

@@ -143,11 +143,11 @@ async def add_guest_player_to_category(
             detail="Player is already registered",
         )
 
-    db_category.players.append(db_player)
+    db_category.add_player(db_player)
     session.commit()
     session.refresh(db_category)
 
-    return db_category.players
+    return db_category.get_players_by_nickname()
 
 
 @router.post("/{category_id}/players/bulk", response_model=list[PlayerPublic])
@@ -184,13 +184,13 @@ async def bulk_add_guest_players_to_category(
                 detail=f"Player with ID {player_id} is already registered",
             )
 
-        db_category.players.append(db_player)
+        db_category.add_player(db_player)
 
     session.add(db_category)
     session.commit()
     session.refresh(db_category)
 
-    return db_category.players
+    return db_category.get_players_by_nickname()
 
 
 @router.get("/{category_id}/invitations", response_model=list[CategoryInvitationPublic])
@@ -257,14 +257,14 @@ async def invite_player_to_category(
             detail="Player is not registered",
         )
 
-    if db_player in db_category.players:
+    if db_player in db_category.get_players_by_nickname():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Player is already in the category",
         )
 
     if db_player.user == user:
-        db_category.players.append(db_player)
+        db_category.add_player(db_player)
         session.commit()
         return
 
@@ -314,7 +314,7 @@ async def accept_category_invitation(
 
     db_invitation.status = RequestStatus.ACCEPTED
 
-    db_category.players.append(player)
+    db_category.add_player(player)
     session.commit()
 
 
@@ -412,14 +412,14 @@ async def request_join_category(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
         )
 
-    if player in db_category.players:
+    if player in db_category.get_players_by_nickname():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Player already in category",
         )
 
     if db_category.auto_accept_join_requests:
-        db_category.players.append(player)
+        db_category.add_player(player)
         session.commit()
         return
 
@@ -457,7 +457,7 @@ async def accept_category_join_request(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
         )
 
-    if player in db_category.players:
+    if player in db_category.get_players_by_nickname():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Player is already in the category",
@@ -484,7 +484,7 @@ async def accept_category_join_request(
 
     join_request.status = RequestStatus.ACCEPTED
 
-    db_category.players.append(player)
+    db_category.add_player(player)
 
     session.commit()
 
@@ -511,7 +511,7 @@ async def decline_category_join_request(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
         )
 
-    if player in db_category.players:
+    if player in db_category.get_players_by_nickname():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Player is already in the category",
@@ -549,7 +549,7 @@ async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
         )
-    return db_category.players
+    return db_category.get_players_by_nickname()
 
 
 @router.delete("/{category_id}/players/{player_id}", response_model=list[PlayerPublic])
@@ -575,17 +575,17 @@ async def remove_player_from_category(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
         )
 
-    if db_player not in db_category.players:
+    if db_player not in db_category.get_players_by_nickname():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found in category"
         )
 
-    db_category.players.remove(db_player)
+    db_category.remove_player(db_player)
     session.add(db_category)
     session.commit()
     session.refresh(db_category)
 
-    return db_category.players
+    return db_category.get_players_by_nickname()
 
 
 @router.get("/{category_id}/rounds", response_model=list[RoundPublic])

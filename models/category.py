@@ -48,6 +48,14 @@ class Category(CategoryBase, table=True):
     def get_rounds_by_order(self) -> list["Round"]:
         return sorted(self.rounds, key=lambda r: r.order_index)
 
+    def add_player(self, player: Player) -> None:
+        if player not in self.players:
+            self.players.append(player)
+
+    def remove_player(self, player: Player) -> None:
+        if player in self.players:
+            self.players.remove(player)
+
 
 class CategoryCreate(CategoryBase):
     tournament_id: uuid.UUID

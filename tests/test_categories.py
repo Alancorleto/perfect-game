@@ -492,8 +492,8 @@ def test_invite_player_to_category_organizer(session: Session, client: TestClien
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     session.refresh(category)
-    assert len(category.players) == 1
-    assert category.players[0].id == player.id
+    assert len(category.get_players_by_nickname()) == 1
+    assert category.get_players_by_nickname()[0].id == player.id
 
 
 def test_invite_player_to_category_category_not_found(
@@ -563,7 +563,7 @@ def test_invite_player_to_category_player_already_in_category(
     player = create_player_in_db(session, user=player_user)
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
-    category.players.append(player)
+    category.add_player(player)
     session.commit()
 
     response = client.post(
@@ -631,8 +631,8 @@ def test_accept_category_invitation(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_200_OK
 
     session.refresh(category)
-    assert len(category.players) == 1
-    assert category.players[0].id == player.id
+    assert len(category.get_players_by_nickname()) == 1
+    assert category.get_players_by_nickname()[0].id == player.id
 
 
 def test_accept_category_invitation_no_player(session: Session, client: TestClient):
@@ -736,7 +736,7 @@ def test_decline_category_invitation(session: Session, client: TestClient):
     session.refresh(invitation)
     assert invitation.status == RequestStatus.DECLINED
     session.refresh(category)
-    assert len(category.players) == 0
+    assert len(category.get_players_by_nickname()) == 0
 
 
 def test_decline_category_invitation_no_player(session: Session, client: TestClient):
@@ -1060,7 +1060,7 @@ def test_request_join_category(session: Session, client: TestClient):
 
     join_request = category.join_requests[0]
     assert join_request.status == RequestStatus.PENDING
-    assert len(category.players) == 0
+    assert len(category.get_players_by_nickname()) == 0
 
 
 def test_request_join_category_auto_accept(session: Session, client: TestClient):
@@ -1084,8 +1084,8 @@ def test_request_join_category_auto_accept(session: Session, client: TestClient)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
     session.refresh(category)
-    assert len(category.players) == 1
-    assert category.players[0] == player
+    assert len(category.get_players_by_nickname()) == 1
+    assert category.get_players_by_nickname()[0] == player
     assert len(category.join_requests) == 0
 
 
@@ -1117,7 +1117,7 @@ def test_request_join_category_player_already_in_category(
     player = create_player_in_db(session, user=user)
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
-    category.players.append(player)
+    category.add_player(player)
     session.add(category)
     session.commit()
 
@@ -1193,7 +1193,7 @@ def test_accept_category_join_request(session: Session, client: TestClient):
     session.refresh(join_request)
     assert join_request.status == RequestStatus.ACCEPTED
     session.refresh(category)
-    assert player in category.players
+    assert player in category.get_players_by_nickname()
 
 
 def test_accept_category_join_request_unauthorized(
@@ -1278,7 +1278,7 @@ def test_accept_category_join_request_player_already_in_category(
     player = create_player_in_db(session, user=user)
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
-    category.players.append(player)
+    category.add_player(player)
     session.add(category)
     session.commit()
     join_request = CategoryJoinRequest(category_id=category.id, player_id=player.id)
@@ -1399,7 +1399,7 @@ def test_decline_category_join_request(session: Session, client: TestClient):
     session.refresh(join_request)
     assert join_request.status == RequestStatus.DECLINED
     session.refresh(category)
-    assert player not in category.players
+    assert player not in category.get_players_by_nickname()
 
 
 def test_decline_category_join_request_unauthorized(
@@ -1484,7 +1484,7 @@ def test_decline_category_join_request_player_already_in_category(
     player = create_player_in_db(session, user=user)
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
-    category.players.append(player)
+    category.add_player(player)
     session.add(category)
     session.commit()
     join_request = CategoryJoinRequest(category_id=category.id, player_id=player.id)
@@ -1583,8 +1583,8 @@ def test_list_players_in_category(session: Session, client: TestClient):
     category = create_category_in_db(session, tournament=tournament)
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
-    category.players.append(player_a)
-    category.players.append(player_b)
+    category.add_player(player_a)
+    category.add_player(player_b)
     session.add(category)
     session.commit()
 
@@ -1627,8 +1627,8 @@ def test_remove_player_from_category(session: Session, client: TestClient):
     category = create_category_in_db(session, tournament=tournament)
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
-    category.players.append(player_a)
-    category.players.append(player_b)
+    category.add_player(player_a)
+    category.add_player(player_b)
     session.add(category)
     session.commit()
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
