@@ -1,6 +1,5 @@
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -22,8 +21,8 @@ from tests.helpers import (
 
 
 def test_list_tournaments(session: Session, client: TestClient):
-    create_tournament_in_db(session, name="Tournament A")
-    create_tournament_in_db(session, name="Tournament B")
+    create_tournament_in_db(session, name="Tournament A", country_code="AR")
+    create_tournament_in_db(session, name="Tournament B", country_code="BR")
 
     response = client.get("/tournaments/")
     data = response.json()
@@ -33,6 +32,31 @@ def test_list_tournaments(session: Session, client: TestClient):
     names = [t["name"] for t in data]
     assert "Tournament A" in names
     assert "Tournament B" in names
+
+
+def test_list_tournaments_filtered_by_country(session: Session, client: TestClient):
+    create_tournament_in_db(session, name="Tournament A", country_code="AR")
+    create_tournament_in_db(session, name="Tournament B", country_code="BR")
+
+    response = client.get("/tournaments/?country_code=ar")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(data) == 1
+    assert data[0]["name"] == "Tournament A"
+    assert data[0]["country_code"] == "AR"
+
+
+def test_list_tournaments_filtered_by_country_with_no_matches(
+    session: Session, client: TestClient
+):
+    create_tournament_in_db(session, name="Tournament A", country_code="AR")
+
+    response = client.get("/tournaments/?country_code=br")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data == []
 
 
 def test_list_tournaments_empty(client: TestClient):
@@ -120,9 +144,7 @@ def test_create_tournament_unauthenticated(client: TestClient):
 
 def test_create_tournament_with_long_name(session: Session, client: TestClient):
     """Test creating a tournament with an excessively long name."""
-    user = create_user_in_db(
-        session, email="organizer@example.com", password="mypassword123"
-    )
+    create_user_in_db(session, email="organizer@example.com", password="mypassword123")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     long_name = "T" * 300
@@ -137,9 +159,7 @@ def test_create_tournament_with_long_name(session: Session, client: TestClient):
 
 def test_create_tournament_with_empty_name(session: Session, client: TestClient):
     """Test creating a tournament with an empty name."""
-    user = create_user_in_db(
-        session, email="organizer@example.com", password="mypassword123"
-    )
+    create_user_in_db(session, email="organizer@example.com", password="mypassword123")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
