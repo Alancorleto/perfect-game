@@ -1000,3 +1000,146 @@ def test_get_set_results_not_found(client: TestClient):
     response = client.get("/sets/00000000-0000-0000-0000-000000000000/results")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+# ---------------------------------------------------------------------------
+# GET /sets/{set_id}/possible-players
+# ---------------------------------------------------------------------------
+
+
+def test_list_possible_players_for_set_not_found(client: TestClient):
+    response = client.get("/sets/00000000-0000-0000-0000-000000000000/possible-players")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_list_possible_players_for_set_first_round_excludes_current_players(
+    session: Session, client: TestClient
+):
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category, state=RoundState.NOT_STARTED)
+    set = create_set_in_db(session, round=round)
+
+    player_a = create_player_in_db(session, nickname="PlayerA")
+    player_b = create_player_in_db(session, nickname="PlayerB")
+    player_c = create_player_in_db(session, nickname="PlayerC")
+
+    category.players.append(player_a)
+    category.players.append(player_b)
+    category.players.append(player_c)
+    session.add(category)
+    session.commit()
+
+    add_player_to_set_in_db(session, set=set, player=player_b, order_index=0)
+
+    response = client.get(f"/sets/{set.id}/possible-players")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert [player["nickname"] for player in data] == ["PlayerA", "PlayerC"]
+
+
+def test_list_possible_players_for_set_first_round_empty_when_all_are_in_set(
+    session: Session, client: TestClient
+):
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, category=category, state=RoundState.NOT_STARTED)
+    set = create_set_in_db(session, round=round)
+
+    player_a = create_player_in_db(session, nickname="PlayerA")
+    player_b = create_player_in_db(session, nickname="PlayerB")
+
+    category.players.append(player_a)
+    category.players.append(player_b)
+    session.add(category)
+    session.commit()
+
+    add_player_to_set_in_db(session, set=set, player=player_a, order_index=0)
+    add_player_to_set_in_db(session, set=set, player=player_b, order_index=1)
+
+    response = client.get(f"/sets/{set.id}/possible-players")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
+
+
+def test_list_possible_players_for_set_second_round_uses_previous_qualifiers(
+    session: Session, client: TestClient
+):
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    first_round = create_round_in_db(session, category=category)
+    second_round = create_round_in_db(session, category=category)
+
+    first_set = create_set_in_db(session, round=first_round, qualifiers_count=1)
+    second_set = create_set_in_db(session, round=second_round)
+
+    player_a = create_player_in_db(session, nickname="PlayerA")
+    player_b = create_player_in_db(session, nickname="PlayerB")
+    player_c = create_player_in_db(session, nickname="PlayerC")
+
+    category.players.append(player_a)
+    category.players.append(player_b)
+    category.players.append(player_c)
+    session.add(category)
+    session.commit()
+
+    chart = create_chart_in_db(session, set=first_set)
+    chart_slot = create_chart_slot_in_db(session, set=first_set, chart=chart)
+
+    add_player_to_set_in_db(session, set=first_set, player=player_a, order_index=0)
+    add_player_to_set_in_db(session, set=first_set, player=player_b, order_index=1)
+
+    create_score_in_db(
+        session, player=player_a, chart=chart, chart_slot=chart_slot, value=900000
+    )
+    create_score_in_db(
+        session, player=player_b, chart=chart, chart_slot=chart_slot, value=800000
+    )
+
+    response = client.get(f"/sets/{second_set.id}/possible-players")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert [player["nickname"] for player in data] == ["PlayerA"]
+
+
+def test_list_possible_players_for_set_second_round_excludes_players_already_in_set(
+    session: Session, client: TestClient
+):
+    tournament = create_tournament_in_db(session)
+    category = create_category_in_db(session, tournament=tournament)
+    first_round = create_round_in_db(session, category=category)
+    second_round = create_round_in_db(session, category=category)
+
+    first_set = create_set_in_db(session, round=first_round, qualifiers_count=1)
+    second_set = create_set_in_db(session, round=second_round)
+
+    player_a = create_player_in_db(session, nickname="PlayerA")
+    player_b = create_player_in_db(session, nickname="PlayerB")
+
+    category.players.append(player_a)
+    category.players.append(player_b)
+    session.add(category)
+    session.commit()
+
+    chart = create_chart_in_db(session, set=first_set)
+    chart_slot = create_chart_slot_in_db(session, set=first_set, chart=chart)
+
+    add_player_to_set_in_db(session, set=first_set, player=player_a, order_index=0)
+    add_player_to_set_in_db(session, set=first_set, player=player_b, order_index=1)
+    add_player_to_set_in_db(session, set=second_set, player=player_a, order_index=0)
+
+    create_score_in_db(
+        session, player=player_a, chart=chart, chart_slot=chart_slot, value=900000
+    )
+    create_score_in_db(
+        session, player=player_b, chart=chart, chart_slot=chart_slot, value=800000
+    )
+
+    response = client.get(f"/sets/{second_set.id}/possible-players")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []

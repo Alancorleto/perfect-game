@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.category import Category
+from models.player import Player
 from models.user import User
 
 if TYPE_CHECKING:
@@ -37,6 +38,14 @@ class Round(RoundBase, table=True):
 
     def can_be_deleted(self, user: User) -> bool:
         return self.can_be_edited_by(user) and self.state == RoundState.NOT_STARTED
+
+    def get_qualifying_players(self) -> list[Player]:
+        qualifying_players = []
+
+        for db_set in sorted(self.sets, key=lambda s: s.order_index):
+            qualifying_players.extend(db_set.get_qualifying_players())
+
+        return qualifying_players
 
 
 class RoundCreate(RoundBase):

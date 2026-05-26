@@ -402,9 +402,4 @@ async def get_qualifying_players_in_round(
             status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
         )
 
-    qualifying_players = []
-
-    for db_set in sorted(db_round.sets, key=lambda s: s.order_index):
-        qualifying_players.extend(db_set.get_qualifying_players())
-
-    return qualifying_players
+    return db_round.get_qualifying_players()

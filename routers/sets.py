@@ -349,3 +349,36 @@ async def get_set_results(set_id: uuid.UUID, session: SessionDep):
         )
 
     return set.get_results()
+
+
+@router.get("/{set_id}/possible-players", response_model=list[Player])
+async def list_possible_players_for_set(
+    set_id: uuid.UUID, session: SessionDep
+) -> list[Player]:
+    """List all possible players in a set, including those who passed the previous round."""
+    set = session.get(Set, set_id)
+    if not set:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+        )
+
+    current_round = set.round
+    category = set.round.category
+    sorted_rounds = sorted(category.rounds, key=lambda r: r.order_index)
+
+    previous_round = (
+        sorted_rounds[sorted_rounds.index(current_round) - 1]
+        if current_round.order_index > 0
+        else None
+    )
+
+    if not previous_round:
+        return [
+            player for player in category.players if player not in set.get_players()
+        ]
+    else:
+        return [
+            player
+            for player in previous_round.get_qualifying_players()
+            if player not in set.get_players()
+        ]
