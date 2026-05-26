@@ -16,7 +16,7 @@ from models.category_invitation import (
 )
 from models.tournament import Tournament
 from routers.players import Player, PlayerPublic
-from routers.rounds import RoundPublic
+from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
 
 router = APIRouter(prefix="/categories", tags=["categories"])
@@ -634,6 +634,16 @@ async def change_round_order_in_category(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Round order must have the same rounds as the category",
+        )
+
+    if any(
+        round.state != RoundState.NOT_STARTED
+        and round_order[round.order_index] != round_id
+        for round_id, round in existing_rounds.items()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot change round order for a round that has already started",
         )
 
     for new_index, round_id in enumerate(round_order):
