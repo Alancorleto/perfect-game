@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, status
+from fastapi import APIRouter, File, HTTPException, Query, status
 from sqlmodel import select
 
 from database import SessionDep
@@ -14,9 +14,17 @@ router = APIRouter(prefix="/players", tags=["players"])
 
 
 @router.get("/", response_model=list[PlayerPublic])
-async def list_players(session: SessionDep):
-    """List all players"""
-    players = session.exec(select(Player)).all()
+async def list_players(
+    session: SessionDep,
+    country_code: str | None = Query(default=None, min_length=2, max_length=2),
+):
+    """List players, optionally filtered by country code."""
+    query = select(Player)
+
+    if country_code is not None:
+        query = query.where(Player.country_code == country_code.upper())
+
+    players = session.exec(query).all()
     return players
 
 

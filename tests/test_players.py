@@ -1,6 +1,5 @@
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -20,8 +19,8 @@ from tests.helpers import (
 def test_list_players(session: Session, client: TestClient):
     user_a = create_user_in_db(session, email="a@example.com")
     user_b = create_user_in_db(session, email="b@example.com")
-    create_player_in_db(session, user=user_a, nickname="PlayerA")
-    create_player_in_db(session, user=user_b, nickname="PlayerB")
+    create_player_in_db(session, user=user_a, nickname="PlayerA", country_code="AR")
+    create_player_in_db(session, user=user_b, nickname="PlayerB", country_code="BR")
 
     response = client.get("/players/")
     data = response.json()
@@ -31,6 +30,34 @@ def test_list_players(session: Session, client: TestClient):
     nicknames = [p["nickname"] for p in data]
     assert "PlayerA" in nicknames
     assert "PlayerB" in nicknames
+
+
+def test_list_players_filtered_by_country(session: Session, client: TestClient):
+    user_a = create_user_in_db(session, email="a@example.com")
+    user_b = create_user_in_db(session, email="b@example.com")
+    create_player_in_db(session, user=user_a, nickname="PlayerA", country_code="AR")
+    create_player_in_db(session, user=user_b, nickname="PlayerB", country_code="BR")
+
+    response = client.get("/players/?country_code=ar")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert len(data) == 1
+    assert data[0]["nickname"] == "PlayerA"
+    assert data[0]["country_code"] == "AR"
+
+
+def test_list_players_filtered_by_country_with_no_matches(
+    session: Session, client: TestClient
+):
+    create_user_in_db(session, email="a@example.com")
+    create_player_in_db(session, nickname="PlayerA", country_code="AR")
+
+    response = client.get("/players/?country_code=br")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data == []
 
 
 def test_list_players_empty(client: TestClient):
