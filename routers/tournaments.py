@@ -1,9 +1,11 @@
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, File, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
+from image_storage import upload_image
 from models.category import CategoryPublic
 from models.player import Player, PlayerPublic
 from models.tournament import (
@@ -217,3 +219,32 @@ async def remove_organizer_from_tournament(
     session.commit()
 
     return [user.player for user in db_tournament.organizers if user.player is not None]
+
+
+@router.post("/{tournament_id}/logo", response_model=TournamentPublic)
+async def upload_tournament_logo(
+    tournament_id: uuid.UUID,
+    logo: Annotated[bytes, File()],
+    session: SessionDep,
+    user: UserDep,
+):
+    """Upload a tournament logo"""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
+        )
+
+    if not db_tournament.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
+        )
+
+    file_name = f"{db_tournament.id}.png"
+    db_tournament.logo_url = await upload_image(logo, file_name, "tournament_logos")
+
+    session.add(db_tournament)
+    session.commit()
+    session.refresh(db_tournament)
+
+    return db_tournament

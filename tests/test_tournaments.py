@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -643,6 +645,80 @@ def test_remove_organizer_unauthenticated(session: Session, client: TestClient):
 
     response = client.delete(
         f"/tournaments/{tournament.id}/organizers/{player.id}",
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+# ---------------------------------------------------------------------------
+# POST /tournaments/{tournament_id}/logo
+# ---------------------------------------------------------------------------
+
+
+def test_upload_tournament_logo(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    expected_url = "https://example.com/tournament-logo.png"
+
+    with patch(
+        "routers.tournaments.upload_image",
+        new=AsyncMock(return_value=expected_url),
+    ) as mock_upload_image:
+        response = client.post(
+            f"/tournaments/{tournament.id}/logo",
+            files={"logo": ("logo.png", b"fake image bytes", "image/png")},
+            headers=headers,
+        )
+
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["logo_url"] == expected_url
+    assert data["id"] == str(tournament.id)
+    mock_upload_image.assert_awaited_once_with(
+        b"fake image bytes",
+        f"{tournament.id}.png",
+        "tournament_logos",
+    )
+
+
+def test_upload_tournament_logo_not_found(session: Session, client: TestClient):
+    create_user_in_db(session, email="organizer@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.post(
+        "/tournaments/00000000-0000-0000-0000-000000000000/logo",
+        files={"logo": ("logo.png", b"fake image bytes", "image/png")},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_upload_tournament_logo_unauthorized(session: Session, client: TestClient):
+    create_user_in_db(session, email="attacker@example.com", password="mypassword123")
+    tournament = create_tournament_in_db(session)
+    headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
+
+    response = client.post(
+        f"/tournaments/{tournament.id}/logo",
+        files={"logo": ("logo.png", b"fake image bytes", "image/png")},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_upload_tournament_logo_unauthenticated(session: Session, client: TestClient):
+    tournament = create_tournament_in_db(session)
+
+    response = client.post(
+        f"/tournaments/{tournament.id}/logo",
+        files={"logo": ("logo.png", b"fake image bytes", "image/png")},
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
