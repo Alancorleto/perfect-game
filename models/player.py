@@ -8,6 +8,7 @@ from models.user import User
 
 if TYPE_CHECKING:
     from models.category import CategoryInvitation, CategoryJoinRequest
+    from models.category_player import CategoryPlayerLink
     from models.score import Score
     from models.tournament import Tournament
 
@@ -50,6 +51,9 @@ class Player(PlayerBase, table=True):
         back_populates="player", cascade_delete=True
     )
     category_join_requests: list["CategoryJoinRequest"] = Relationship(
+        back_populates="player", cascade_delete=True
+    )
+    category_links: list["CategoryPlayerLink"] = Relationship(
         back_populates="player", cascade_delete=True
     )
 

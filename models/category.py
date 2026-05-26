@@ -1,7 +1,6 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from pydantic import computed_field
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.category_player import CategoryPlayerLink
@@ -23,7 +22,9 @@ class Category(CategoryBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tournament_id: uuid.UUID = Field(foreign_key="tournament.id", ondelete="CASCADE")
 
-    players: list[Player] = Relationship(link_model=CategoryPlayerLink)
+    player_links: list[CategoryPlayerLink] = Relationship(
+        back_populates="category", cascade_delete=True
+    )
     tournament: Tournament = Relationship(back_populates="categories")
     rounds: list["Round"] = Relationship(back_populates="category", cascade_delete=True)
 
@@ -43,18 +44,24 @@ class Category(CategoryBase, table=True):
         )
 
     def get_players_by_nickname(self) -> list[Player]:
-        return sorted(self.players, key=lambda p: p.nickname)
+        players = [link.player for link in self.player_links]
+        return sorted(players, key=lambda p: p.nickname)
 
     def get_rounds_by_order(self) -> list["Round"]:
         return sorted(self.rounds, key=lambda r: r.order_index)
 
     def add_player(self, player: Player) -> None:
-        if player not in self.players:
-            self.players.append(player)
+        if all(link.player_id != player.id for link in self.player_links):
+            player_link = CategoryPlayerLink(player=player, category=self)
+            self.player_links.append(player_link)
 
     def remove_player(self, player: Player) -> None:
-        if player in self.players:
-            self.players.remove(player)
+        player_link = next(
+            (link for link in self.player_links if link.player_id == player.id),
+            None,
+        )
+        if player_link is not None:
+            self.player_links.remove(player_link)
 
 
 class CategoryCreate(CategoryBase):
