@@ -866,7 +866,7 @@ requires-dist = [
     { name = "pyjwt", specifier = ">=2.12.1" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "python-multipart", specifier = ">=0.0.6" },
-    { name = "sqlmodel", specifier = ">=0.0.22" },
+    { name = "sqlmodel", specifier = ">=0.0.38" },
 ]
 
 [package.metadata.requires-dev]

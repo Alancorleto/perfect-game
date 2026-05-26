@@ -599,7 +599,7 @@ async def list_rounds_in_category(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
         )
 
-    return sorted(db_category.rounds, key=lambda r: r.order_index)
+    return db_category.get_rounds_by_order()
 
 
 @router.put("/{category_id}/rounds/order", response_model=list[RoundPublic])
@@ -659,4 +659,4 @@ async def change_round_order_in_category(
     session.commit()
     session.refresh(db_category)
 
-    return sorted(db_category.rounds, key=lambda r: r.order_index)
+    return db_category.get_rounds_by_order()

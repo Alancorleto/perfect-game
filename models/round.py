@@ -43,10 +43,13 @@ class Round(RoundBase, table=True):
     def get_qualifying_players(self) -> list[Player]:
         qualifying_players = []
 
-        for db_set in sorted(self.sets, key=lambda s: s.order_index):
+        for db_set in self.get_sets_by_order():
             qualifying_players.extend(db_set.get_qualifying_players())
 
         return qualifying_players
+
+    def get_sets_by_order(self) -> list["Set"]:
+        return sorted(self.sets, key=lambda s: s.order_index)
 
 
 class RoundCreate(RoundBase):

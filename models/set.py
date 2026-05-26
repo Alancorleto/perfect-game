@@ -75,16 +75,17 @@ class Set(SetBase, table=True):
             or all(chart_slot.can_be_deleted(user) for chart_slot in self.chart_slots)
         )
 
-    def get_players(self) -> list[Player]:
+    def get_players_by_order(self) -> list[Player]:
         sorted_player_links = sorted(
             self.player_links, key=lambda player_link: player_link.order_index
         )
         return [player_link.player for player_link in sorted_player_links]
 
+    def get_chart_slots_by_order(self) -> list["ChartSlot"]:
+        return sorted(self.chart_slots, key=lambda chart_slot: chart_slot.order_index)
+
     def get_results(self) -> list[PlayerResults]:
-        chart_slots = sorted(
-            self.chart_slots, key=lambda chart_slot: chart_slot.order_index
-        )
+        chart_slots = self.get_chart_slots_by_order()
 
         chart_results_list: list[ChartResults] = []
         for chart_slot in chart_slots:

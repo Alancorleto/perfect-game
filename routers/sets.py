@@ -172,7 +172,7 @@ async def update_chart_slot_order_in_set(
     session.commit()
     session.refresh(db_set)
 
-    sorted_chart_slots = sorted(db_set.chart_slots, key=lambda c: c.order_index)
+    sorted_chart_slots = db_set.get_chart_slots_by_order()
 
     return sorted_chart_slots
 
@@ -219,9 +219,7 @@ async def bulk_add_players_to_set(
     session.commit()
     session.refresh(db_set)
 
-    sorted_player_links = sorted(db_set.player_links, key=lambda p: p.order_index)
-
-    return [player_link.player for player_link in sorted_player_links]
+    return db_set.get_players_by_order()
 
 
 @router.get("/{set_id}/players", response_model=list[PlayerPublic])
@@ -232,8 +230,7 @@ async def list_players_in_set(set_id: uuid.UUID, session: SessionDep):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
         )
-    sorted_player_links = sorted(set.player_links, key=lambda link: link.order_index)
-    return [player_link.player for player_link in sorted_player_links]
+    return set.get_players_by_order()
 
 
 @router.put("/{set_id}/players/order", response_model=list[PlayerPublic])
@@ -285,9 +282,7 @@ async def update_player_order_in_set(
     session.commit()
     session.refresh(db_set)
 
-    sorted_player_links = sorted(db_set.player_links, key=lambda link: link.order_index)
-
-    return [player_link.player for player_link in sorted_player_links]
+    return db_set.get_players_by_order()
 
 
 @router.delete("/{set_id}/players/{player_id}", response_model=list[PlayerPublic])
@@ -333,9 +328,7 @@ async def remove_player_from_set(
 
     session.commit()
 
-    sorted_player_links = sorted(db_set.player_links, key=lambda link: link.order_index)
-
-    return [player_link.player for player_link in sorted_player_links]
+    return db_set.get_players_by_order()
 
 
 @router.get("/{set_id}/results", response_model=list[PlayerResults])
@@ -364,7 +357,7 @@ async def list_possible_players_for_set(
 
     current_round = set.round
     category = set.round.category
-    sorted_rounds = sorted(category.rounds, key=lambda r: r.order_index)
+    sorted_rounds = category.get_rounds_by_order()
 
     previous_round = (
         sorted_rounds[sorted_rounds.index(current_round) - 1]
@@ -374,11 +367,13 @@ async def list_possible_players_for_set(
 
     if not previous_round:
         return [
-            player for player in category.players if player not in set.get_players()
+            player
+            for player in category.get_players_by_nickname()
+            if player not in set.get_players_by_order()
         ]
     else:
         return [
             player
             for player in previous_round.get_qualifying_players()
-            if player not in set.get_players()
+            if player not in set.get_players_by_order()
         ]

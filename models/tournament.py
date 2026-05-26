@@ -50,6 +50,9 @@ class Tournament(TournamentBase, table=True):
             category.can_be_deleted(user) for category in self.categories
         )
 
+    def get_categories_by_name(self) -> list["Category"]:
+        return sorted(self.categories, key=lambda c: c.name)
+
 
 class TournamentCreate(TournamentBase):
     pass

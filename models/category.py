@@ -42,6 +42,12 @@ class Category(CategoryBase, table=True):
             round.can_be_deleted(user) for round in self.rounds
         )
 
+    def get_players_by_nickname(self) -> list[Player]:
+        return sorted(self.players, key=lambda p: p.nickname)
+
+    def get_rounds_by_order(self) -> list["Round"]:
+        return sorted(self.rounds, key=lambda r: r.order_index)
+
 
 class CategoryCreate(CategoryBase):
     tournament_id: uuid.UUID

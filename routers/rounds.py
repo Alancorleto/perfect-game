@@ -116,7 +116,7 @@ async def list_sets_in_round(round_id: uuid.UUID, session: SessionDep):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
         )
-    return sorted(db_round.sets, key=lambda set: set.order_index)
+    return db_round.get_sets_by_order()
 
 
 @router.put("/{round_id}/sets/{set_id}/order", response_model=list[SetPublic])
@@ -159,7 +159,7 @@ async def change_set_order_in_round(
 
     session.commit()
 
-    return sorted(db_round.sets, key=lambda set: set.order_index)
+    return db_round.get_sets_by_order()
 
 
 @router.delete("/{round_id}/scores", status_code=status.HTTP_204_NO_CONTENT)
@@ -211,7 +211,7 @@ async def start_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
 
     if db_round.order_index > 0:
         db_category = db_round.category
-        sorted_rounds = sorted(db_category.rounds, key=lambda r: r.order_index)
+        sorted_rounds = db_category.get_rounds_by_order()
         previous_round = sorted_rounds[db_round.order_index - 1]
 
         if not previous_round:
@@ -376,7 +376,7 @@ async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep, user: Us
 
     db_category = db_round.category
     if db_round.order_index < len(db_category.rounds) - 1:
-        sorted_rounds = sorted(db_category.rounds, key=lambda r: r.order_index)
+        sorted_rounds = db_category.get_rounds_by_order()
         next_round = sorted_rounds[db_round.order_index + 1]
         if next_round.state != RoundState.NOT_STARTED:
             raise HTTPException(
