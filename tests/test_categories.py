@@ -1952,3 +1952,35 @@ def test_change_round_order_round_already_started(session: Session, client: Test
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_change_round_order_round_already_started_but_not_changing_order(
+    session: Session, client: TestClient
+):
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+
+    round_a = create_round_in_db(session, category=category)
+    round_b = create_round_in_db(session, category=category)
+    round_c = create_round_in_db(session, category=category)
+
+    round_a.state = RoundState.IN_PROGRESS
+    session.commit()
+
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.put(
+        f"/categories/{category.id}/rounds/order",
+        json=[str(round_a.id), str(round_c.id), str(round_b.id)],
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert [r["id"] for r in response.json()] == [
+        str(round_a.id),
+        str(round_c.id),
+        str(round_b.id),
+    ]

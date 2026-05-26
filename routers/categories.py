@@ -659,4 +659,4 @@ async def change_round_order_in_category(
     session.commit()
     session.refresh(db_category)
 
-    return db_category.rounds
+    return sorted(db_category.rounds, key=lambda r: r.order_index)
