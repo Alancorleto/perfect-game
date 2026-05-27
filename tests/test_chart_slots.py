@@ -47,7 +47,13 @@ def test_list_chart_slots(session: Session, client: TestClient):
     _, _, _, _, set, chart_a = create_editable_chart_slot_context(session)
     chart_b = create_chart_in_db(session, set=set, song_name="Chart B", level=12)
     slot_a = create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
-    slot_b = create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
+    slot_b = create_chart_slot_in_db(
+        session,
+        set=set,
+        chart=chart_b,
+        order_index=1,
+        description="Chart B description",
+    )
 
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
     response = client.get("/chart_slots/", headers=headers)
@@ -57,6 +63,8 @@ def test_list_chart_slots(session: Session, client: TestClient):
     assert len(data) == 2
     assert {item["id"] for item in data} == {str(slot_a.id), str(slot_b.id)}
     assert sorted(item["order_index"] for item in data) == [0, 1]
+    assert data[0]["description"] is None
+    assert data[1]["description"] == "Chart B description"
 
 
 def test_list_chart_slots_empty(session: Session, client: TestClient):
@@ -95,10 +103,12 @@ def test_create_chart_slot(session: Session, client: TestClient):
     assert data["set_id"] == str(set.id)
     assert data["chart_id"] == str(chart.id)
     assert data["order_index"] == 0
+    assert data["description"] is None
 
     created_slot = session.get(ChartSlot, uuid.UUID(data["id"]))
     assert created_slot is not None
     assert created_slot.order_index == 0
+    assert created_slot.description is None
 
 
 def test_create_chart_slot_without_chart(session: Session, client: TestClient):
@@ -107,7 +117,10 @@ def test_create_chart_slot_without_chart(session: Session, client: TestClient):
 
     response = client.post(
         "/chart_slots/",
-        json={"set_id": str(set.id)},
+        json={
+            "set_id": str(set.id),
+            "description": "Custom chart",
+        },
         headers=headers,
     )
     data = response.json()
@@ -116,6 +129,7 @@ def test_create_chart_slot_without_chart(session: Session, client: TestClient):
     assert data["set_id"] == str(set.id)
     assert data["chart_id"] is None
     assert data["order_index"] == 0
+    assert data["description"] == "Custom chart"
 
 
 def test_create_chart_slot_set_not_found(session: Session, client: TestClient):

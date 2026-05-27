@@ -17,6 +17,7 @@ class ChartSlot(SQLModel, table=True):
     set_id: uuid.UUID = Field(foreign_key="set.id", ondelete="CASCADE")
     chart_id: uuid.UUID | None = Field(foreign_key="chart.id", ondelete="SET NULL")
     order_index: int = Field(ge=0, default=0)
+    description: str | None = Field(default=None, max_length=20)
 
     set: Set = Relationship(back_populates="chart_slots")
     chart: Chart | None = Relationship()
@@ -36,10 +37,12 @@ class ChartSlot(SQLModel, table=True):
 class ChartSlotCreate(SQLModel):
     set_id: uuid.UUID
     chart_id: uuid.UUID | None = None
+    description: str | None = Field(default=None, max_length=20)
 
 
 class ChartSlotUpdate(SQLModel):
     chart_id: uuid.UUID | None = None
+    description: str | None = Field(default=None, max_length=20)
 
 
 class ChartSlotPublic(SQLModel):
@@ -47,5 +50,6 @@ class ChartSlotPublic(SQLModel):
     set_id: uuid.UUID
     chart_id: uuid.UUID | None
     order_index: int
+    description: str | None
 
     chart: ChartPublic | None = None

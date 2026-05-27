@@ -147,9 +147,15 @@ def create_chart_slot_in_db(
     set: Set,
     chart: Chart,
     order_index: int = 0,
+    description: str | None = None,
 ) -> ChartSlot:
     """Creates a chart slot directly in the test database."""
-    chart_slot = ChartSlot(set_id=set.id, chart_id=chart.id, order_index=order_index)
+    chart_slot = ChartSlot(
+        set_id=set.id,
+        chart_id=chart.id,
+        order_index=order_index,
+        description=description,
+    )
     session.add(chart_slot)
     session.commit()
     session.refresh(chart_slot)
