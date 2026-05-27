@@ -5,10 +5,10 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.category import Category
-from models.player import PlayerPublic
 from models.round import Round, RoundCreate, RoundPublic, RoundState, RoundUpdate
 from models.set import SetPublic
 from routers.users import UserDep
+from schemas.player import PlayerPublic
 
 router = APIRouter(prefix="/rounds", tags=["rounds"])
 

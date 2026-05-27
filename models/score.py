@@ -5,8 +5,9 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from models.chart import Chart, ChartPublic
 from models.chart_slot import ChartSlot, ChartSlotPublic
-from models.player import Player, PlayerPublic
+from models.player import Player
 from models.user import User
+from schemas.player import PlayerPublic
 
 
 class Grade(Enum):

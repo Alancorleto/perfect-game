@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
-from models.category import Category, CategoryCreate, CategoryPublic, CategoryUpdate
+from models.category import Category, CategoryCreate
 from models.category_invitation import (
     CategoryInvitation,
     CategoryInvitationPublic,
@@ -15,13 +15,15 @@ from models.category_invitation import (
 )
 from models.category_player import (
     CategoryPlayerLink,
-    CategoryPlayerLinkPublic,
     CategoryPlayerLinkUpdate,
 )
 from models.tournament import Tournament
-from routers.players import Player, PlayerPublic
+from routers.players import Player
 from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
+from schemas.category import CategoryPublic, CategoryUpdate
+from schemas.category_player import CategoryPlayerLinkPublic
+from schemas.player import PlayerPublic
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 

@@ -73,18 +73,3 @@ class Player(PlayerBase, table=True):
 
 class PlayerCreate(PlayerBase):
     pass
-
-
-class PlayerPublic(PlayerBase):
-    id: uuid.UUID
-    user_id: uuid.UUID | None
-    guest_tournament_id: uuid.UUID | None
-
-
-class PlayerUpdate(SQLModel):
-    nickname: str | None = Field(default=None, max_length=NICKNAME_MAX_LENGTH)
-    country_code: str | None = Field(default=None, min_length=2, max_length=2)
-    name: str | None = Field(default=None, max_length=NAME_MAX_LENGTH)
-    team_name: str | None = Field(default=None, max_length=TEAM_NAME_MAX_LENGTH)
-    birth_date: date | None = Field(default=None)
-    city: str | None = Field(default=None, max_length=CITY_MAX_LENGTH)

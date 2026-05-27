@@ -68,12 +68,3 @@ class Category(CategoryBase, table=True):
 
 class CategoryCreate(CategoryBase):
     tournament_id: uuid.UUID
-
-
-class CategoryPublic(CategoryBase):
-    id: uuid.UUID
-    tournament_id: uuid.UUID
-
-
-class CategoryUpdate(SQLModel):
-    name: str | None = None

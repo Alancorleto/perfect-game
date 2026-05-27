@@ -6,7 +6,7 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.chart_slot import ChartSlot, ChartSlotPublic
-from models.player import Player, PlayerPublic
+from models.player import Player
 from models.round import Round
 from models.set import (
     ChartResults,
@@ -20,6 +20,7 @@ from models.set import (
 )
 from models.set_player import SetPlayerLink
 from routers.users import UserDep
+from schemas.player import PlayerPublic
 
 router = APIRouter(prefix="/sets", tags=["sets"])
 

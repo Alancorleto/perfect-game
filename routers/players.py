@@ -6,9 +6,10 @@ from sqlmodel import select
 
 from database import SessionDep
 from image_storage import upload_image
-from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
+from models.player import Player, PlayerCreate
 from models.tournament import Tournament
 from routers.users import UserDep
+from schemas.player import PlayerPublic, PlayerUpdate
 
 router = APIRouter(prefix="/players", tags=["players"])
 
