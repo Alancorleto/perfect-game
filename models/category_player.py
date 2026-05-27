@@ -9,14 +9,30 @@ if TYPE_CHECKING:
     from models.player import Player
 
 
-class CategoryPlayerLink(SQLModel, table=True):
+class CategoryPlayerLinkBase(SQLModel):
+    has_paid_entry: bool = Field(default=False)
+
+
+class CategoryPlayerLink(CategoryPlayerLinkBase, SQLModel, table=True):
     category_id: uuid.UUID = Field(
         foreign_key="category.id", primary_key=True, ondelete="CASCADE"
     )
     player_id: uuid.UUID = Field(
         foreign_key="player.id", primary_key=True, ondelete="CASCADE"
     )
-    has_paid_entry: bool = Field(default=False)
 
     category: "Category" = Relationship(back_populates="player_links")
     player: "Player" = Relationship(back_populates="category_links")
+
+
+class CategoryPlayerLinkCreate(CategoryPlayerLinkBase):
+    pass
+
+
+class CategoryPlayerLinkUpdate(SQLModel):
+    has_paid_entry: bool | None = Field(default=None)
+
+
+class CategoryPlayerLinkPublic(CategoryPlayerLinkBase):
+    category: "Category"
+    player: "Player"

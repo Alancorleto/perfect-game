@@ -50,9 +50,11 @@ class Category(CategoryBase, table=True):
     def get_rounds_by_order(self) -> list["Round"]:
         return sorted(self.rounds, key=lambda r: r.order_index)
 
-    def add_player(self, player: Player) -> None:
+    def add_player(self, player: Player, has_paid_entry: bool = False) -> None:
         if all(link.player_id != player.id for link in self.player_links):
-            player_link = CategoryPlayerLink(player=player, category=self)
+            player_link = CategoryPlayerLink(
+                player=player, category=self, has_paid_entry=has_paid_entry
+            )
             self.player_links.append(player_link)
 
     def remove_player(self, player: Player) -> None:

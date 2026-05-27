@@ -1593,7 +1593,7 @@ def test_list_players_in_category(session: Session, client: TestClient):
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 2
-    nicknames = [p["nickname"] for p in data]
+    nicknames = [link["player"]["nickname"] for link in data]
     assert "PlayerA" in nicknames
     assert "PlayerB" in nicknames
 
@@ -1641,7 +1641,8 @@ def test_remove_player_from_category(session: Session, client: TestClient):
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 1
-    assert data[0]["nickname"] == "PlayerB"
+    assert data[0]["player"]["nickname"] == "PlayerB"
+    assert data[0]["has_paid_entry"] is False
 
 
 def test_remove_player_from_category_when_player_not_in_category(
@@ -1721,6 +1722,52 @@ def test_remove_player_from_category_unauthenticated(
     response = client.delete(f"/categories/{category.id}/players/{player.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+# ---------------------------------------------------------------------------
+# PUT /categories/{category_id}/players/{player_id}
+# ---------------------------------------------------------------------------
+
+
+def test_update_player_in_category(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    player = create_player_in_db(session, nickname="PlayerA")
+    category.add_player(player)
+    session.add(category)
+    session.commit()
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.put(
+        f"/categories/{category.id}/players/{player.id}",
+        json={"has_paid_entry": True},
+        headers=headers,
+    )
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["player"]["nickname"] == "PlayerA"
+    assert data["has_paid_entry"] is True
+
+
+def test_update_player_in_category_not_found(session: Session, client: TestClient):
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    tournament = create_tournament_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, tournament=tournament)
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.put(
+        f"/categories/{category.id}/players/00000000-0000-0000-0000-000000000000",
+        json={"has_paid_entry": True},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------

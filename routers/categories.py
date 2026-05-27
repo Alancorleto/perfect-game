@@ -2,7 +2,6 @@ import datetime
 import uuid
 
 from fastapi import APIRouter, HTTPException, status
-from httpx import Request
 from sqlmodel import select
 
 from database import SessionDep
@@ -13,6 +12,11 @@ from models.category_invitation import (
     CategoryJoinRequest,
     CategoryJoinRequestPublic,
     RequestStatus,
+)
+from models.category_player import (
+    CategoryPlayerLink,
+    CategoryPlayerLinkPublic,
+    CategoryPlayerLinkUpdate,
 )
 from models.tournament import Tournament
 from routers.players import Player, PlayerPublic
@@ -541,7 +545,7 @@ async def decline_category_join_request(
     session.commit()
 
 
-@router.get("/{category_id}/players", response_model=list[PlayerPublic])
+@router.get("/{category_id}/players", response_model=list[CategoryPlayerLinkPublic])
 async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
     """List all players in a category"""
     db_category = session.get(Category, category_id)
@@ -549,10 +553,12 @@ async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
         )
-    return db_category.get_players_by_nickname()
+    return db_category.player_links
 
 
-@router.delete("/{category_id}/players/{player_id}", response_model=list[PlayerPublic])
+@router.delete(
+    "/{category_id}/players/{player_id}", response_model=list[CategoryPlayerLinkPublic]
+)
 async def remove_player_from_category(
     category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
@@ -566,7 +572,7 @@ async def remove_player_from_category(
     if not db_category.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="Unauthorized to edit category",
         )
 
     db_player = session.get(Player, player_id)
@@ -575,17 +581,51 @@ async def remove_player_from_category(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
         )
 
-    if db_player not in db_category.get_players_by_nickname():
+    db_category_player_link = session.get(CategoryPlayerLink, (category_id, player_id))
+    if not db_category_player_link:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found in category"
         )
 
-    db_category.remove_player(db_player)
-    session.add(db_category)
+    session.delete(db_category_player_link)
     session.commit()
     session.refresh(db_category)
 
-    return db_category.get_players_by_nickname()
+    return db_category.player_links
+
+
+@router.put(
+    "/{category_id}/players/{player_id}",
+    response_model=CategoryPlayerLinkPublic,
+)
+async def update_player_in_category(
+    category_id: uuid.UUID,
+    player_id: uuid.UUID,
+    category_player_link: CategoryPlayerLinkUpdate,
+    session: SessionDep,
+    user: UserDep,
+):
+    db_category_player_link = session.get(CategoryPlayerLink, (category_id, player_id))
+    if not db_category_player_link:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category player link not found",
+        )
+
+    if not db_category_player_link.category.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Unauthorized to edit category",
+        )
+
+    category_player_link_data = category_player_link.model_dump(exclude_unset=True)
+    db_category_player_link.sqlmodel_update(category_player_link_data)
+
+    session.add(db_category_player_link)
+    session.commit()
+    session.refresh(db_category_player_link)
+
+    return db_category_player_link
 
 
 @router.get("/{category_id}/rounds", response_model=list[RoundPublic])
