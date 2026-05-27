@@ -4,9 +4,10 @@ from typing import TYPE_CHECKING
 from sqlmodel import Field, SQLModel
 from sqlmodel.main import Relationship
 
+from models.player import Player
+
 if TYPE_CHECKING:
     from models.category import Category
-    from models.player import Player
 
 
 class CategoryPlayerLinkBase(SQLModel):
@@ -22,7 +23,7 @@ class CategoryPlayerLink(CategoryPlayerLinkBase, SQLModel, table=True):
     )
 
     category: "Category" = Relationship(back_populates="player_links")
-    player: "Player" = Relationship(back_populates="category_links")
+    player: Player = Relationship(back_populates="category_links")
 
 
 class CategoryPlayerLinkCreate(CategoryPlayerLinkBase):
@@ -33,6 +34,5 @@ class CategoryPlayerLinkUpdate(SQLModel):
     has_paid_entry: bool | None = Field(default=None)
 
 
-class CategoryPlayerLinkPublic(CategoryPlayerLinkBase):
-    category: "Category"
-    player: "Player"
+class PlayerInCategory(CategoryPlayerLinkBase):
+    player: Player
