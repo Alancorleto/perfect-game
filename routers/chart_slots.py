@@ -102,7 +102,8 @@ async def update_chart_slot(
 
         if db_chart not in db_chart_slot.score_table.charts:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Chart not in set"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Chart not in score table",
             )
 
     chart_slot_data = chart_slot_update.model_dump(exclude_unset=True)

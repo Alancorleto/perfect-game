@@ -6,8 +6,8 @@ from routers.chart_slots import router as chart_slot_router
 from routers.charts import router as chart_router
 from routers.players import router as player_router
 from routers.rounds import router as round_router
+from routers.score_tables import router as set_router
 from routers.scores import router as score_router
-from routers.sets import router as set_router
 from routers.tournaments import router as tournament_router
 from routers.users import router as user_router
 
