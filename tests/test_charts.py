@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from models.chart import Mode
-from models.set import Set
+from models.score_table import ScoreTable
 from models.user import User
 from tests.helpers import (
     create_category_in_db,
@@ -18,7 +18,7 @@ from tests.helpers import (
 )
 
 
-def create_chart_context_in_db(session: Session, organizer: User) -> Set:
+def create_chart_context_in_db(session: Session, organizer: User) -> ScoreTable:
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)

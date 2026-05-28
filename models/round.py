@@ -9,7 +9,7 @@ from models.player import Player
 from models.user import User
 
 if TYPE_CHECKING:
-    from models.set import Set
+    from models.score_table import ScoreTable
 
 
 class RoundState(Enum):
@@ -32,7 +32,7 @@ class Round(RoundBase, table=True):
 
     category: Category = Relationship(back_populates="rounds")
 
-    sets: list["Set"] = Relationship(back_populates="round", cascade_delete=True)
+    sets: list["ScoreTable"] = Relationship(back_populates="round", cascade_delete=True)
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.category.can_be_edited_by(user)
@@ -48,7 +48,7 @@ class Round(RoundBase, table=True):
 
         return qualifying_players
 
-    def get_sets_by_order(self) -> list["Set"]:
+    def get_sets_by_order(self) -> list["ScoreTable"]:
         return sorted(self.sets, key=lambda s: s.order_index)
 
 

@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from models.round import RoundState
-from models.set import SetFormat
+from models.score_table import ScoreTableFormat
 from tests.helpers import (
     add_player_to_set_in_db,
     create_category_in_db,
@@ -35,7 +35,7 @@ def create_set_with_players(
     session: Session,
     round,
     *,
-    format: SetFormat = SetFormat.SCORE_SUM,
+    format: ScoreTableFormat = ScoreTableFormat.SCORE_SUM,
     qualifiers_count: int,
     players_scores: list[tuple[str, int]],
     set_order_index: int | None = None,
@@ -796,7 +796,7 @@ def test_delete_all_scores_in_round(session: Session, client: TestClient):
     set, _, _, _ = create_set_with_players(
         session=session,
         round=round,
-        format=SetFormat.SCORE_SUM,
+        format=ScoreTableFormat.SCORE_SUM,
         qualifiers_count=1,
         players_scores=[
             ("player1", 100),
@@ -824,7 +824,7 @@ def test_delete_all_scores_in_round_empty_set(session: Session, client: TestClie
     set, _, _, _ = create_set_with_players(
         session=session,
         round=round,
-        format=SetFormat.SCORE_SUM,
+        format=ScoreTableFormat.SCORE_SUM,
         qualifiers_count=1,
         players_scores=[],
     )
@@ -1212,7 +1212,7 @@ def test_get_qualifying_players_in_round_two_battles(
     set_a, _, _, set_a_players = create_set_with_players(
         session,
         round,
-        format=SetFormat.BATTLE,
+        format=ScoreTableFormat.BATTLE,
         qualifiers_count=1,
         players_scores=[
             ("Set A Player 1", 950000),
@@ -1223,7 +1223,7 @@ def test_get_qualifying_players_in_round_two_battles(
     set_b, _, _, set_b_players = create_set_with_players(
         session,
         round,
-        format=SetFormat.BATTLE,
+        format=ScoreTableFormat.BATTLE,
         qualifiers_count=1,
         players_scores=[
             ("Set B Player 1", 900000),

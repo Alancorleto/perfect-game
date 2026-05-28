@@ -4,7 +4,7 @@ from sqlmodel import Session
 
 from models import chart_slot
 from models.round import RoundState
-from models.set import SetFormat
+from models.score_table import ScoreTableFormat
 from tests.helpers import (
     add_player_to_set_in_db,
     create_category_in_db,
@@ -889,7 +889,7 @@ def test_get_set_results_score_sum(session: Session, client: TestClient):
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    set = create_set_in_db(session, round=round, format=SetFormat.SCORE_SUM)
+    set = create_set_in_db(session, round=round, format=ScoreTableFormat.SCORE_SUM)
 
     chart_a = create_chart_in_db(session, set=set, song_name="Song A")
     chart_b = create_chart_in_db(session, set=set, song_name="Song B")
@@ -932,7 +932,7 @@ def test_get_set_results_battle(session: Session, client: TestClient):
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    set = create_set_in_db(session, round=round, format=SetFormat.BATTLE)
+    set = create_set_in_db(session, round=round, format=ScoreTableFormat.BATTLE)
     chart = create_chart_in_db(session, set=set, song_name="Battle Song")
     slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
 
@@ -968,7 +968,7 @@ def test_get_set_results_battle_tie_scores_no_points(
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    set = create_set_in_db(session, round=round, format=SetFormat.BATTLE)
+    set = create_set_in_db(session, round=round, format=ScoreTableFormat.BATTLE)
     chart = create_chart_in_db(session, set=set, song_name="Tie Song")
     slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
 

@@ -7,7 +7,7 @@ from models.chart_slot import ChartSlot
 from models.player import Player
 from models.round import Round, RoundState
 from models.score import Grade, Score
-from models.set import Set, SetFormat
+from models.score_table import ScoreTable, ScoreTableFormat
 from models.set_player import SetPlayerLink
 from models.tournament import Tournament
 from models.tournament_organizer import TournamentOrganizer
@@ -62,7 +62,7 @@ def create_player_in_db(
 
 def create_chart_in_db(
     session: Session,
-    set: Set,
+    set: ScoreTable,
     song_name: str = "Song",
     mode: Mode = Mode.SINGLE,
     level: int = 1,
@@ -126,10 +126,10 @@ def create_set_in_db(
     round: Round,
     levels: str | None = None,
     qualifiers_count: int | None = None,
-    format: SetFormat = SetFormat.SCORE_SUM,
-) -> Set:
+    format: ScoreTableFormat = ScoreTableFormat.SCORE_SUM,
+) -> ScoreTable:
     """Creates a set directly in the test database."""
-    set = Set(
+    set = ScoreTable(
         round_id=round.id,
         levels=levels,
         qualifiers_count=qualifiers_count,
@@ -144,7 +144,7 @@ def create_set_in_db(
 
 def create_chart_slot_in_db(
     session: Session,
-    set: Set,
+    set: ScoreTable,
     chart: Chart,
     order_index: int = 0,
     description: str | None = None,
@@ -164,7 +164,7 @@ def create_chart_slot_in_db(
 
 def add_player_to_set_in_db(
     session: Session,
-    set: Set,
+    set: ScoreTable,
     player: Player,
     order_index: int = 0,
 ) -> SetPlayerLink:

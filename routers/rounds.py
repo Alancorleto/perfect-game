@@ -7,7 +7,7 @@ from database import SessionDep
 from models.category import Category
 from models.player import PlayerPublic
 from models.round import Round, RoundCreate, RoundPublic, RoundState, RoundUpdate
-from models.set import SetPublic
+from models.score_table import ScoreTablePublic
 from routers.users import UserDep
 
 router = APIRouter(prefix="/rounds", tags=["rounds"])
@@ -108,7 +108,7 @@ async def delete_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     session.commit()
 
 
-@router.get("/{round_id}/sets", response_model=list[SetPublic])
+@router.get("/{round_id}/sets", response_model=list[ScoreTablePublic])
 async def list_sets_in_round(round_id: uuid.UUID, session: SessionDep):
     """Get the set associated with a round"""
     db_round = session.get(Round, round_id)
@@ -119,7 +119,7 @@ async def list_sets_in_round(round_id: uuid.UUID, session: SessionDep):
     return db_round.get_sets_by_order()
 
 
-@router.put("/{round_id}/sets/{set_id}/order", response_model=list[SetPublic])
+@router.put("/{round_id}/sets/{set_id}/order", response_model=list[ScoreTablePublic])
 async def change_set_order_in_round(
     round_id: uuid.UUID,
     new_set_order: list[uuid.UUID],

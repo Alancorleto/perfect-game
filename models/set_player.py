@@ -5,7 +5,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from models.player import Player
-    from models.set import Set
+    from models.score_table import ScoreTable
 
 
 class SetPlayerLink(SQLModel, table=True):
@@ -17,5 +17,5 @@ class SetPlayerLink(SQLModel, table=True):
     )
     order_index: int = Field(ge=0)
 
-    set: "Set" = Relationship(back_populates="player_links")
+    set: "ScoreTable" = Relationship(back_populates="player_links")
     player: "Player" = Relationship()

@@ -8,7 +8,7 @@ from models.user import User
 
 if TYPE_CHECKING:
     from models.score import Score
-    from models.set import Set
+    from models.score_table import ScoreTable
 
 
 class Mode(Enum):
@@ -35,7 +35,7 @@ class Chart(ChartBase, table=True):
     )
     set_id: uuid.UUID = Field(foreign_key="set.id")
 
-    set: "Set" = Relationship(back_populates="charts")
+    set: "ScoreTable" = Relationship(back_populates="charts")
 
     # This is not used but needed by SQLModel to work properly with cascade delete
     scores: list["Score"] = Relationship(back_populates="chart", cascade_delete=True)

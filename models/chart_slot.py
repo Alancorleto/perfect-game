@@ -5,7 +5,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from models.chart import Chart, ChartPublic
 from models.round import RoundState
-from models.set import Set
+from models.score_table import ScoreTable
 from models.user import User
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ class ChartSlot(SQLModel, table=True):
     order_index: int = Field(ge=0, default=0)
     description: str | None = Field(default=None, max_length=20)
 
-    set: Set = Relationship(back_populates="chart_slots")
+    set: ScoreTable = Relationship(back_populates="chart_slots")
     chart: Chart | None = Relationship()
     scores: list["Score"] = Relationship(
         back_populates="chart_slot", cascade_delete=True

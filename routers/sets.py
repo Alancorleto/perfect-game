@@ -7,15 +7,15 @@ from database import SessionDep
 from models.chart_slot import ChartSlot, ChartSlotPublic
 from models.player import Player, PlayerPublic
 from models.round import Round
-from models.set import (
+from models.score_table import (
     ChartResults,
     PlayerResults,
     Result,
-    Set,
-    SetCreate,
-    SetFormat,
-    SetPublic,
-    SetUpdate,
+    ScoreTable,
+    ScoreTableCreate,
+    ScoreTableFormat,
+    ScoreTableUpdate,
+    ScoreTablePublic,
 )
 from models.set_player import SetPlayerLink
 from routers.users import UserDep
@@ -23,8 +23,8 @@ from routers.users import UserDep
 router = APIRouter(prefix="/sets", tags=["sets"])
 
 
-@router.post("/", response_model=SetPublic)
-async def create_set(set: SetCreate, session: SessionDep, user: UserDep):
+@router.post("/", response_model=ScoreTablePublic)
+async def create_set(set: ScoreTableCreate, session: SessionDep, user: UserDep):
     """Create a new set for a round."""
     round = session.get(Round, set.round_id)
     if not round:
@@ -38,7 +38,7 @@ async def create_set(set: SetCreate, session: SessionDep, user: UserDep):
             detail="You are not an organizer for this tournament",
         )
 
-    db_set = Set.model_validate(set)
+    db_set = ScoreTable.model_validate(set)
 
     db_set.order_index = len(round.sets)
 
@@ -48,17 +48,17 @@ async def create_set(set: SetCreate, session: SessionDep, user: UserDep):
     return db_set
 
 
-@router.get("/", response_model=list[SetPublic])
+@router.get("/", response_model=list[ScoreTablePublic])
 async def list_sets(session: SessionDep):
     """List all sets."""
-    sets = session.exec(select(Set)).all()
+    sets = session.exec(select(ScoreTable)).all()
     return sets
 
 
-@router.get("/{set_id}", response_model=SetPublic)
+@router.get("/{set_id}", response_model=ScoreTablePublic)
 async def get_set(set_id: uuid.UUID, session: SessionDep):
     """Get a specific set."""
-    db_set = session.get(Set, set_id)
+    db_set = session.get(ScoreTable, set_id)
     if not db_set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
@@ -66,12 +66,12 @@ async def get_set(set_id: uuid.UUID, session: SessionDep):
     return db_set
 
 
-@router.patch("/{set_id}", response_model=SetPublic)
+@router.patch("/{set_id}", response_model=ScoreTablePublic)
 async def update_set(
-    set_id: uuid.UUID, set: SetUpdate, session: SessionDep, user: UserDep
+    set_id: uuid.UUID, set: ScoreTableUpdate, session: SessionDep, user: UserDep
 ):
     """Update a set"""
-    db_set = session.get(Set, set_id)
+    db_set = session.get(ScoreTable, set_id)
     if not db_set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
@@ -94,7 +94,7 @@ async def update_set(
 @router.delete("/{set_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_set(set_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Delete a set"""
-    db_set = session.get(Set, set_id)
+    db_set = session.get(ScoreTable, set_id)
     if not db_set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
@@ -121,7 +121,7 @@ async def delete_set(set_id: uuid.UUID, session: SessionDep, user: UserDep):
 @router.get("/{set_id}/chart_slots", response_model=list[ChartSlotPublic])
 async def list_chart_slots_for_set(set_id: uuid.UUID, session: SessionDep):
     """Get all charts for a set"""
-    db_set = session.get(Set, set_id)
+    db_set = session.get(ScoreTable, set_id)
     if not db_set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
@@ -137,7 +137,7 @@ async def update_chart_slot_order_in_set(
     session: SessionDep,
     user: UserDep,
 ):
-    db_set = session.get(Set, set_id)
+    db_set = session.get(ScoreTable, set_id)
     if not db_set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
@@ -181,7 +181,7 @@ async def bulk_add_players_to_set(
     set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep, user: UserDep
 ):
     """Bulk add players to a set"""
-    db_set = session.get(Set, set_id)
+    db_set = session.get(ScoreTable, set_id)
     if not db_set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
@@ -224,7 +224,7 @@ async def bulk_add_players_to_set(
 @router.get("/{set_id}/players", response_model=list[PlayerPublic])
 async def list_players_in_set(set_id: uuid.UUID, session: SessionDep):
     """Get the players for a specific set."""
-    set = session.get(Set, set_id)
+    set = session.get(ScoreTable, set_id)
     if not set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
@@ -237,7 +237,7 @@ async def update_player_order_in_set(
     set_id: uuid.UUID, player_ids: list[uuid.UUID], session: SessionDep, user: UserDep
 ):
     """Update the order of players in a set"""
-    db_set = session.get(Set, set_id)
+    db_set = session.get(ScoreTable, set_id)
     if not db_set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
@@ -289,7 +289,7 @@ async def remove_player_from_set(
     set_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     """Remove a player from a set."""
-    db_set = session.get(Set, set_id)
+    db_set = session.get(ScoreTable, set_id)
     if not db_set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
@@ -334,7 +334,7 @@ async def remove_player_from_set(
 async def get_set_results(set_id: uuid.UUID, session: SessionDep):
     """Get the results for a specific set."""
 
-    set = session.get(Set, set_id)
+    set = session.get(ScoreTable, set_id)
     if not set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
@@ -348,7 +348,7 @@ async def list_possible_players_for_set(
     set_id: uuid.UUID, session: SessionDep
 ) -> list[Player]:
     """List all possible players in a set, including those who passed the previous round."""
-    set = session.get(Set, set_id)
+    set = session.get(ScoreTable, set_id)
     if not set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"

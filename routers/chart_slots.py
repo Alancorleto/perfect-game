@@ -11,7 +11,7 @@ from models.chart_slot import (
     ChartSlotPublic,
     ChartSlotUpdate,
 )
-from models.set import Set
+from models.score_table import ScoreTable
 from routers.users import UserDep
 
 router = APIRouter(prefix="/chart_slots", tags=["chart_slots"])
@@ -29,7 +29,7 @@ async def create_chart_slot(
     chart_slot: ChartSlotCreate, session: SessionDep, user: UserDep
 ):
     """Create a chart slot."""
-    db_set = session.get(Set, chart_slot.set_id)
+    db_set = session.get(ScoreTable, chart_slot.set_id)
     if not db_set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"

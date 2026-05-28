@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from models.set_player import SetPlayerLink
 
 
-class SetFormat(Enum):
+class ScoreTableFormat(Enum):
     SCORE_SUM = "score_sum"
     BATTLE = "battle"
     CUSTOM_SET = "custom_set"
@@ -47,13 +47,13 @@ class ChartResults(BaseModel):
     results: list[Result] = []
 
 
-class SetBase(SQLModel):
+class ScoreTableBase(SQLModel):
     qualifiers_count: int | None = Field(ge=1, default=None)
-    format: SetFormat = Field(default=SetFormat.SCORE_SUM)
+    format: ScoreTableFormat = Field(default=ScoreTableFormat.SCORE_SUM)
     order_index: int = Field(default=0)
 
 
-class Set(SetBase, table=True):
+class ScoreTable(ScoreTableBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     round_id: uuid.UUID = Field(foreign_key="round.id", ondelete="CASCADE")
 
@@ -114,17 +114,17 @@ class Set(SetBase, table=True):
         return qualifying_players
 
 
-class SetCreate(SetBase):
+class ScoreTableCreate(ScoreTableBase):
     round_id: uuid.UUID
 
 
-class SetUpdate(SetBase):
+class ScoreTableUpdate(ScoreTableBase):
     levels: str | None = None
     qualifiers_count: int | None = Field(ge=1, default=1)
-    format: SetFormat | None = Field(default=SetFormat.SCORE_SUM)
+    format: ScoreTableFormat | None = Field(default=ScoreTableFormat.SCORE_SUM)
 
 
-class SetPublic(SetBase):
+class ScoreTablePublic(ScoreTableBase):
     id: uuid.UUID
     round_id: uuid.UUID
 
@@ -211,12 +211,14 @@ def _try_get_player_result(player_id: uuid.UUID, results: list[Result]) -> Resul
     return None
 
 
-def _calculate_player_total_score(player_results: PlayerResults, set_format: SetFormat):
-    if set_format == SetFormat.SCORE_SUM:
+def _calculate_player_total_score(
+    player_results: PlayerResults, set_format: ScoreTableFormat
+):
+    if set_format == ScoreTableFormat.SCORE_SUM:
         for result in player_results.results:
             player_results.total_score += result.score
 
-    elif set_format == SetFormat.BATTLE:
+    elif set_format == ScoreTableFormat.BATTLE:
         for result in player_results.results:
             if result.place == 1 and not result.is_tie and result.score_id is not None:
                 player_results.total_score += 1
