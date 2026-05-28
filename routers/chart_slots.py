@@ -29,13 +29,13 @@ async def create_chart_slot(
     chart_slot: ChartSlotCreate, session: SessionDep, user: UserDep
 ):
     """Create a chart slot."""
-    db_set = session.get(ScoreTable, chart_slot.score_table_id)
-    if not db_set:
+    db_score_table = session.get(ScoreTable, chart_slot.score_table_id)
+    if not db_score_table:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score table not found"
         )
 
-    if not db_set.can_be_edited_by(user):
+    if not db_score_table.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not an organizer for this tournament",
@@ -50,7 +50,7 @@ async def create_chart_slot(
 
     db_chart_slot = ChartSlot.model_validate(chart_slot)
 
-    db_chart_slot.order_index = len(db_set.chart_slots)
+    db_chart_slot.order_index = len(db_score_table.chart_slots)
 
     session.add(db_chart_slot)
     session.commit()
@@ -133,20 +133,20 @@ async def delete_chart_slot(
             detail="You are not allowed to delete this chart slot",
         )
 
-    db_set = db_chart_slot.score_table
-    if not db_set:
+    db_score_table = db_chart_slot.score_table
+    if not db_score_table:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score table not found"
         )
 
     deleted_slot_order_index = db_chart_slot.order_index
 
     session.delete(db_chart_slot)
 
-    for slot in db_set.chart_slots:
+    for slot in db_score_table.chart_slots:
         if slot.order_index > deleted_slot_order_index:
             slot.order_index -= 1
             session.add(slot)
 
     session.commit()
-    session.refresh(db_set)
+    session.refresh(db_score_table)
