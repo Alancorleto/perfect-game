@@ -185,8 +185,8 @@ async def delete_all_scores_in_round(
         )
 
     for db_score_table in db_round.score_tables:
-        for db_chart_slot in db_score_table.score_columns:
-            db_chart_slot.scores = []
+        for db_score_column in db_score_table.score_columns:
+            db_score_column.scores = []
 
     session.add(db_round)
     session.commit()
@@ -260,8 +260,8 @@ async def cancel_round_start(round_id: uuid.UUID, session: SessionDep, user: Use
         )
 
     for db_score_table in db_round.score_tables:
-        for chart_slot in db_score_table.score_columns:
-            if len(chart_slot.scores) > 0:
+        for score_column in db_score_table.score_columns:
+            if len(score_column.scores) > 0:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Cannot cancel round with scores",

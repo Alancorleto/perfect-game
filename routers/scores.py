@@ -46,13 +46,13 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
             status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
         )
 
-    db_chart_slot = session.get(ScoreColumn, score.score_column_id)
-    if not db_chart_slot:
+    db_score_column = session.get(ScoreColumn, score.score_column_id)
+    if not db_score_column:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chart slot not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score column not found"
         )
 
-    if not db_chart_slot.can_be_edited_by(user):
+    if not db_score_column.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not an organizer for this tournament",
@@ -60,32 +60,32 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
 
     if not any(
         link.player_id == score.player_id
-        for link in db_chart_slot.score_table.player_rows
+        for link in db_score_column.score_table.player_rows
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Player is not in the score table",
         )
 
-    if db_chart not in db_chart_slot.score_table.charts:
+    if db_chart not in db_score_column.score_table.charts:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Chart {db_chart} is not in the score table",
         )
 
-    if db_chart_slot.chart is not None and db_chart_slot.chart != db_chart:
+    if db_score_column.chart is not None and db_score_column.chart != db_chart:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Chart {db_chart} does not correspond with column {db_chart_slot.order_index}",
+            detail=f"Chart {db_chart} does not correspond with column {db_score_column.order_index}",
         )
 
     if any(
-        score.player_id == chart_slot_score.player_id
-        for chart_slot_score in db_chart_slot.scores
+        score.player_id == score_column_score.player_id
+        for score_column_score in db_score_column.scores
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A score already exists for this player and chart slot",
+            detail="A score already exists for this player and score column",
         )
 
     db_score = Score.model_validate(score)

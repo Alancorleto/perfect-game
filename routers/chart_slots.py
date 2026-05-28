@@ -14,22 +14,22 @@ from models.score_column import (
 from models.score_table import ScoreTable
 from routers.users import UserDep
 
-router = APIRouter(prefix="/chart_slots", tags=["chart_slots"])
+router = APIRouter(prefix="/score_columns", tags=["score_columns"])
 
 
 @router.get("/", response_model=list[ScoreColumnPublic])
-async def list_chart_slots(session: SessionDep, user: UserDep):
-    """List all chart slots."""
-    chart_slots = session.exec(select(ScoreColumn)).all()
-    return chart_slots
+async def list_score_columns(session: SessionDep, user: UserDep):
+    """List all score columns."""
+    score_columns = session.exec(select(ScoreColumn)).all()
+    return score_columns
 
 
 @router.post("/", response_model=ScoreColumnPublic)
-async def create_chart_slot(
-    chart_slot: ScoreColumnCreate, session: SessionDep, user: UserDep
+async def create_score_column(
+    score_column: ScoreColumnCreate, session: SessionDep, user: UserDep
 ):
-    """Create a chart slot."""
-    db_score_table = session.get(ScoreTable, chart_slot.score_table_id)
+    """Create a score column."""
+    db_score_table = session.get(ScoreTable, score_column.score_table_id)
     if not db_score_table:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Score table not found"
@@ -41,107 +41,107 @@ async def create_chart_slot(
             detail="You are not an organizer for this tournament",
         )
 
-    if chart_slot.chart_id is not None:
-        db_chart = session.get(Chart, chart_slot.chart_id)
+    if score_column.chart_id is not None:
+        db_chart = session.get(Chart, score_column.chart_id)
         if not db_chart:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
             )
 
-    db_chart_slot = ScoreColumn.model_validate(chart_slot)
+    db_score_column = ScoreColumn.model_validate(score_column)
 
-    db_chart_slot.order_index = len(db_score_table.score_columns)
+    db_score_column.order_index = len(db_score_table.score_columns)
 
-    session.add(db_chart_slot)
+    session.add(db_score_column)
     session.commit()
-    session.refresh(db_chart_slot)
+    session.refresh(db_score_column)
 
-    return db_chart_slot
+    return db_score_column
 
 
-@router.get("/{chart_slot_id}", response_model=ScoreColumnPublic)
-async def get_chart_slot(
-    chart_slot_id: uuid.UUID,
+@router.get("/{score_column_id}", response_model=ScoreColumnPublic)
+async def get_score_column(
+    score_column_id: uuid.UUID,
     session: SessionDep,
 ):
-    """Get a chart slot."""
-    db_chart_slot = session.get(ScoreColumn, chart_slot_id)
-    if not db_chart_slot:
+    """Get a score column."""
+    db_score_column = session.get(ScoreColumn, score_column_id)
+    if not db_score_column:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chart slot not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score column not found"
         )
-    return db_chart_slot
+    return db_score_column
 
 
-@router.patch("/{chart_slot_id}", response_model=ScoreColumnPublic)
-async def update_chart_slot(
-    chart_slot_id: uuid.UUID,
-    chart_slot_update: ScoreColumnUpdate,
+@router.patch("/{score_column_id}", response_model=ScoreColumnPublic)
+async def update_score_column(
+    score_column_id: uuid.UUID,
+    score_column_update: ScoreColumnUpdate,
     session: SessionDep,
     user: UserDep,
 ):
-    """Update a chart slot."""
-    db_chart_slot = session.get(ScoreColumn, chart_slot_id)
-    if not db_chart_slot:
+    """Update a score column."""
+    db_score_column = session.get(ScoreColumn, score_column_id)
+    if not db_score_column:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chart slot not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score column not found"
         )
 
-    if not db_chart_slot.can_be_edited_by(user):
+    if not db_score_column.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not an organizer for this tournament",
         )
 
-    if chart_slot_update.chart_id:
-        db_chart = session.get(Chart, chart_slot_update.chart_id)
+    if score_column_update.chart_id:
+        db_chart = session.get(Chart, score_column_update.chart_id)
         if not db_chart:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
             )
 
-        if db_chart not in db_chart_slot.score_table.charts:
+        if db_chart not in db_score_column.score_table.charts:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Chart not in score table",
             )
 
-    chart_slot_data = chart_slot_update.model_dump(exclude_unset=True)
-    db_chart_slot.sqlmodel_update(chart_slot_data)
+    score_column_data = score_column_update.model_dump(exclude_unset=True)
+    db_score_column.sqlmodel_update(score_column_data)
 
-    session.add(db_chart_slot)
+    session.add(db_score_column)
     session.commit()
-    session.refresh(db_chart_slot)
+    session.refresh(db_score_column)
 
-    return db_chart_slot
+    return db_score_column
 
 
-@router.delete("/{chart_slot_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_chart_slot(
-    chart_slot_id: uuid.UUID, session: SessionDep, user: UserDep
+@router.delete("/{score_column_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_score_column(
+    score_column_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Delete a chart slot."""
-    db_chart_slot = session.get(ScoreColumn, chart_slot_id)
-    if not db_chart_slot:
+    """Delete a score column."""
+    db_score_column = session.get(ScoreColumn, score_column_id)
+    if not db_score_column:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chart slot not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score column not found"
         )
 
-    if not db_chart_slot.can_be_deleted(user):
+    if not db_score_column.can_be_deleted(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not allowed to delete this chart slot",
+            detail="You are not allowed to delete this score column",
         )
 
-    db_score_table = db_chart_slot.score_table
+    db_score_table = db_score_column.score_table
     if not db_score_table:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Score table not found"
         )
 
-    deleted_slot_order_index = db_chart_slot.order_index
+    deleted_slot_order_index = db_score_column.order_index
 
-    session.delete(db_chart_slot)
+    session.delete(db_score_column)
 
     for slot in db_score_table.score_columns:
         if slot.order_index > deleted_slot_order_index:

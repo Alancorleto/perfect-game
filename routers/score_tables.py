@@ -122,8 +122,8 @@ async def delete_score_table(
     session.commit()
 
 
-@router.get("/{score_table_id}/chart_slots", response_model=list[ScoreColumnPublic])
-async def list_chart_slots_for_score_table(
+@router.get("/{score_table_id}/score_columns", response_model=list[ScoreColumnPublic])
+async def list_score_columns_for_score_table(
     score_table_id: uuid.UUID, session: SessionDep
 ):
     """Get all charts for a score table"""
@@ -137,9 +137,9 @@ async def list_chart_slots_for_score_table(
 
 
 @router.put(
-    "/{score_table_id}/chart_slots/order", response_model=list[ScoreColumnPublic]
+    "/{score_table_id}/score_columns/order", response_model=list[ScoreColumnPublic]
 )
-async def update_chart_slot_order_in_score_table(
+async def update_score_column_order_in_score_table(
     score_table_id: uuid.UUID,
     new_order: list[uuid.UUID],
     session: SessionDep,
@@ -160,28 +160,28 @@ async def update_chart_slot_order_in_score_table(
     if len(set(new_order)) != len(new_order):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Chart slot order must not contain duplicate ids",
+            detail="Score column order must not contain duplicate ids",
         )
 
-    chart_slots_dict = {slot.id: slot for slot in db_score_table.score_columns}
+    score_columns_dict = {slot.id: slot for slot in db_score_table.score_columns}
 
-    if set(new_order) != set(chart_slots_dict.keys()):
+    if set(new_order) != set(score_columns_dict.keys()):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Chart slot order must have the same ids as the current chart slots",
+            detail="Score column order must have the same ids as the current score columns",
         )
 
-    for new_index, chart_slot_id in enumerate(new_order):
-        chart_slot = chart_slots_dict[chart_slot_id]
-        chart_slot.order_index = new_index
-        session.add(chart_slot)
+    for new_index, score_column_id in enumerate(new_order):
+        score_column = score_columns_dict[score_column_id]
+        score_column.order_index = new_index
+        session.add(score_column)
 
     session.commit()
     session.refresh(db_score_table)
 
-    sorted_chart_slots = db_score_table.get_score_columns_by_order()
+    sorted_score_columns = db_score_table.get_score_columns_by_order()
 
-    return sorted_chart_slots
+    return sorted_score_columns
 
 
 @router.post("/{score_table_id}/players/bulk", response_model=list[PlayerPublic])
@@ -332,8 +332,8 @@ async def remove_player_from_score_table(
     player_order_index = player_row.order_index
 
     # Remove score entries associated with the player
-    for chart_slot in db_score_table.score_columns:
-        for score in chart_slot.scores:
+    for score_column in db_score_table.score_columns:
+        for score in score_column.scores:
             if score.player_id == player_id:
                 session.delete(score)
 
