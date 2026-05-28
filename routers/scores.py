@@ -59,14 +59,15 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
         )
 
     if not any(
-        link.player_id == score.player_id for link in db_chart_slot.set.player_links
+        link.player_id == score.player_id
+        for link in db_chart_slot.score_table.player_links
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Player is not in the set",
         )
 
-    if db_chart not in db_chart_slot.set.charts:
+    if db_chart not in db_chart_slot.score_table.charts:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Chart {db_chart} is not in the set",

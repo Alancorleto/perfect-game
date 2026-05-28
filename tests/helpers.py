@@ -8,7 +8,7 @@ from models.player import Player
 from models.round import Round, RoundState
 from models.score import Grade, Score
 from models.score_table import ScoreTable, ScoreTableFormat
-from models.set_player import SetPlayerLink
+from models.score_table_player import ScoreTablePlayerLink
 from models.tournament import Tournament
 from models.tournament_organizer import TournamentOrganizer
 from models.user import User
@@ -75,7 +75,7 @@ def create_chart_in_db(
         mode=mode,
         level=level,
         player_count=player_count,
-        set_id=set.id,
+        score_table_id=set.id,
         title_url=title_url,
     )
     session.add(chart)
@@ -134,7 +134,7 @@ def create_set_in_db(
         levels=levels,
         qualifiers_count=qualifiers_count,
         format=format,
-        order_index=len(round.sets),
+        order_index=len(round.score_tables),
     )
     session.add(set)
     session.commit()
@@ -151,7 +151,7 @@ def create_chart_slot_in_db(
 ) -> ChartSlot:
     """Creates a chart slot directly in the test database."""
     chart_slot = ChartSlot(
-        set_id=set.id,
+        score_table_id=set.id,
         chart_id=chart.id,
         order_index=order_index,
         description=description,
@@ -167,9 +167,11 @@ def add_player_to_set_in_db(
     set: ScoreTable,
     player: Player,
     order_index: int = 0,
-) -> SetPlayerLink:
+) -> ScoreTablePlayerLink:
     """Adds a player to a set directly in the test database."""
-    link = SetPlayerLink(set_id=set.id, player_id=player.id, order_index=order_index)
+    link = ScoreTablePlayerLink(
+        score_table_id=set.id, player_id=player.id, order_index=order_index
+    )
     session.add(link)
     session.commit()
     session.refresh(link)

@@ -56,7 +56,7 @@ class Score(ScoreBase, table=True):
     chart_slot: ChartSlot = Relationship(back_populates="scores")
 
     def can_be_edited_by(self, user: User) -> bool:
-        return self.chart_slot is not None and self.chart_slot.set.can_be_edited_by(
+        return self.chart_slot is not None and self.chart_slot.score_table.can_be_edited_by(
             user
         )
 

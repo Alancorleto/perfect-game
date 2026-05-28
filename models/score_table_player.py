@@ -8,14 +8,14 @@ if TYPE_CHECKING:
     from models.score_table import ScoreTable
 
 
-class SetPlayerLink(SQLModel, table=True):
-    set_id: uuid.UUID = Field(
-        foreign_key="set.id", primary_key=True, ondelete="CASCADE"
+class ScoreTablePlayerLink(SQLModel, table=True):
+    score_table_id: uuid.UUID = Field(
+        foreign_key="score_table.id", primary_key=True, ondelete="CASCADE"
     )
     player_id: uuid.UUID = Field(
         foreign_key="player.id", primary_key=True, ondelete="CASCADE"
     )
     order_index: int = Field(ge=0)
 
-    set: "ScoreTable" = Relationship(back_populates="player_links")
+    score_table: "ScoreTable" = Relationship(back_populates="player_links")
     player: "Player" = Relationship()

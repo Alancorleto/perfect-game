@@ -32,7 +32,9 @@ class Round(RoundBase, table=True):
 
     category: Category = Relationship(back_populates="rounds")
 
-    sets: list["ScoreTable"] = Relationship(back_populates="round", cascade_delete=True)
+    score_tables: list["ScoreTable"] = Relationship(
+        back_populates="round", cascade_delete=True
+    )
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.category.can_be_edited_by(user)
@@ -43,13 +45,13 @@ class Round(RoundBase, table=True):
     def get_qualifying_players(self) -> list[Player]:
         qualifying_players = []
 
-        for db_set in self.get_sets_by_order():
-            qualifying_players.extend(db_set.get_qualifying_players())
+        for score_table in self.get_score_tables_by_order():
+            qualifying_players.extend(score_table.get_qualifying_players())
 
         return qualifying_players
 
-    def get_sets_by_order(self) -> list["ScoreTable"]:
-        return sorted(self.sets, key=lambda s: s.order_index)
+    def get_score_tables_by_order(self) -> list["ScoreTable"]:
+        return sorted(self.score_tables, key=lambda s: s.order_index)
 
 
 class RoundCreate(RoundBase):

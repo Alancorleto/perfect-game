@@ -116,7 +116,7 @@ async def list_sets_in_round(round_id: uuid.UUID, session: SessionDep):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Round not found"
         )
-    return db_round.get_sets_by_order()
+    return db_round.get_score_tables_by_order()
 
 
 @router.put("/{round_id}/sets/{set_id}/order", response_model=list[ScoreTablePublic])
@@ -139,13 +139,13 @@ async def change_set_order_in_round(
             detail="You don't have permission to edit this round",
         )
 
-    if len(new_set_order) != len(db_round.sets):
+    if len(new_set_order) != len(db_round.score_tables):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The number of sets in the order does not match the number of sets in the round",
         )
 
-    existing_sets = {db_set.id: db_set for db_set in db_round.sets}
+    existing_sets = {db_set.id: db_set for db_set in db_round.score_tables}
 
     if set(new_set_order) != set(existing_sets.keys()):
         raise HTTPException(
@@ -159,7 +159,7 @@ async def change_set_order_in_round(
 
     session.commit()
 
-    return db_round.get_sets_by_order()
+    return db_round.get_score_tables_by_order()
 
 
 @router.delete("/{round_id}/scores", status_code=status.HTTP_204_NO_CONTENT)
@@ -179,7 +179,7 @@ async def delete_all_scores_in_round(
             detail="You are not an organizer for this tournament",
         )
 
-    for db_set in db_round.sets:
+    for db_set in db_round.score_tables:
         for db_chart_slot in db_set.chart_slots:
             db_chart_slot.scores = []
 
@@ -254,7 +254,7 @@ async def cancel_round_start(round_id: uuid.UUID, session: SessionDep, user: Use
             status_code=status.HTTP_400_BAD_REQUEST, detail="Round is not in progress"
         )
 
-    for db_set in db_round.sets:
+    for db_set in db_round.score_tables:
         for chart_slot in db_set.chart_slots:
             if len(chart_slot.scores) > 0:
                 raise HTTPException(

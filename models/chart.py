@@ -33,27 +33,27 @@ class Chart(ChartBase, table=True):
         default_factory=uuid.uuid4,
         primary_key=True,
     )
-    set_id: uuid.UUID = Field(foreign_key="set.id")
+    score_table_id: uuid.UUID = Field(foreign_key="score_table.id")
 
-    set: "ScoreTable" = Relationship(back_populates="charts")
+    score_table: "ScoreTable" = Relationship(back_populates="charts")
 
     # This is not used but needed by SQLModel to work properly with cascade delete
     scores: list["Score"] = Relationship(back_populates="chart", cascade_delete=True)
 
     def can_be_edited_by(self, user: User) -> bool:
-        return user.is_super_admin or self.set.can_be_edited_by(user)
+        return user.is_super_admin or self.score_table.can_be_edited_by(user)
 
     def can_be_deleted(self, user: User) -> bool:
         return user.is_super_admin
 
 
 class ChartCreate(ChartBase):
-    set_id: uuid.UUID
+    score_table_id: uuid.UUID
 
 
 class ChartPublic(ChartBase):
     id: uuid.UUID
-    set_id: uuid.UUID
+    score_table_id: uuid.UUID
 
 
 class ChartUpdate(SQLModel):

@@ -29,7 +29,7 @@ async def create_chart_slot(
     chart_slot: ChartSlotCreate, session: SessionDep, user: UserDep
 ):
     """Create a chart slot."""
-    db_set = session.get(ScoreTable, chart_slot.set_id)
+    db_set = session.get(ScoreTable, chart_slot.score_table_id)
     if not db_set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"
@@ -100,7 +100,7 @@ async def update_chart_slot(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
             )
 
-        if db_chart not in db_chart_slot.set.charts:
+        if db_chart not in db_chart_slot.score_table.charts:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Chart not in set"
             )
@@ -132,7 +132,7 @@ async def delete_chart_slot(
             detail="You are not allowed to delete this chart slot",
         )
 
-    db_set = db_chart_slot.set
+    db_set = db_chart_slot.score_table
     if not db_set:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Set not found"

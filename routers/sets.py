@@ -14,10 +14,10 @@ from models.score_table import (
     ScoreTable,
     ScoreTableCreate,
     ScoreTableFormat,
-    ScoreTableUpdate,
     ScoreTablePublic,
+    ScoreTableUpdate,
 )
-from models.set_player import SetPlayerLink
+from models.score_table_player import ScoreTablePlayerLink
 from routers.users import UserDep
 
 router = APIRouter(prefix="/sets", tags=["sets"])
@@ -40,7 +40,7 @@ async def create_set(set: ScoreTableCreate, session: SessionDep, user: UserDep):
 
     db_set = ScoreTable.model_validate(set)
 
-    db_set.order_index = len(round.sets)
+    db_set.order_index = len(round.score_tables)
 
     session.add(db_set)
     session.commit()
@@ -111,7 +111,7 @@ async def delete_set(set_id: uuid.UUID, session: SessionDep, user: UserDep):
 
     session.delete(db_set)
 
-    for set in db_round.sets:
+    for set in db_round.score_tables:
         if set.order_index > set_order_index:
             set.order_index -= 1
 
@@ -209,8 +209,8 @@ async def bulk_add_players_to_set(
                 detail=f"Player with ID {player_id} not found",
             )
         order_index = previous_player_count + i
-        set_player_link = SetPlayerLink(
-            set=db_set, player=db_player, order_index=order_index
+        set_player_link = ScoreTablePlayerLink(
+            score_table=db_set, player=db_player, order_index=order_index
         )
         db_set.player_links.append(set_player_link)
 

@@ -12,7 +12,7 @@ from models.user import User
 
 if TYPE_CHECKING:
     from models.chart_slot import ChartSlot
-    from models.set_player import SetPlayerLink
+    from models.score_table_player import ScoreTablePlayerLink
 
 
 class ScoreTableFormat(Enum):
@@ -24,7 +24,7 @@ class ScoreTableFormat(Enum):
 class Result(BaseModel):
     player_id: uuid.UUID
     player_order_index: int
-    set_id: uuid.UUID
+    score_table_id: uuid.UUID
     chart_order_index: int
     score_id: uuid.UUID | None = None
     score: int = 0
@@ -57,14 +57,14 @@ class ScoreTable(ScoreTableBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     round_id: uuid.UUID = Field(foreign_key="round.id", ondelete="CASCADE")
 
-    round: Round = Relationship(back_populates="sets")
+    round: Round = Relationship(back_populates="score_tables")
     chart_slots: list["ChartSlot"] = Relationship(
-        back_populates="set", cascade_delete=True
+        back_populates="score_table", cascade_delete=True
     )
-    player_links: list["SetPlayerLink"] = Relationship(
-        back_populates="set", cascade_delete=True
+    player_links: list["ScoreTablePlayerLink"] = Relationship(
+        back_populates="score_table", cascade_delete=True
     )
-    charts: list[Chart] = Relationship(back_populates="set")
+    charts: list[Chart] = Relationship(back_populates="score_table")
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.round.can_be_edited_by(user)
@@ -134,14 +134,14 @@ def _populate_chart_results(chart_slot: "ChartSlot") -> ChartResults:
 
     for score in chart_slot.scores:
         player_order_index = next(
-            set_player.order_index
-            for set_player in chart_slot.set.player_links
-            if set_player.player_id == score.player_id
+            player_row.order_index
+            for player_row in chart_slot.score_table.player_links
+            if player_row.player_id == score.player_id
         )
         result = Result(
             player_id=score.player_id,
             player_order_index=player_order_index,
-            set_id=chart_slot.set_id,
+            score_table_id=chart_slot.score_table_id,
             chart_order_index=chart_slot.order_index,
             score=score.value,
             score_id=score.id,
@@ -174,10 +174,10 @@ def _sort_chart_results(chart_results: ChartResults):
 
 
 def _populate_player_results(
-    player_link: "SetPlayerLink", chart_results_list: list[ChartResults]
+    player_link: "ScoreTablePlayerLink", chart_results_list: list[ChartResults]
 ) -> list[PlayerResults]:
     player = player_link.player
-    set = player_link.set
+    score_table = player_link.score_table
 
     player_results = PlayerResults(
         player_id=player_link.player_id,
@@ -192,14 +192,14 @@ def _populate_player_results(
             result = Result(
                 player_id=player.id,
                 player_order_index=player_link.order_index,
-                set_id=set.id,
+                score_table_id=score_table.id,
                 chart_order_index=chart_order_index,
                 place=len(chart_results.results) + 1,
             )
 
         player_results.results.append(result)
 
-    _calculate_player_total_score(player_results, set.format)
+    _calculate_player_total_score(player_results, score_table.format)
 
     return player_results
 
@@ -212,13 +212,13 @@ def _try_get_player_result(player_id: uuid.UUID, results: list[Result]) -> Resul
 
 
 def _calculate_player_total_score(
-    player_results: PlayerResults, set_format: ScoreTableFormat
+    player_results: PlayerResults, score_table_format: ScoreTableFormat
 ):
-    if set_format == ScoreTableFormat.SCORE_SUM:
+    if score_table_format == ScoreTableFormat.SCORE_SUM:
         for result in player_results.results:
             player_results.total_score += result.score
 
-    elif set_format == ScoreTableFormat.BATTLE:
+    elif score_table_format == ScoreTableFormat.BATTLE:
         for result in player_results.results:
             if result.place == 1 and not result.is_tie and result.score_id is not None:
                 player_results.total_score += 1
