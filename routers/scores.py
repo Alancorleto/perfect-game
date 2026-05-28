@@ -5,7 +5,7 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.chart import Chart
-from models.chart_slot import ChartSlot
+from models.score_column import ScoreColumn
 from models.player import Player
 from models.score import Score, ScoreCreate, ScorePublic, ScoreUpdate
 from routers.users import UserDep
@@ -46,7 +46,7 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
             status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
         )
 
-    db_chart_slot = session.get(ChartSlot, score.chart_slot_id)
+    db_chart_slot = session.get(ScoreColumn, score.chart_slot_id)
     if not db_chart_slot:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Chart slot not found"

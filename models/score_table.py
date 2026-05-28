@@ -11,8 +11,8 @@ from models.round import Round
 from models.user import User
 
 if TYPE_CHECKING:
-    from models.chart_slot import ChartSlot
     from models.player_row import PlayerRow
+    from models.score_column import ScoreColumn
 
 
 class ScoreTableFormat(Enum):
@@ -58,7 +58,7 @@ class ScoreTable(ScoreTableBase, table=True):
     round_id: uuid.UUID = Field(foreign_key="round.id", ondelete="CASCADE")
 
     round: Round = Relationship(back_populates="score_tables")
-    chart_slots: list["ChartSlot"] = Relationship(
+    chart_slots: list["ScoreColumn"] = Relationship(
         back_populates="score_table", cascade_delete=True
     )
     player_rows: list["PlayerRow"] = Relationship(
@@ -81,7 +81,7 @@ class ScoreTable(ScoreTableBase, table=True):
         )
         return [player_row.player for player_row in sorted_player_rows]
 
-    def get_chart_slots_by_order(self) -> list["ChartSlot"]:
+    def get_chart_slots_by_order(self) -> list["ScoreColumn"]:
         return sorted(self.chart_slots, key=lambda chart_slot: chart_slot.order_index)
 
     def get_results(self) -> list[PlayerResults]:
@@ -129,7 +129,7 @@ class ScoreTablePublic(ScoreTableBase):
     round_id: uuid.UUID
 
 
-def _populate_chart_results(chart_slot: "ChartSlot") -> ChartResults:
+def _populate_chart_results(chart_slot: "ScoreColumn") -> ChartResults:
     chart_results = ChartResults(chart_slot_id=chart_slot.id, results=[])
 
     for score in chart_slot.scores:

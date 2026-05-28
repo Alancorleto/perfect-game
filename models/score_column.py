@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from models.score import Score
 
 
-class ChartSlot(SQLModel, table=True):
+class ScoreColumn(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     score_table_id: uuid.UUID = Field(foreign_key="scoretable.id", ondelete="CASCADE")
     chart_id: uuid.UUID | None = Field(foreign_key="chart.id", ondelete="SET NULL")
@@ -35,18 +35,18 @@ class ChartSlot(SQLModel, table=True):
         )
 
 
-class ChartSlotCreate(SQLModel):
+class ScoreColumnCreate(SQLModel):
     score_table_id: uuid.UUID
     chart_id: uuid.UUID | None = None
     description: str | None = Field(default=None, max_length=20)
 
 
-class ChartSlotUpdate(SQLModel):
+class ScoreColumnUpdate(SQLModel):
     chart_id: uuid.UUID | None = None
     description: str | None = Field(default=None, max_length=20)
 
 
-class ChartSlotPublic(SQLModel):
+class ScoreColumnPublic(SQLModel):
     id: uuid.UUID
     score_table_id: uuid.UUID
     chart_id: uuid.UUID | None

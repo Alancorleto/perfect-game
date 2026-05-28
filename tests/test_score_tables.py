@@ -2,7 +2,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from models import chart_slot
+from models import score_column
 from models.round import RoundState
 from models.score_table import ScoreTableFormat
 from tests.helpers import (

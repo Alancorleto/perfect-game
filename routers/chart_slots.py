@@ -5,11 +5,11 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.chart import Chart
-from models.chart_slot import (
-    ChartSlot,
-    ChartSlotCreate,
-    ChartSlotPublic,
-    ChartSlotUpdate,
+from models.score_column import (
+    ScoreColumn,
+    ScoreColumnCreate,
+    ScoreColumnPublic,
+    ScoreColumnUpdate,
 )
 from models.score_table import ScoreTable
 from routers.users import UserDep
@@ -17,16 +17,16 @@ from routers.users import UserDep
 router = APIRouter(prefix="/chart_slots", tags=["chart_slots"])
 
 
-@router.get("/", response_model=list[ChartSlotPublic])
+@router.get("/", response_model=list[ScoreColumnPublic])
 async def list_chart_slots(session: SessionDep, user: UserDep):
     """List all chart slots."""
-    chart_slots = session.exec(select(ChartSlot)).all()
+    chart_slots = session.exec(select(ScoreColumn)).all()
     return chart_slots
 
 
-@router.post("/", response_model=ChartSlotPublic)
+@router.post("/", response_model=ScoreColumnPublic)
 async def create_chart_slot(
-    chart_slot: ChartSlotCreate, session: SessionDep, user: UserDep
+    chart_slot: ScoreColumnCreate, session: SessionDep, user: UserDep
 ):
     """Create a chart slot."""
     db_score_table = session.get(ScoreTable, chart_slot.score_table_id)
@@ -48,7 +48,7 @@ async def create_chart_slot(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
             )
 
-    db_chart_slot = ChartSlot.model_validate(chart_slot)
+    db_chart_slot = ScoreColumn.model_validate(chart_slot)
 
     db_chart_slot.order_index = len(db_score_table.chart_slots)
 
@@ -59,13 +59,13 @@ async def create_chart_slot(
     return db_chart_slot
 
 
-@router.get("/{chart_slot_id}", response_model=ChartSlotPublic)
+@router.get("/{chart_slot_id}", response_model=ScoreColumnPublic)
 async def get_chart_slot(
     chart_slot_id: uuid.UUID,
     session: SessionDep,
 ):
     """Get a chart slot."""
-    db_chart_slot = session.get(ChartSlot, chart_slot_id)
+    db_chart_slot = session.get(ScoreColumn, chart_slot_id)
     if not db_chart_slot:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Chart slot not found"
@@ -73,15 +73,15 @@ async def get_chart_slot(
     return db_chart_slot
 
 
-@router.patch("/{chart_slot_id}", response_model=ChartSlotPublic)
+@router.patch("/{chart_slot_id}", response_model=ScoreColumnPublic)
 async def update_chart_slot(
     chart_slot_id: uuid.UUID,
-    chart_slot_update: ChartSlotUpdate,
+    chart_slot_update: ScoreColumnUpdate,
     session: SessionDep,
     user: UserDep,
 ):
     """Update a chart slot."""
-    db_chart_slot = session.get(ChartSlot, chart_slot_id)
+    db_chart_slot = session.get(ScoreColumn, chart_slot_id)
     if not db_chart_slot:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Chart slot not found"
@@ -121,7 +121,7 @@ async def delete_chart_slot(
     chart_slot_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     """Delete a chart slot."""
-    db_chart_slot = session.get(ChartSlot, chart_slot_id)
+    db_chart_slot = session.get(ScoreColumn, chart_slot_id)
     if not db_chart_slot:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Chart slot not found"

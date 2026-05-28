@@ -4,8 +4,8 @@ from enum import Enum
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.chart import Chart, ChartPublic
-from models.chart_slot import ChartSlot, ChartSlotPublic
 from models.player import Player, PlayerPublic
+from models.score_column import ScoreColumn, ScoreColumnPublic
 from models.user import User
 
 
@@ -53,11 +53,12 @@ class Score(ScoreBase, table=True):
 
     player: Player = Relationship(back_populates="scores")
     chart: Chart = Relationship(back_populates="scores")
-    chart_slot: ChartSlot = Relationship(back_populates="scores")
+    chart_slot: ScoreColumn = Relationship(back_populates="scores")
 
     def can_be_edited_by(self, user: User) -> bool:
-        return self.chart_slot is not None and self.chart_slot.score_table.can_be_edited_by(
-            user
+        return (
+            self.chart_slot is not None
+            and self.chart_slot.score_table.can_be_edited_by(user)
         )
 
     def can_be_deleted(self, user: User) -> bool:
@@ -75,7 +76,7 @@ class ScorePublic(ScoreBase):
 
     player: PlayerPublic
     chart: ChartPublic
-    chart_slot: ChartSlotPublic
+    chart_slot: ScoreColumnPublic
 
 
 class ScoreUpdate(SQLModel):

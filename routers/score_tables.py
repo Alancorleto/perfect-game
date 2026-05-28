@@ -4,10 +4,10 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
-from models.chart_slot import ChartSlotPublic
 from models.player import Player, PlayerPublic
 from models.player_row import PlayerRow
 from models.round import Round
+from models.score_column import ScoreColumnPublic
 from models.score_table import (
     PlayerResults,
     ScoreTable,
@@ -122,7 +122,7 @@ async def delete_score_table(
     session.commit()
 
 
-@router.get("/{score_table_id}/chart_slots", response_model=list[ChartSlotPublic])
+@router.get("/{score_table_id}/chart_slots", response_model=list[ScoreColumnPublic])
 async def list_chart_slots_for_score_table(
     score_table_id: uuid.UUID, session: SessionDep
 ):
@@ -136,7 +136,7 @@ async def list_chart_slots_for_score_table(
     return db_score_table.chart_slots
 
 
-@router.put("/{score_table_id}/chart_slots/order", response_model=list[ChartSlotPublic])
+@router.put("/{score_table_id}/chart_slots/order", response_model=list[ScoreColumnPublic])
 async def update_chart_slot_order_in_score_table(
     score_table_id: uuid.UUID,
     new_order: list[uuid.UUID],

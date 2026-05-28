@@ -4,8 +4,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from models.chart_slot import ChartSlot
 from models.round import RoundState
+from models.score_column import ScoreColumn
 from tests.helpers import (
     create_category_in_db,
     create_chart_in_db,
@@ -105,7 +105,7 @@ def test_create_chart_slot(session: Session, client: TestClient):
     assert data["order_index"] == 0
     assert data["description"] is None
 
-    created_slot = session.get(ChartSlot, uuid.UUID(data["id"]))
+    created_slot = session.get(ScoreColumn, uuid.UUID(data["id"]))
     assert created_slot is not None
     assert created_slot.order_index == 0
     assert created_slot.description is None
@@ -376,9 +376,9 @@ def test_delete_chart_slot(session: Session, client: TestClient):
     response = client.delete(f"/chart_slots/{slot_b.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
-    assert session.get(ChartSlot, slot_b.id) is None
-    assert session.get(ChartSlot, slot_a.id).order_index == 0
-    assert session.get(ChartSlot, slot_c.id).order_index == 1
+    assert session.get(ScoreColumn, slot_b.id) is None
+    assert session.get(ScoreColumn, slot_a.id).order_index == 0
+    assert session.get(ScoreColumn, slot_c.id).order_index == 1
 
 
 def test_delete_chart_slot_not_found(session: Session, client: TestClient):
@@ -443,7 +443,7 @@ def test_delete_chart_slot_as_super_admin(session: Session, client: TestClient):
     response = client.delete(f"/chart_slots/{chart_slot.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
-    assert session.get(ChartSlot, chart_slot.id) is None
+    assert session.get(ScoreColumn, chart_slot.id) is None
 
 
 def test_delete_chart_slot_unauthenticated(session: Session, client: TestClient):

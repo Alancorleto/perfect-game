@@ -3,11 +3,11 @@ from sqlmodel import Session
 
 from models.category import Category
 from models.chart import Chart, Mode
-from models.chart_slot import ChartSlot
 from models.player import Player
 from models.player_row import PlayerRow
 from models.round import Round, RoundState
 from models.score import Grade, Score
+from models.score_column import ScoreColumn
 from models.score_table import ScoreTable, ScoreTableFormat
 from models.tournament import Tournament
 from models.tournament_organizer import TournamentOrganizer
@@ -148,9 +148,9 @@ def create_chart_slot_in_db(
     chart: Chart,
     order_index: int = 0,
     description: str | None = None,
-) -> ChartSlot:
+) -> ScoreColumn:
     """Creates a chart slot directly in the test database."""
-    chart_slot = ChartSlot(
+    chart_slot = ScoreColumn(
         score_table_id=score_table.id,
         chart_id=chart.id,
         order_index=order_index,
@@ -182,7 +182,7 @@ def create_score_in_db(
     session: Session,
     player: Player,
     chart: Chart,
-    chart_slot: ChartSlot,
+    chart_slot: ScoreColumn,
     value: int = 1000000,
 ) -> Score:
     """Creates a score directly in the test database."""
