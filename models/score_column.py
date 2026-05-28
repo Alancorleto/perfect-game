@@ -19,10 +19,10 @@ class ScoreColumn(SQLModel, table=True):
     order_index: int = Field(ge=0, default=0)
     description: str | None = Field(default=None, max_length=20)
 
-    score_table: ScoreTable = Relationship(back_populates="chart_slots")
+    score_table: ScoreTable = Relationship(back_populates="score_columns")
     chart: Chart | None = Relationship()
     scores: list["Score"] = Relationship(
-        back_populates="chart_slot", cascade_delete=True
+        back_populates="score_column", cascade_delete=True
     )
 
     def can_be_edited_by(self, user: User) -> bool:

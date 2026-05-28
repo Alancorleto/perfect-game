@@ -824,7 +824,7 @@ def test_delete_all_scores_in_round(session: Session, client: TestClient):
 
     session.refresh(score_table)
 
-    assert score_table.chart_slots[0].scores == []
+    assert score_table.score_columns[0].scores == []
 
 
 def test_delete_all_scores_in_round_empty_score_table(
@@ -848,7 +848,7 @@ def test_delete_all_scores_in_round_empty_score_table(
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     session.refresh(score_table)
-    assert score_table.chart_slots[0].scores == []
+    assert score_table.score_columns[0].scores == []
 
 
 def test_delete_all_scores_in_round_not_found(session: Session, client: TestClient):

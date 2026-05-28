@@ -49,16 +49,16 @@ class Score(ScoreBase, table=True):
     )
     player_id: uuid.UUID = Field(foreign_key="player.id", ondelete="CASCADE")
     chart_id: uuid.UUID = Field(foreign_key="chart.id", ondelete="CASCADE")
-    chart_slot_id: uuid.UUID = Field(foreign_key="chartslot.id", ondelete="CASCADE")
+    score_column_id: uuid.UUID = Field(foreign_key="chartslot.id", ondelete="CASCADE")
 
     player: Player = Relationship(back_populates="scores")
     chart: Chart = Relationship(back_populates="scores")
-    chart_slot: ScoreColumn = Relationship(back_populates="scores")
+    score_column: ScoreColumn = Relationship(back_populates="scores")
 
     def can_be_edited_by(self, user: User) -> bool:
         return (
-            self.chart_slot is not None
-            and self.chart_slot.score_table.can_be_edited_by(user)
+            self.score_column is not None
+            and self.score_column.score_table.can_be_edited_by(user)
         )
 
     def can_be_deleted(self, user: User) -> bool:
@@ -68,7 +68,7 @@ class Score(ScoreBase, table=True):
 class ScoreCreate(ScoreBase):
     player_id: uuid.UUID
     chart_id: uuid.UUID
-    chart_slot_id: uuid.UUID
+    score_column_id: uuid.UUID
 
 
 class ScorePublic(ScoreBase):
@@ -76,7 +76,7 @@ class ScorePublic(ScoreBase):
 
     player: PlayerPublic
     chart: ChartPublic
-    chart_slot: ScoreColumnPublic
+    score_column: ScoreColumnPublic
 
 
 class ScoreUpdate(SQLModel):

@@ -189,7 +189,7 @@ def create_score_in_db(
     score = Score(
         player_id=player.id,
         chart_id=chart.id,
-        chart_slot_id=chart_slot.id,
+        score_column_id=chart_slot.id,
         value=value,
         perfect=100,
         great=0,

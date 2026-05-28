@@ -185,7 +185,7 @@ async def delete_all_scores_in_round(
         )
 
     for db_score_table in db_round.score_tables:
-        for db_chart_slot in db_score_table.chart_slots:
+        for db_chart_slot in db_score_table.score_columns:
             db_chart_slot.scores = []
 
     session.add(db_round)
@@ -260,7 +260,7 @@ async def cancel_round_start(round_id: uuid.UUID, session: SessionDep, user: Use
         )
 
     for db_score_table in db_round.score_tables:
-        for chart_slot in db_score_table.chart_slots:
+        for chart_slot in db_score_table.score_columns:
             if len(chart_slot.scores) > 0:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,

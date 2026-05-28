@@ -133,10 +133,12 @@ async def list_chart_slots_for_score_table(
             status_code=status.HTTP_404_NOT_FOUND, detail="Score table not found"
         )
 
-    return db_score_table.chart_slots
+    return db_score_table.score_columns
 
 
-@router.put("/{score_table_id}/chart_slots/order", response_model=list[ScoreColumnPublic])
+@router.put(
+    "/{score_table_id}/chart_slots/order", response_model=list[ScoreColumnPublic]
+)
 async def update_chart_slot_order_in_score_table(
     score_table_id: uuid.UUID,
     new_order: list[uuid.UUID],
@@ -161,7 +163,7 @@ async def update_chart_slot_order_in_score_table(
             detail="Chart slot order must not contain duplicate ids",
         )
 
-    chart_slots_dict = {slot.id: slot for slot in db_score_table.chart_slots}
+    chart_slots_dict = {slot.id: slot for slot in db_score_table.score_columns}
 
     if set(new_order) != set(chart_slots_dict.keys()):
         raise HTTPException(
@@ -177,7 +179,7 @@ async def update_chart_slot_order_in_score_table(
     session.commit()
     session.refresh(db_score_table)
 
-    sorted_chart_slots = db_score_table.get_chart_slots_by_order()
+    sorted_chart_slots = db_score_table.get_score_columns_by_order()
 
     return sorted_chart_slots
 
@@ -330,7 +332,7 @@ async def remove_player_from_score_table(
     player_order_index = player_row.order_index
 
     # Remove score entries associated with the player
-    for chart_slot in db_score_table.chart_slots:
+    for chart_slot in db_score_table.score_columns:
         for score in chart_slot.scores:
             if score.player_id == player_id:
                 session.delete(score)

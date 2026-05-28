@@ -43,7 +43,7 @@ class PlayerResults(BaseModel):
 
 
 class ChartResults(BaseModel):
-    chart_slot_id: uuid.UUID
+    score_column_id: uuid.UUID
     results: list[Result] = []
 
 
@@ -58,7 +58,7 @@ class ScoreTable(ScoreTableBase, table=True):
     round_id: uuid.UUID = Field(foreign_key="round.id", ondelete="CASCADE")
 
     round: Round = Relationship(back_populates="score_tables")
-    chart_slots: list["ScoreColumn"] = Relationship(
+    score_columns: list["ScoreColumn"] = Relationship(
         back_populates="score_table", cascade_delete=True
     )
     player_rows: list["PlayerRow"] = Relationship(
@@ -72,7 +72,9 @@ class ScoreTable(ScoreTableBase, table=True):
     def can_be_deleted(self, user: User) -> bool:
         return self.can_be_edited_by(user) and (
             user.is_super_admin
-            or all(chart_slot.can_be_deleted(user) for chart_slot in self.chart_slots)
+            or all(
+                score_column.can_be_deleted(user) for score_column in self.score_columns
+            )
         )
 
     def get_players_by_order(self) -> list[Player]:
@@ -81,15 +83,17 @@ class ScoreTable(ScoreTableBase, table=True):
         )
         return [player_row.player for player_row in sorted_player_rows]
 
-    def get_chart_slots_by_order(self) -> list["ScoreColumn"]:
-        return sorted(self.chart_slots, key=lambda chart_slot: chart_slot.order_index)
+    def get_score_columns_by_order(self) -> list["ScoreColumn"]:
+        return sorted(
+            self.score_columns, key=lambda score_column: score_column.order_index
+        )
 
     def get_results(self) -> list[PlayerResults]:
-        chart_slots = self.get_chart_slots_by_order()
+        score_columns = self.get_score_columns_by_order()
 
         chart_results_list: list[ChartResults] = []
-        for chart_slot in chart_slots:
-            chart_results = _populate_chart_results(chart_slot)
+        for score_column in score_columns:
+            chart_results = _populate_column_results(score_column)
             chart_results_list.append(chart_results)
 
         player_results_list: list[PlayerResults] = []
@@ -129,20 +133,20 @@ class ScoreTablePublic(ScoreTableBase):
     round_id: uuid.UUID
 
 
-def _populate_chart_results(chart_slot: "ScoreColumn") -> ChartResults:
-    chart_results = ChartResults(chart_slot_id=chart_slot.id, results=[])
+def _populate_column_results(score_column: "ScoreColumn") -> ChartResults:
+    chart_results = ChartResults(score_column_id=score_column.id, results=[])
 
-    for score in chart_slot.scores:
+    for score in score_column.scores:
         player_order_index = next(
             player_row.order_index
-            for player_row in chart_slot.score_table.player_rows
+            for player_row in score_column.score_table.player_rows
             if player_row.player_id == score.player_id
         )
         result = Result(
             player_id=score.player_id,
             player_order_index=player_order_index,
-            score_table_id=chart_slot.score_table_id,
-            chart_order_index=chart_slot.order_index,
+            score_table_id=score_column.score_table_id,
+            chart_order_index=score_column.order_index,
             score=score.value,
             score_id=score.id,
         )

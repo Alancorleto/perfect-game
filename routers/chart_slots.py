@@ -50,7 +50,7 @@ async def create_chart_slot(
 
     db_chart_slot = ScoreColumn.model_validate(chart_slot)
 
-    db_chart_slot.order_index = len(db_score_table.chart_slots)
+    db_chart_slot.order_index = len(db_score_table.score_columns)
 
     session.add(db_chart_slot)
     session.commit()
@@ -143,7 +143,7 @@ async def delete_chart_slot(
 
     session.delete(db_chart_slot)
 
-    for slot in db_score_table.chart_slots:
+    for slot in db_score_table.score_columns:
         if slot.order_index > deleted_slot_order_index:
             slot.order_index -= 1
             session.add(slot)
