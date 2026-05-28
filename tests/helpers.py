@@ -5,10 +5,10 @@ from models.category import Category
 from models.chart import Chart, Mode
 from models.chart_slot import ChartSlot
 from models.player import Player
+from models.player_row import PlayerRow
 from models.round import Round, RoundState
 from models.score import Grade, Score
 from models.score_table import ScoreTable, ScoreTableFormat
-from models.score_table_player import ScoreTablePlayerLink
 from models.tournament import Tournament
 from models.tournament_organizer import TournamentOrganizer
 from models.user import User
@@ -167,9 +167,9 @@ def add_player_to_set_in_db(
     set: ScoreTable,
     player: Player,
     order_index: int = 0,
-) -> ScoreTablePlayerLink:
+) -> PlayerRow:
     """Adds a player to a set directly in the test database."""
-    link = ScoreTablePlayerLink(
+    link = PlayerRow(
         score_table_id=set.id, player_id=player.id, order_index=order_index
     )
     session.add(link)

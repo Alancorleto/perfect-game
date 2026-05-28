@@ -12,7 +12,7 @@ from models.user import User
 
 if TYPE_CHECKING:
     from models.chart_slot import ChartSlot
-    from models.score_table_player import ScoreTablePlayerLink
+    from models.player_row import PlayerRow
 
 
 class ScoreTableFormat(Enum):
@@ -61,7 +61,7 @@ class ScoreTable(ScoreTableBase, table=True):
     chart_slots: list["ChartSlot"] = Relationship(
         back_populates="score_table", cascade_delete=True
     )
-    player_links: list["ScoreTablePlayerLink"] = Relationship(
+    player_rows: list["PlayerRow"] = Relationship(
         back_populates="score_table", cascade_delete=True
     )
     charts: list[Chart] = Relationship(back_populates="score_table")
@@ -76,10 +76,10 @@ class ScoreTable(ScoreTableBase, table=True):
         )
 
     def get_players_by_order(self) -> list[Player]:
-        sorted_player_links = sorted(
-            self.player_links, key=lambda player_link: player_link.order_index
+        sorted_player_rows = sorted(
+            self.player_rows, key=lambda player_row: player_row.order_index
         )
-        return [player_link.player for player_link in sorted_player_links]
+        return [player_row.player for player_row in sorted_player_rows]
 
     def get_chart_slots_by_order(self) -> list["ChartSlot"]:
         return sorted(self.chart_slots, key=lambda chart_slot: chart_slot.order_index)
@@ -93,8 +93,8 @@ class ScoreTable(ScoreTableBase, table=True):
             chart_results_list.append(chart_results)
 
         player_results_list: list[PlayerResults] = []
-        for player_link in self.player_links:
-            player_results = _populate_player_results(player_link, chart_results_list)
+        for player_row in self.player_rows:
+            player_results = _populate_player_results(player_row, chart_results_list)
             player_results_list.append(player_results)
 
         _sort_player_results(player_results_list)
@@ -135,7 +135,7 @@ def _populate_chart_results(chart_slot: "ChartSlot") -> ChartResults:
     for score in chart_slot.scores:
         player_order_index = next(
             player_row.order_index
-            for player_row in chart_slot.score_table.player_links
+            for player_row in chart_slot.score_table.player_rows
             if player_row.player_id == score.player_id
         )
         result = Result(
@@ -174,15 +174,15 @@ def _sort_chart_results(chart_results: ChartResults):
 
 
 def _populate_player_results(
-    player_link: "ScoreTablePlayerLink", chart_results_list: list[ChartResults]
+    player_row: "PlayerRow", chart_results_list: list[ChartResults]
 ) -> list[PlayerResults]:
-    player = player_link.player
-    score_table = player_link.score_table
+    player = player_row.player
+    score_table = player_row.score_table
 
     player_results = PlayerResults(
-        player_id=player_link.player_id,
+        player_id=player_row.player_id,
         player=player,
-        order_index=player_link.order_index,
+        order_index=player_row.order_index,
     )
 
     for chart_order_index, chart_results in enumerate(chart_results_list):
@@ -191,7 +191,7 @@ def _populate_player_results(
         if not result:
             result = Result(
                 player_id=player.id,
-                player_order_index=player_link.order_index,
+                player_order_index=player_row.order_index,
                 score_table_id=score_table.id,
                 chart_order_index=chart_order_index,
                 place=len(chart_results.results) + 1,

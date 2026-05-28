@@ -6,6 +6,7 @@ from sqlmodel import select
 from database import SessionDep
 from models.chart_slot import ChartSlot, ChartSlotPublic
 from models.player import Player, PlayerPublic
+from models.player_row import PlayerRow
 from models.round import Round
 from models.score_table import (
     ChartResults,
@@ -17,7 +18,6 @@ from models.score_table import (
     ScoreTablePublic,
     ScoreTableUpdate,
 )
-from models.score_table_player import ScoreTablePlayerLink
 from routers.users import UserDep
 
 router = APIRouter(prefix="/sets", tags=["sets"])
@@ -195,11 +195,11 @@ async def bulk_add_players_to_set(
 
     # Filter out player IDs that are already in the set
     player_ids = filter(
-        lambda pid: not any(link.player_id == pid for link in db_set.player_links),
+        lambda pid: not any(link.player_id == pid for link in db_set.player_rows),
         player_ids,
     )
 
-    previous_player_count = len(db_set.player_links)
+    previous_player_count = len(db_set.player_rows)
 
     for i, player_id in enumerate(player_ids):
         db_player = session.get(Player, player_id)
@@ -209,10 +209,10 @@ async def bulk_add_players_to_set(
                 detail=f"Player with ID {player_id} not found",
             )
         order_index = previous_player_count + i
-        set_player_link = ScoreTablePlayerLink(
+        player_row = PlayerRow(
             score_table=db_set, player=db_player, order_index=order_index
         )
-        db_set.player_links.append(set_player_link)
+        db_set.player_rows.append(player_row)
 
     session.add(db_set)
     session.commit()
@@ -249,7 +249,7 @@ async def update_player_order_in_set(
             detail="You are not an organizer for this tournament",
         )
 
-    if len(player_ids) != len(db_set.player_links):
+    if len(player_ids) != len(db_set.player_rows):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Player IDs count does not match the number of players in the set",
@@ -265,18 +265,18 @@ async def update_player_order_in_set(
             )
 
         # Validate player is in the set
-        db_set_player_link = next(
-            (link for link in db_set.player_links if link.player_id == player_id), None
+        player_row = next(
+            (row for row in db_set.player_rows if row.player_id == player_id), None
         )
-        if not db_set_player_link:
+        if not player_row:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Player with ID {player_id} is not in the set",
             )
 
         # Update the order index
-        db_set_player_link.order_index = order_index
-        session.add(db_set_player_link)
+        player_row.order_index = order_index
+        session.add(player_row)
 
     session.commit()
     session.refresh(db_set)
@@ -301,16 +301,16 @@ async def remove_player_from_set(
             detail="You are not an organizer for this tournament",
         )
 
-    db_set_player_link = next(
-        (link for link in db_set.player_links if link.player_id == player_id), None
+    player_row = next(
+        (row for row in db_set.player_rows if row.player_id == player_id), None
     )
-    if not db_set_player_link:
+    if not player_row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Player with ID {player_id} is not in the set",
         )
 
-    player_order_index = db_set_player_link.order_index
+    player_order_index = player_row.order_index
 
     # Remove score entries associated with the player
     for chart_slot in db_set.chart_slots:
@@ -318,12 +318,12 @@ async def remove_player_from_set(
             if score.player_id == player_id:
                 session.delete(score)
 
-    session.delete(db_set_player_link)
+    session.delete(player_row)
 
-    for player_link in db_set.player_links:
-        if player_link.order_index > player_order_index:
-            player_link.order_index -= 1
-            session.add(player_link)
+    for player_row in db_set.player_rows:
+        if player_row.order_index > player_order_index:
+            player_row.order_index -= 1
+            session.add(player_row)
 
     session.commit()
 

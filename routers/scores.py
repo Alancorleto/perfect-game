@@ -60,7 +60,7 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
 
     if not any(
         link.player_id == score.player_id
-        for link in db_chart_slot.score_table.player_links
+        for link in db_chart_slot.score_table.player_rows
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
