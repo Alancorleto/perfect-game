@@ -11,7 +11,7 @@ from tests.helpers import (
     create_category_in_db,
     create_chart_in_db,
     create_round_in_db,
-    create_set_in_db,
+    create_score_table_in_db,
     create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
@@ -22,8 +22,8 @@ def create_chart_context_in_db(session: Session, organizer: User) -> ScoreTable:
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set = create_set_in_db(session, round=round)
-    return set
+    score_table = create_score_table_in_db(session, round=round)
+    return score_table
 
 
 # ---------------------------------------------------------------------------
@@ -35,17 +35,17 @@ def test_list_charts(session: Session, client: TestClient):
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
+    score_table = create_chart_context_in_db(session, user)
     create_chart_in_db(
         session,
-        set=set,
+        score_table,
         song_name="Song A",
         mode=Mode.SINGLE,
         level=10,
     )
     create_chart_in_db(
         session,
-        set=set,
+        score_table,
         song_name="Song B",
         mode=Mode.DOUBLE,
         level=15,
@@ -84,8 +84,8 @@ def test_fuzzy_search_titles_exact_match(session: Session, client: TestClient):
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
-    chart = create_chart_in_db(session, set=set, song_name="My Song")
+    score_table = create_chart_context_in_db(session, user)
+    chart = create_chart_in_db(session, score_table=score_table, song_name="My Song")
     chart.title_url = "https://example.com/my-song.png"
     session.add(chart)
     session.commit()
@@ -107,10 +107,10 @@ def test_fuzzy_search_titles_is_case_and_punctuation_insensitive(
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
+    score_table = create_chart_context_in_db(session, user)
     chart = create_chart_in_db(
         session,
-        set=set,
+        score_table=score_table,
         song_name="Canción del Corazón!",
     )
     chart.title_url = "https://example.com/cancion.png"
@@ -134,10 +134,10 @@ def test_fuzzy_search_titles_query_parameter_case_and_punctuation_insensitive(
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
+    score_table = create_chart_context_in_db(session, user)
     chart = create_chart_in_db(
         session,
-        set=set,
+        score_table=score_table,
         song_name="cancion del corazon",
     )
     chart.title_url = "https://example.com/cancion.png"
@@ -161,8 +161,8 @@ def test_fuzzy_search_titles_matches_approximate_typos(
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
-    chart = create_chart_in_db(session, set=set, song_name="My Song")
+    score_table = create_chart_context_in_db(session, user)
+    chart = create_chart_in_db(session, score_table=score_table, song_name="My Song")
     chart.title_url = "https://example.com/my-song.png"
     session.add(chart)
     session.commit()
@@ -184,16 +184,18 @@ def test_fuzzy_search_titles_orders_results_by_best_match_first(
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
-    exact = create_chart_in_db(session, set=set, song_name="My Song")
+    score_table = create_chart_context_in_db(session, user)
+    exact = create_chart_in_db(session, score_table=score_table, song_name="My Song")
     exact.title_url = "https://example.com/exact.png"
     session.add(exact)
-    set = create_chart_context_in_db(session, user)
-    close = create_chart_in_db(session, set=set, song_name="My Sng")
+    score_table = create_chart_context_in_db(session, user)
+    close = create_chart_in_db(session, score_table=score_table, song_name="My Sng")
     close.title_url = "https://example.com/close.png"
     session.add(close)
-    set = create_chart_context_in_db(session, user)
-    more_distant = create_chart_in_db(session, set=set, song_name="My Long Song")
+    score_table = create_chart_context_in_db(session, user)
+    more_distant = create_chart_in_db(
+        session, score_table=score_table, song_name="My Long Song"
+    )
     more_distant.title_url = "https://example.com/distant.png"
     session.add(more_distant)
 
@@ -220,13 +222,15 @@ def test_fuzzy_search_titles_excludes_charts_without_title_url(
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
-    chart_with_title = create_chart_in_db(session, set=set, song_name="Song With Title")
+    score_table = create_chart_context_in_db(session, user)
+    chart_with_title = create_chart_in_db(
+        session, score_table=score_table, song_name="Song With Title"
+    )
     chart_with_title.title_url = "https://example.com/with-title.png"
     session.add(chart_with_title)
 
     chart_without_title = create_chart_in_db(
-        session, set=set, song_name="Song Without Title"
+        session, score_table=score_table, song_name="Song Without Title"
     )
     session.add(chart_without_title)
     session.commit()
@@ -248,8 +252,10 @@ def test_fuzzy_search_titles_returns_empty_list_when_no_match(
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
-    chart = create_chart_in_db(session, set=set, song_name="Completely Different Song")
+    score_table = create_chart_context_in_db(session, user)
+    chart = create_chart_in_db(
+        session, score_table=score_table, song_name="Completely Different Song"
+    )
     chart.title_url = "https://example.com/different.png"
     session.add(chart)
     session.commit()
@@ -271,10 +277,10 @@ def test_fuzzy_search_titles_does_not_match_title_url_contents(
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
+    score_table = create_chart_context_in_db(session, user)
     chart = create_chart_in_db(
         session,
-        set=set,
+        score_table=score_table,
         song_name="Unrelated Song",
     )
     chart.title_url = "https://example.com/my-song.png"
@@ -301,10 +307,10 @@ def test_get_chart(session: Session, client: TestClient):
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
+    score_table = create_chart_context_in_db(session, user)
     chart = create_chart_in_db(
         session,
-        set=set,
+        score_table=score_table,
         song_name="My Song",
         mode=Mode.DOUBLE,
         level=18,
@@ -343,7 +349,7 @@ def test_create_chart(session: Session, client: TestClient):
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, organizer=user)
+    score_table = create_chart_context_in_db(session, organizer=user)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
@@ -353,7 +359,7 @@ def test_create_chart(session: Session, client: TestClient):
             "mode": "single_performance",
             "level": 20,
             "player_count": 1,
-            "set_id": str(set.id),
+            "score_table_id": str(score_table.id),
         },
         headers=headers,
     )
@@ -371,12 +377,12 @@ def test_create_chart_with_defaults(session: Session, client: TestClient):
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, organizer=user)
+    score_table = create_chart_context_in_db(session, organizer=user)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
         "/charts/",
-        json={"song_name": "Default Chart Song", "set_id": str(set.id)},
+        json={"song_name": "Default Chart Song", "score_table_id": str(score_table.id)},
         headers=headers,
     )
     data = response.json()
@@ -459,10 +465,10 @@ def test_update_chart(session: Session, client: TestClient):
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
+    score_table = create_chart_context_in_db(session, user)
     chart = create_chart_in_db(
         session,
-        set=set,
+        score_table=score_table,
         song_name="Update Song",
         mode=Mode.SINGLE,
         level=8,
@@ -487,10 +493,10 @@ def test_update_chart_partial(session: Session, client: TestClient):
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
+    score_table = create_chart_context_in_db(session, user)
     chart = create_chart_in_db(
         session,
-        set=set,
+        score_table=score_table,
         song_name="Partial Update Song",
         mode=Mode.COOP,
         level=12,
@@ -524,8 +530,10 @@ def test_update_chart_invalid_mode(session: Session, client: TestClient):
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
-    chart = create_chart_in_db(session, set=set, song_name="Invalid Update Song")
+    score_table = create_chart_context_in_db(session, user)
+    chart = create_chart_in_db(
+        session, score_table=score_table, song_name="Invalid Update Song"
+    )
 
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
     response = client.patch(
@@ -547,8 +555,10 @@ def test_delete_chart(session: Session, client: TestClient):
         password="mypassword123",
         is_super_admin=True,
     )
-    set = create_chart_context_in_db(session, user)
-    chart = create_chart_in_db(session, set=set, song_name="Delete Chart")
+    score_table = create_chart_context_in_db(session, user)
+    chart = create_chart_in_db(
+        session, score_table=score_table, song_name="Delete Chart"
+    )
     chart_id = chart.id
 
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
@@ -584,8 +594,8 @@ def test_upload_chart_title(session: Session, client: TestClient):
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
-    set = create_chart_context_in_db(session, user)
-    chart = create_chart_in_db(session, song_name="Test Song", set=set)
+    score_table = create_chart_context_in_db(session, user)
+    chart = create_chart_in_db(session, song_name="Test Song", score_table=score_table)
 
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 

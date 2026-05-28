@@ -5,14 +5,14 @@ from sqlmodel import Session
 from models.round import RoundState
 from models.score_table import ScoreTableFormat
 from tests.helpers import (
-    add_player_to_set_in_db,
+    add_player_to_score_table_in_db,
     create_category_in_db,
     create_chart_in_db,
     create_chart_slot_in_db,
     create_player_in_db,
     create_round_in_db,
     create_score_in_db,
-    create_set_in_db,
+    create_score_table_in_db,
     create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
@@ -31,36 +31,36 @@ def create_editable_round(
     return organizer, tournament, category, round
 
 
-def create_set_with_players(
+def create_score_table_with_players(
     session: Session,
     round,
     *,
     format: ScoreTableFormat = ScoreTableFormat.SCORE_SUM,
     qualifiers_count: int,
     players_scores: list[tuple[str, int]],
-    set_order_index: int | None = None,
+    score_table_order_index: int | None = None,
 ):
-    set = create_set_in_db(
+    score_table = create_score_table_in_db(
         session,
         round=round,
         qualifiers_count=qualifiers_count,
         format=format,
     )
 
-    if set_order_index is not None:
-        set.order_index = set_order_index
-        session.add(set)
+    if score_table_order_index is not None:
+        score_table.order_index = score_table_order_index
+        session.add(score_table)
         session.commit()
 
-    chart = create_chart_in_db(session, set=set)
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
+    chart = create_chart_in_db(session, score_table=score_table)
+    chart_slot = create_chart_slot_in_db(session, score_table=score_table, chart=chart)
 
     players = []
     for player_order_index, (nickname, score_value) in enumerate(players_scores):
         player = create_player_in_db(session, nickname=nickname)
-        add_player_to_set_in_db(
+        add_player_to_score_table_in_db(
             session,
-            set=set,
+            score_table=score_table,
             player=player,
             order_index=player_order_index,
         )
@@ -73,7 +73,7 @@ def create_set_with_players(
         )
         players.append(player)
 
-    return set, chart, chart_slot, players
+    return score_table, chart, chart_slot, players
 
 
 # ---------------------------------------------------------------------------
@@ -552,103 +552,105 @@ def test_delete_tournament_cascade(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# GET /rounds/{round_id}/sets
+# GET /rounds/{round_id}/score_tables
 # ---------------------------------------------------------------------------
 
 
-def test_list_sets_in_round(session: Session, client: TestClient):
+def test_list_score_tables_in_round(session: Session, client: TestClient):
     tournament = create_tournament_in_db(session)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set_a = create_set_in_db(session, round=round)
-    set_b = create_set_in_db(session, round=round)
+    score_table_a = create_score_table_in_db(session, round=round)
+    score_table_b = create_score_table_in_db(session, round=round)
 
-    response = client.get(f"/rounds/{round.id}/sets")
+    response = client.get(f"/rounds/{round.id}/score_tables")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 2
     ids = [s["id"] for s in data]
-    assert str(set_a.id) in ids
-    assert str(set_b.id) in ids
+    assert str(score_table_a.id) in ids
+    assert str(score_table_b.id) in ids
     assert data[0]["order_index"] == 0
     assert data[1]["order_index"] == 1
 
 
-def test_list_sets_in_round_order_changed(session: Session, client: TestClient):
+def test_list_score_tables_in_round_order_changed(session: Session, client: TestClient):
     tournament = create_tournament_in_db(session)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set_a = create_set_in_db(session, round=round)
-    set_b = create_set_in_db(session, round=round)
+    score_table_a = create_score_table_in_db(session, round=round)
+    score_table_b = create_score_table_in_db(session, round=round)
 
-    set_a.order_index = 1
-    set_b.order_index = 0
+    score_table_a.order_index = 1
+    score_table_b.order_index = 0
     session.commit()
 
-    response = client.get(f"/rounds/{round.id}/sets")
+    response = client.get(f"/rounds/{round.id}/score_tables")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 2
-    assert data[0]["id"] == str(set_b.id)
-    assert data[1]["id"] == str(set_a.id)
+    assert data[0]["id"] == str(score_table_b.id)
+    assert data[1]["id"] == str(score_table_a.id)
 
 
-def test_list_sets_in_round_empty(session: Session, client: TestClient):
+def test_list_score_tables_in_round_empty(session: Session, client: TestClient):
     tournament = create_tournament_in_db(session)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
 
-    response = client.get(f"/rounds/{round.id}/sets")
+    response = client.get(f"/rounds/{round.id}/score_tables")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
-def test_list_sets_in_round_not_found(client: TestClient):
-    response = client.get("/rounds/00000000-0000-0000-0000-000000000000/sets")
+def test_list_score_tables_in_round_not_found(client: TestClient):
+    response = client.get("/rounds/00000000-0000-0000-0000-000000000000/score_tables")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# PUT /rounds/{round_id}/sets/{set_id}/order
+# PUT /rounds/{round_id}/score_tables/{score_table_id}/order
 # ---------------------------------------------------------------------------
 
 
-def test_change_set_order_in_round(session: Session, client: TestClient):
+def test_change_score_table_order_in_round(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set_a = create_set_in_db(session, round=round)
-    set_b = create_set_in_db(session, round=round)
+    score_table_a = create_score_table_in_db(session, round=round)
+    score_table_b = create_score_table_in_db(session, round=round)
 
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/sets/{set_a.id}/order",
-        json=[str(set_b.id), str(set_a.id)],
+        f"/rounds/{round.id}/score_tables/{score_table_a.id}/order",
+        json=[str(score_table_b.id), str(score_table_a.id)],
         headers=headers,
     )
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 2
-    assert data[0]["id"] == str(set_b.id)
-    assert data[1]["id"] == str(set_a.id)
+    assert data[0]["id"] == str(score_table_b.id)
+    assert data[1]["id"] == str(score_table_a.id)
 
-    session.refresh(set_a)
-    session.refresh(set_b)
+    session.refresh(score_table_a)
+    session.refresh(score_table_b)
 
-    assert set_a.order_index == 1
-    assert set_b.order_index == 0
+    assert score_table_a.order_index == 1
+    assert score_table_b.order_index == 0
 
 
-def test_change_set_order_in_round_as_super_admin(session: Session, client: TestClient):
+def test_change_score_table_order_in_round_as_super_admin(
+    session: Session, client: TestClient
+):
     create_user_in_db(
         session,
         email="admin@example.com",
@@ -658,30 +660,32 @@ def test_change_set_order_in_round_as_super_admin(session: Session, client: Test
     tournament = create_tournament_in_db(session)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set_a = create_set_in_db(session, round=round)
-    set_b = create_set_in_db(session, round=round)
+    score_table_a = create_score_table_in_db(session, round=round)
+    score_table_b = create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/sets/{set_a.id}/order",
-        json=[str(set_b.id), str(set_a.id)],
+        f"/rounds/{round.id}/score_tables/{score_table_a.id}/order",
+        json=[str(score_table_b.id), str(score_table_a.id)],
         headers=headers,
     )
 
-    session.refresh(set_a)
-    session.refresh(set_b)
+    session.refresh(score_table_a)
+    session.refresh(score_table_b)
 
     assert response.status_code == status.HTTP_200_OK
-    assert set_a.order_index == 1
-    assert set_b.order_index == 0
+    assert score_table_a.order_index == 1
+    assert score_table_b.order_index == 0
 
 
-def test_change_set_order_in_round_not_found(session: Session, client: TestClient):
+def test_change_score_table_order_in_round_not_found(
+    session: Session, client: TestClient
+):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.put(
-        "/rounds/00000000-0000-0000-0000-000000000000/sets/00000000-0000-0000-0000-000000000000/order",
+        "/rounds/00000000-0000-0000-0000-000000000000/score_tables/00000000-0000-0000-0000-000000000000/order",
         json=["00000000-0000-0000-0000-000000000000"],
         headers=headers,
     )
@@ -689,93 +693,101 @@ def test_change_set_order_in_round_not_found(session: Session, client: TestClien
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_change_set_order_in_round_unauthorized(session: Session, client: TestClient):
+def test_change_score_table_order_in_round_unauthorized(
+    session: Session, client: TestClient
+):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     tournament = create_tournament_in_db(session)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set_a = create_set_in_db(session, round=round)
+    score_table_a = create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/sets/{set_a.id}/order",
-        json=[str(set_a.id)],
+        f"/rounds/{round.id}/score_tables/{score_table_a.id}/order",
+        json=[str(score_table_a.id)],
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_change_set_order_in_round_unauthenticated(
+def test_change_score_table_order_in_round_unauthenticated(
     session: Session, client: TestClient
 ):
     tournament = create_tournament_in_db(session)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set_a = create_set_in_db(session, round=round)
+    score_table_a = create_score_table_in_db(session, round=round)
 
     response = client.put(
-        f"/rounds/{round.id}/sets/{set_a.id}/order",
-        json=[str(set_a.id)],
+        f"/rounds/{round.id}/score_tables/{score_table_a.id}/order",
+        json=[str(score_table_a.id)],
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_change_set_order_in_round_count_mismatch(session: Session, client: TestClient):
+def test_change_score_table_order_in_round_count_mismatch(
+    session: Session, client: TestClient
+):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set_a = create_set_in_db(session, round=round)
-    create_set_in_db(session, round=round)
+    score_table_a = create_score_table_in_db(session, round=round)
+    create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/sets/{set_a.id}/order",
-        json=[str(set_a.id)],
+        f"/rounds/{round.id}/score_tables/{score_table_a.id}/order",
+        json=[str(score_table_a.id)],
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_change_set_order_in_round_repeated_set(session: Session, client: TestClient):
+def test_change_score_table_order_in_round_repeated_score_table(
+    session: Session, client: TestClient
+):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set_a = create_set_in_db(session, round=round)
-    create_set_in_db(session, round=round)
+    score_table_a = create_score_table_in_db(session, round=round)
+    create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/sets/{set_a.id}/order",
-        json=[str(set_a.id), str(set_a.id)],
+        f"/rounds/{round.id}/score_tables/{score_table_a.id}/order",
+        json=[str(score_table_a.id), str(score_table_a.id)],
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_change_set_order_in_round_incorrect_set(session: Session, client: TestClient):
+def test_change_score_table_order_in_round_incorrect_score_table(
+    session: Session, client: TestClient
+):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set_a = create_set_in_db(session, round=round)
-    create_set_in_db(session, round=round)
+    score_table_a = create_score_table_in_db(session, round=round)
+    create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/sets/{set_a.id}/order",
-        json=[str(set_a.id), "00000000-0000-0000-0000-000000000000"],
+        f"/rounds/{round.id}/score_tables/{score_table_a.id}/order",
+        json=[str(score_table_a.id), "00000000-0000-0000-0000-000000000000"],
         headers=headers,
     )
 
@@ -793,7 +805,7 @@ def test_delete_all_scores_in_round(session: Session, client: TestClient):
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    set, _, _, _ = create_set_with_players(
+    score_table, _, _, _ = create_score_table_with_players(
         session=session,
         round=round,
         format=ScoreTableFormat.SCORE_SUM,
@@ -810,18 +822,20 @@ def test_delete_all_scores_in_round(session: Session, client: TestClient):
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    session.refresh(set)
+    session.refresh(score_table)
 
-    assert set.chart_slots[0].scores == []
+    assert score_table.chart_slots[0].scores == []
 
 
-def test_delete_all_scores_in_round_empty_set(session: Session, client: TestClient):
+def test_delete_all_scores_in_round_empty_score_table(
+    session: Session, client: TestClient
+):
     _, _, _, round = create_editable_round(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    set, _, _, _ = create_set_with_players(
+    score_table, _, _, _ = create_score_table_with_players(
         session=session,
         round=round,
         format=ScoreTableFormat.SCORE_SUM,
@@ -833,8 +847,8 @@ def test_delete_all_scores_in_round_empty_set(session: Session, client: TestClie
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    session.refresh(set)
-    assert set.chart_slots[0].scores == []
+    session.refresh(score_table)
+    assert score_table.chart_slots[0].scores == []
 
 
 def test_delete_all_scores_in_round_not_found(session: Session, client: TestClient):
@@ -1161,24 +1175,24 @@ def test_get_qualifying_players_in_round(session: Session, client: TestClient):
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
 
-    set_a, _, _, set_a_players = create_set_with_players(
+    score_table_a, _, _, score_table_a_players = create_score_table_with_players(
         session,
         round,
         qualifiers_count=1,
         players_scores=[
-            ("Set A Player 1", 1000000),
-            ("Set A Player 2", 950000),
+            ("Score Table A Player 1", 1000000),
+            ("Score Table A Player 2", 950000),
         ],
     )
 
-    set_b, _, _, set_b_players = create_set_with_players(
+    score_table_b, _, _, score_table_b_players = create_score_table_with_players(
         session,
         round,
         qualifiers_count=2,
         players_scores=[
-            ("Set B Player 1", 900000),
-            ("Set B Player 2", 800000),
-            ("Set B Player 3", 1000000),
+            ("Score Table B Player 1", 900000),
+            ("Score Table B Player 2", 800000),
+            ("Score Table B Player 3", 1000000),
         ],
     )
 
@@ -1187,14 +1201,14 @@ def test_get_qualifying_players_in_round(session: Session, client: TestClient):
 
     assert response.status_code == status.HTTP_200_OK
     assert [player["nickname"] for player in data] == [
-        set_a_players[0].nickname,
-        set_b_players[2].nickname,
-        set_b_players[0].nickname,
+        score_table_a_players[0].nickname,
+        score_table_b_players[2].nickname,
+        score_table_b_players[0].nickname,
     ]
     assert [player["id"] for player in data] == [
-        str(set_a_players[0].id),
-        str(set_b_players[2].id),
-        str(set_b_players[0].id),
+        str(score_table_a_players[0].id),
+        str(score_table_b_players[2].id),
+        str(score_table_b_players[0].id),
     ]
     assert len(data) == 3
 
@@ -1209,25 +1223,25 @@ def test_get_qualifying_players_in_round_two_battles(
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
 
-    set_a, _, _, set_a_players = create_set_with_players(
+    score_table_a, _, _, score_table_a_players = create_score_table_with_players(
         session,
         round,
         format=ScoreTableFormat.BATTLE,
         qualifiers_count=1,
         players_scores=[
-            ("Set A Player 1", 950000),
-            ("Set A Player 2", 1000000),
+            ("Score Table A Player 1", 950000),
+            ("Score Table A Player 2", 1000000),
         ],
     )
 
-    set_b, _, _, set_b_players = create_set_with_players(
+    score_table_b, _, _, score_table_b_players = create_score_table_with_players(
         session,
         round,
         format=ScoreTableFormat.BATTLE,
         qualifiers_count=1,
         players_scores=[
-            ("Set B Player 1", 900000),
-            ("Set B Player 2", 800000),
+            ("Score Table B Player 1", 900000),
+            ("Score Table B Player 2", 800000),
         ],
     )
 
@@ -1236,12 +1250,12 @@ def test_get_qualifying_players_in_round_two_battles(
 
     assert response.status_code == status.HTTP_200_OK
     assert [player["nickname"] for player in data] == [
-        set_a_players[1].nickname,
-        set_b_players[0].nickname,
+        score_table_a_players[1].nickname,
+        score_table_b_players[0].nickname,
     ]
     assert [player["id"] for player in data] == [
-        str(set_a_players[1].id),
-        str(set_b_players[0].id),
+        str(score_table_a_players[1].id),
+        str(score_table_b_players[0].id),
     ]
     assert len(data) == 2
 

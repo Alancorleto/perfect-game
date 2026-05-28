@@ -1,17 +1,16 @@
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlalchemy.sql.operators import is_
 from sqlmodel import Session
 
 from tests.helpers import (
-    add_player_to_set_in_db,
+    add_player_to_score_table_in_db,
     create_category_in_db,
     create_chart_in_db,
     create_chart_slot_in_db,
     create_player_in_db,
     create_round_in_db,
     create_score_in_db,
-    create_set_in_db,
+    create_score_table_in_db,
     create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
@@ -46,12 +45,23 @@ def create_score_context(session: Session):
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set = create_set_in_db(session, round=round)
+    score_table = create_score_table_in_db(session, round=round)
     player = create_player_in_db(session, nickname="PlayerA")
-    chart = create_chart_in_db(session, set=set, song_name="Song A")
-    add_player_to_set_in_db(session, set=set, player=player)
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
-    return organizer, tournament, category, round, set, player, chart, chart_slot
+    chart = create_chart_in_db(session, score_table=score_table, song_name="Song A")
+    add_player_to_score_table_in_db(session, score_table=score_table, player=player)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table=score_table, chart=chart, order_index=0
+    )
+    return (
+        organizer,
+        tournament,
+        category,
+        round,
+        score_table,
+        player,
+        chart,
+        chart_slot,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -127,10 +137,12 @@ def test_get_score_not_found(client: TestClient):
 
 
 def test_create_score(session: Session, client: TestClient):
-    _, _, _, _, set, player, chart, _ = create_score_context(session)
-    other_chart = create_chart_in_db(session, set=set, song_name="Song B")
+    _, _, _, _, score_table, player, chart, _ = create_score_context(session)
+    other_chart = create_chart_in_db(
+        session, score_table=score_table, song_name="Song B"
+    )
     chart_slot = create_chart_slot_in_db(
-        session, set=set, chart=other_chart, order_index=1
+        session, score_table=score_table, chart=other_chart, order_index=1
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -200,15 +212,15 @@ def test_create_score_chart_slot_not_found(session: Session, client: TestClient)
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create_score_in_set_unauthorized(session: Session, client: TestClient):
+def test_create_score_in_score_table_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     tournament = create_tournament_in_db(session)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category)
-    set = create_set_in_db(session, round=round)
+    score_table = create_score_table_in_db(session, round=round)
     player = create_player_in_db(session)
-    chart = create_chart_in_db(session, set=set, song_name="Song A")
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart)
+    chart = create_chart_in_db(session, score_table=score_table, song_name="Song A")
+    chart_slot = create_chart_slot_in_db(session, score_table=score_table, chart=chart)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
@@ -220,7 +232,7 @@ def test_create_score_in_set_unauthorized(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_create_score_player_not_in_set(session: Session, client: TestClient):
+def test_create_score_player_not_in_score_table(session: Session, client: TestClient):
     _, _, _, _, _, _, chart, chart_slot = create_score_context(session)
     other_player = create_player_in_db(session, nickname="OtherPlayer")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
@@ -234,18 +246,22 @@ def test_create_score_player_not_in_set(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_create_score_chart_not_in_set(session: Session, client: TestClient):
-    organizer, _, _, round, set, player, _, chart_slot = create_score_context(session)
+def test_create_score_chart_not_in_score_table(session: Session, client: TestClient):
+    organizer, _, _, round, score_table, player, _, chart_slot = create_score_context(
+        session
+    )
 
     # Make sure it does not trigger the chart slot restriction
     chart_slot.chart = None
     session.commit()
 
-    other_set = create_set_in_db(
+    other_score_table = create_score_table_in_db(
         session,
         round,
     )
-    other_chart = create_chart_in_db(session, set=other_set, song_name="Other Song")
+    other_chart = create_chart_in_db(
+        session, score_table=other_score_table, song_name="Other Song"
+    )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
@@ -542,7 +558,7 @@ def test_delete_chart_slot_cascade(session: Session, client: TestClient):
         password="mypassword123",
         is_super_admin=True,
     )
-    _, _, _, _, set, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, score_table, player, chart, chart_slot = create_score_context(session)
     score = create_score_in_db(
         session, player=player, chart=chart, chart_slot=chart_slot
     )

@@ -1939,7 +1939,7 @@ def test_change_round_order_round_count_mismatch(session: Session, client: TestC
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_change_round_order_round_set_mismatch(session: Session, client: TestClient):
+def test_change_round_order_round_mismatch(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )

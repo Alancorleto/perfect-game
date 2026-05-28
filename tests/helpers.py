@@ -62,7 +62,7 @@ def create_player_in_db(
 
 def create_chart_in_db(
     session: Session,
-    set: ScoreTable,
+    score_table: ScoreTable,
     song_name: str = "Song",
     mode: Mode = Mode.SINGLE,
     level: int = 1,
@@ -75,7 +75,7 @@ def create_chart_in_db(
         mode=mode,
         level=level,
         player_count=player_count,
-        score_table_id=set.id,
+        score_table_id=score_table.id,
         title_url=title_url,
     )
     session.add(chart)
@@ -121,37 +121,37 @@ def create_round_in_db(
     return round
 
 
-def create_set_in_db(
+def create_score_table_in_db(
     session: Session,
     round: Round,
     levels: str | None = None,
     qualifiers_count: int | None = None,
     format: ScoreTableFormat = ScoreTableFormat.SCORE_SUM,
 ) -> ScoreTable:
-    """Creates a set directly in the test database."""
-    set = ScoreTable(
+    """Creates a score table directly in the test database."""
+    score_table = ScoreTable(
         round_id=round.id,
         levels=levels,
         qualifiers_count=qualifiers_count,
         format=format,
         order_index=len(round.score_tables),
     )
-    session.add(set)
+    session.add(score_table)
     session.commit()
-    session.refresh(set)
-    return set
+    session.refresh(score_table)
+    return score_table
 
 
 def create_chart_slot_in_db(
     session: Session,
-    set: ScoreTable,
+    score_table: ScoreTable,
     chart: Chart,
     order_index: int = 0,
     description: str | None = None,
 ) -> ChartSlot:
     """Creates a chart slot directly in the test database."""
     chart_slot = ChartSlot(
-        score_table_id=set.id,
+        score_table_id=score_table.id,
         chart_id=chart.id,
         order_index=order_index,
         description=description,
@@ -162,20 +162,20 @@ def create_chart_slot_in_db(
     return chart_slot
 
 
-def add_player_to_set_in_db(
+def add_player_to_score_table_in_db(
     session: Session,
-    set: ScoreTable,
+    score_table: ScoreTable,
     player: Player,
     order_index: int = 0,
 ) -> PlayerRow:
-    """Adds a player to a set directly in the test database."""
-    link = PlayerRow(
-        score_table_id=set.id, player_id=player.id, order_index=order_index
+    """Adds a player to a score table directly in the test database."""
+    row = PlayerRow(
+        score_table_id=score_table.id, player_id=player.id, order_index=order_index
     )
-    session.add(link)
+    session.add(row)
     session.commit()
-    session.refresh(link)
-    return link
+    session.refresh(row)
+    return row
 
 
 def create_score_in_db(

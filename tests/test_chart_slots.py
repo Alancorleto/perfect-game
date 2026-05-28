@@ -11,7 +11,7 @@ from tests.helpers import (
     create_chart_in_db,
     create_chart_slot_in_db,
     create_round_in_db,
-    create_set_in_db,
+    create_score_table_in_db,
     create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
@@ -32,9 +32,9 @@ def create_editable_chart_slot_context(
     tournament = create_tournament_in_db(session, organizer=organizer)
     category = create_category_in_db(session, tournament=tournament)
     round = create_round_in_db(session, category=category, state=round_state)
-    set = create_set_in_db(session, round=round)
-    chart = create_chart_in_db(session, set=set, song_name="Chart A", level=10)
-    return organizer, tournament, category, round, set, chart
+    score_table = create_score_table_in_db(session, round=round)
+    chart = create_chart_in_db(session, score_table, song_name="Chart A", level=10)
+    return organizer, tournament, category, round, score_table, chart
 
 
 # ---------------------------------------------------------------------------
@@ -44,12 +44,12 @@ def create_editable_chart_slot_context(
 
 def test_list_chart_slots(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
-    _, _, _, _, set, chart_a = create_editable_chart_slot_context(session)
-    chart_b = create_chart_in_db(session, set=set, song_name="Chart B", level=12)
-    slot_a = create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
+    _, _, _, _, score_table, chart_a = create_editable_chart_slot_context(session)
+    chart_b = create_chart_in_db(session, score_table, song_name="Chart B", level=12)
+    slot_a = create_chart_slot_in_db(session, score_table, chart=chart_a, order_index=0)
     slot_b = create_chart_slot_in_db(
         session,
-        set=set,
+        score_table,
         chart=chart_b,
         order_index=1,
         description="Chart B description",
@@ -89,18 +89,18 @@ def test_list_chart_slots_unauthorized(client: TestClient):
 
 
 def test_create_chart_slot(session: Session, client: TestClient):
-    _, _, _, _, set, chart = create_editable_chart_slot_context(session)
+    _, _, _, _, score_table, chart = create_editable_chart_slot_context(session)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
         "/chart_slots/",
-        json={"set_id": str(set.id), "chart_id": str(chart.id)},
+        json={"score_table_id": str(score_table.id), "chart_id": str(chart.id)},
         headers=headers,
     )
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert data["set_id"] == str(set.id)
+    assert data["score_table_id"] == str(score_table.id)
     assert data["chart_id"] == str(chart.id)
     assert data["order_index"] == 0
     assert data["description"] is None
@@ -112,13 +112,13 @@ def test_create_chart_slot(session: Session, client: TestClient):
 
 
 def test_create_chart_slot_without_chart(session: Session, client: TestClient):
-    _, _, _, _, set, _ = create_editable_chart_slot_context(session)
+    _, _, _, _, score_table, _ = create_editable_chart_slot_context(session)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
         "/chart_slots/",
         json={
-            "set_id": str(set.id),
+            "score_table_id": str(score_table.id),
             "description": "Custom chart",
         },
         headers=headers,
@@ -126,20 +126,20 @@ def test_create_chart_slot_without_chart(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert data["set_id"] == str(set.id)
+    assert data["score_table_id"] == str(score_table.id)
     assert data["chart_id"] is None
     assert data["order_index"] == 0
     assert data["description"] == "Custom chart"
 
 
-def test_create_chart_slot_set_not_found(session: Session, client: TestClient):
+def test_create_chart_slot_score_table_not_found(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
         "/chart_slots/",
         json={
-            "set_id": "00000000-0000-0000-0000-000000000000",
+            "score_table_id": "00000000-0000-0000-0000-000000000000",
             "chart_id": None,
         },
         headers=headers,
@@ -150,12 +150,12 @@ def test_create_chart_slot_set_not_found(session: Session, client: TestClient):
 
 def test_create_chart_slot_forbidden(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
-    _, _, _, _, set, chart = create_editable_chart_slot_context(session)
+    _, _, _, _, score_table, chart = create_editable_chart_slot_context(session)
 
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
     response = client.post(
         "/chart_slots/",
-        json={"set_id": str(set.id), "chart_id": str(chart.id)},
+        json={"score_table_id": str(score_table.id), "chart_id": str(chart.id)},
         headers=headers,
     )
 
@@ -163,13 +163,13 @@ def test_create_chart_slot_forbidden(session: Session, client: TestClient):
 
 
 def test_create_chart_slot_chart_not_found(session: Session, client: TestClient):
-    _, _, _, _, set, _ = create_editable_chart_slot_context(session)
+    _, _, _, _, score_table, _ = create_editable_chart_slot_context(session)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
         "/chart_slots/",
         json={
-            "set_id": str(set.id),
+            "score_table_id": str(score_table.id),
             "chart_id": "00000000-0000-0000-0000-000000000000",
         },
         headers=headers,
@@ -181,14 +181,16 @@ def test_create_chart_slot_chart_not_found(session: Session, client: TestClient)
 def test_create_chart_slot_appends_to_existing_slots(
     session: Session, client: TestClient
 ):
-    _, _, _, _, set, first_chart = create_editable_chart_slot_context(session)
-    second_chart = create_chart_in_db(session, set=set, song_name="Chart B", level=12)
-    create_chart_slot_in_db(session, set=set, chart=first_chart, order_index=0)
+    _, _, _, _, score_table, first_chart = create_editable_chart_slot_context(session)
+    second_chart = create_chart_in_db(
+        session, score_table, song_name="Chart B", level=12
+    )
+    create_chart_slot_in_db(session, score_table, chart=first_chart, order_index=0)
 
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
     response = client.post(
         "/chart_slots/",
-        json={"set_id": str(set.id), "chart_id": str(second_chart.id)},
+        json={"score_table_id": str(score_table.id), "chart_id": str(second_chart.id)},
         headers=headers,
     )
     data = response.json()
@@ -199,11 +201,11 @@ def test_create_chart_slot_appends_to_existing_slots(
 
 
 def test_create_chart_slot_unauthenticated(session: Session, client: TestClient):
-    _, _, _, _, set, chart = create_editable_chart_slot_context(session)
+    _, _, _, _, score_table, chart = create_editable_chart_slot_context(session)
 
     response = client.post(
         "/chart_slots/",
-        json={"set_id": str(set.id), "chart_id": str(chart.id)},
+        json={"score_table_id": str(score_table.id), "chart_id": str(chart.id)},
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -215,15 +217,17 @@ def test_create_chart_slot_unauthenticated(session: Session, client: TestClient)
 
 
 def test_get_chart_slot(session: Session, client: TestClient):
-    _, _, _, _, set, chart = create_editable_chart_slot_context(session)
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
+    _, _, _, _, score_table, chart = create_editable_chart_slot_context(session)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table, chart=chart, order_index=0
+    )
 
     response = client.get(f"/chart_slots/{chart_slot.id}")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert data["id"] == str(chart_slot.id)
-    assert data["set_id"] == str(set.id)
+    assert data["score_table_id"] == str(score_table.id)
     assert data["chart_id"] == str(chart.id)
     assert data["order_index"] == 0
 
@@ -240,9 +244,11 @@ def test_get_chart_slot_not_found(client: TestClient):
 
 
 def test_update_chart_slot(session: Session, client: TestClient):
-    _, _, _, _, set, chart_a = create_editable_chart_slot_context(session)
-    chart_b = create_chart_in_db(session, set=set, song_name="Chart B", level=12)
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
+    _, _, _, _, score_table, chart_a = create_editable_chart_slot_context(session)
+    chart_b = create_chart_in_db(session, score_table, song_name="Chart B", level=12)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table, chart=chart_a, order_index=0
+    )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.patch(
@@ -254,14 +260,16 @@ def test_update_chart_slot(session: Session, client: TestClient):
 
     assert response.status_code == status.HTTP_200_OK
     assert data["id"] == str(chart_slot.id)
-    assert data["set_id"] == str(set.id)
+    assert data["score_table_id"] == str(score_table.id)
     assert data["chart_id"] == str(chart_b.id)
     assert data["order_index"] == 0
 
 
 def test_update_chart_slot_chart_not_found(session: Session, client: TestClient):
-    _, _, _, _, set, chart = create_editable_chart_slot_context(session)
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
+    _, _, _, _, score_table, chart = create_editable_chart_slot_context(session)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table, chart=chart, order_index=0
+    )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.patch(
@@ -273,12 +281,18 @@ def test_update_chart_slot_chart_not_found(session: Session, client: TestClient)
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_update_chart_slot_chart_not_in_set(session: Session, client: TestClient):
-    _, _, _, round, set, chart = create_editable_chart_slot_context(session)
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
+def test_update_chart_slot_chart_not_in_score_table(
+    session: Session, client: TestClient
+):
+    _, _, _, round, score_table, chart = create_editable_chart_slot_context(session)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table, chart=chart, order_index=0
+    )
 
-    other_set = create_set_in_db(session, round=round)
-    other_chart = create_chart_in_db(session, set=other_set, song_name="Other", level=9)
+    other_score_table = create_score_table_in_db(session, round=round)
+    other_chart = create_chart_in_db(
+        session, other_score_table, song_name="Other", level=9
+    )
 
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
     response = client.patch(
@@ -292,8 +306,10 @@ def test_update_chart_slot_chart_not_in_set(session: Session, client: TestClient
 
 def test_update_chart_slot_forbidden(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
-    _, _, _, _, set, chart = create_editable_chart_slot_context(session)
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
+    _, _, _, _, score_table, chart = create_editable_chart_slot_context(session)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table, chart=chart, order_index=0
+    )
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.patch(
@@ -312,9 +328,11 @@ def test_update_chart_slot_as_super_admin(session: Session, client: TestClient):
         password="mypassword123",
         is_super_admin=True,
     )
-    _, _, _, _, set, chart_a = create_editable_chart_slot_context(session)
-    chart_b = create_chart_in_db(session, set=set, song_name="Chart B", level=12)
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
+    _, _, _, _, score_table, chart_a = create_editable_chart_slot_context(session)
+    chart_b = create_chart_in_db(session, score_table, song_name="Chart B", level=12)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table, chart=chart_a, order_index=0
+    )
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.patch(
@@ -328,8 +346,10 @@ def test_update_chart_slot_as_super_admin(session: Session, client: TestClient):
 
 
 def test_update_chart_slot_unauthenticated(session: Session, client: TestClient):
-    _, _, _, _, set, chart = create_editable_chart_slot_context(session)
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
+    _, _, _, _, score_table, chart = create_editable_chart_slot_context(session)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table, chart=chart, order_index=0
+    )
 
     response = client.patch(
         f"/chart_slots/{chart_slot.id}",
@@ -345,12 +365,12 @@ def test_update_chart_slot_unauthenticated(session: Session, client: TestClient)
 
 
 def test_delete_chart_slot(session: Session, client: TestClient):
-    _, _, _, _, set, chart_a = create_editable_chart_slot_context(session)
-    chart_b = create_chart_in_db(session, set=set, song_name="Chart B", level=12)
-    chart_c = create_chart_in_db(session, set=set, song_name="Chart C", level=14)
-    slot_a = create_chart_slot_in_db(session, set=set, chart=chart_a, order_index=0)
-    slot_b = create_chart_slot_in_db(session, set=set, chart=chart_b, order_index=1)
-    slot_c = create_chart_slot_in_db(session, set=set, chart=chart_c, order_index=2)
+    _, _, _, _, score_table, chart_a = create_editable_chart_slot_context(session)
+    chart_b = create_chart_in_db(session, score_table, song_name="Chart B", level=12)
+    chart_c = create_chart_in_db(session, score_table, song_name="Chart C", level=14)
+    slot_a = create_chart_slot_in_db(session, score_table, chart=chart_a, order_index=0)
+    slot_b = create_chart_slot_in_db(session, score_table, chart=chart_b, order_index=1)
+    slot_c = create_chart_slot_in_db(session, score_table, chart=chart_c, order_index=2)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(f"/chart_slots/{slot_b.id}", headers=headers)
@@ -376,8 +396,10 @@ def test_delete_chart_slot_not_found(session: Session, client: TestClient):
 
 def test_delete_chart_slot_forbidden(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
-    _, _, _, _, set, chart = create_editable_chart_slot_context(session)
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
+    _, _, _, _, score_table, chart = create_editable_chart_slot_context(session)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table, chart=chart, order_index=0
+    )
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.delete(f"/chart_slots/{chart_slot.id}", headers=headers)
@@ -390,10 +412,12 @@ def test_delete_chart_slot_forbidden_when_round_finished(
     session: Session, client: TestClient
 ):
     create_user_in_db(session, email="organizer@example.com", password="mypassword123")
-    _, _, _, _, set, chart = create_editable_chart_slot_context(
+    _, _, _, _, score_table, chart = create_editable_chart_slot_context(
         session, round_state=RoundState.FINISHED
     )
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table, chart=chart, order_index=0
+    )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(f"/chart_slots/{chart_slot.id}", headers=headers)
@@ -408,10 +432,12 @@ def test_delete_chart_slot_as_super_admin(session: Session, client: TestClient):
         password="mypassword123",
         is_super_admin=True,
     )
-    _, _, _, _, set, chart = create_editable_chart_slot_context(
+    _, _, _, _, score_table, chart = create_editable_chart_slot_context(
         session, round_state=RoundState.FINISHED
     )
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table, chart=chart, order_index=0
+    )
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.delete(f"/chart_slots/{chart_slot.id}", headers=headers)
@@ -421,8 +447,10 @@ def test_delete_chart_slot_as_super_admin(session: Session, client: TestClient):
 
 
 def test_delete_chart_slot_unauthenticated(session: Session, client: TestClient):
-    _, _, _, _, set, chart = create_editable_chart_slot_context(session)
-    chart_slot = create_chart_slot_in_db(session, set=set, chart=chart, order_index=0)
+    _, _, _, _, score_table, chart = create_editable_chart_slot_context(session)
+    chart_slot = create_chart_slot_in_db(
+        session, score_table, chart=chart, order_index=0
+    )
 
     response = client.delete(f"/chart_slots/{chart_slot.id}")
 

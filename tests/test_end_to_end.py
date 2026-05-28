@@ -7,9 +7,9 @@ from tests.helpers import get_auth_headers, get_grade
 # This test exercises the main tournament scoring flow through the public API.
 # It creates an organizer account, signs in, creates the organizer's player
 # profile, builds a tournament structure, creates playable content, connects
-# that content and player to a set, submits a score, and verifies that the set
-# results endpoint calculates the expected score and placement.
-def test_create_set_score_and_results_end_to_end(client: TestClient):
+# that content and player to a score table, submits a score, and verifies that
+# the score table results endpoint calculates the expected score and placement.
+def test_create_score_table_score_and_results_end_to_end(client: TestClient):
     # Create an organizer user account.
     user_response = client.post(
         "/users",
@@ -63,9 +63,9 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
     assert round_response.status_code == status.HTTP_200_OK
     round_id = round_response.json()["id"]
 
-    # Create a score-sum set inside the round.
-    set_response = client.post(
-        "/sets/",
+    # Create a score-sum score table inside the round.
+    score_table_response = client.post(
+        "/score_tables/",
         json={
             "round_id": round_id,
             "levels": "S15",
@@ -74,8 +74,8 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
         },
         headers=headers,
     )
-    assert set_response.status_code == status.HTTP_200_OK
-    set_id = set_response.json()["id"]
+    assert score_table_response.status_code == status.HTTP_200_OK
+    score_table_id = score_table_response.json()["id"]
 
     # Create a chart for the song.
     chart_response = client.post(
@@ -85,25 +85,25 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
             "mode": "single",
             "level": 15,
             "player_count": 1,
-            "set_id": set_id,
+            "score_table_id": score_table_id,
         },
         headers=headers,
     )
     assert chart_response.status_code == status.HTTP_200_OK
     chart_id = chart_response.json()["id"]
 
-    # Add the chart to the set as the first chart slot.
+    # Add the chart to the score table as the first chart slot.
     chart_slot_response = client.post(
         "/chart_slots/",
-        json={"set_id": set_id, "chart_id": chart_id},
+        json={"score_table_id": score_table_id, "chart_id": chart_id},
         headers=headers,
     )
     assert chart_slot_response.status_code == status.HTTP_200_OK
     chart_slot_id = chart_slot_response.json()["id"]
 
-    # Add the organizer's player to the set.
+    # Add the organizer's player to the score table.
     add_player_response = client.post(
-        f"/sets/{set_id}/players/bulk",
+        f"/score_tables/{score_table_id}/players/bulk",
         json=[player_id],
         headers=headers,
     )
@@ -118,7 +118,7 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
     assert start_round_response.status_code == status.HTTP_200_OK
     assert start_round_response.json()["id"] == round_id
 
-    # Submit a score for the player on the set's first chart slot.
+    # Submit a score for the player on the score table's first chart slot.
     score_response = client.post(
         "/scores/",
         json={
@@ -141,12 +141,12 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
     assert score_response.status_code == status.HTTP_200_OK
     score_id = score_response.json()["id"]
 
-    # Fetch the calculated set results.
-    results_response = client.get(f"/sets/{set_id}/results")
+    # Fetch the calculated score table results.
+    results_response = client.get(f"/score_tables/{score_table_id}/results")
     assert results_response.status_code == status.HTTP_200_OK
     results = results_response.json()
 
-    # Verify the score-sum result and placement for the only player in the set.
+    # Verify the score-sum result and placement for the only player in the score table.
     assert len(results) == 1
     assert results[0]["player_id"] == player_id
     assert results[0]["total_score"] == 987654
@@ -159,16 +159,16 @@ def test_create_set_score_and_results_end_to_end(client: TestClient):
 # This test verifies the score-sum format with a late player insertion in a round.
 # Steps:
 # 1. Create and authenticate an organizer.
-# 2. Create a tournament, category, round, and a score-sum set with two charts (levels 15 and 16).
-# 3. Create eight guest players and add them to the category and set.
+# 2. Create a tournament, category, round, and a score-sum score table with two charts (levels 15 and 16).
+# 3. Create eight guest players and add them to the category and score table.
 # 4. Start the round.
 # 5. Enter scores for the first four player pairs (players 0-3) on both charts in two-player game order.
-# 6. Insert a late player after the fourth player, add them to the category and set, and reorder set players to place the late player at index 4.
+# 6. Insert a late player after the fourth player, add them to the category and score table, and reorder score table players to place the late player at index 4.
 # 7. Continue entering scores for the remaining pairs (including the late player) and the final unpaired player.
 # 8. Finish the round.
-# 9. Fetch the set results and verify that the ordering is by total score (sum of both charts) and not by input order, and that each player has results for both charts.
+# 9. Fetch the score table results and verify that the ordering is by total score (sum of both charts) and not by input order, and that each player has results for both charts.
 def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
-    def create_song_chart(song_name: str, level: int, set_id: str) -> str:
+    def create_song_chart(song_name: str, level: int, score_table_id: str) -> str:
         chart_response = client.post(
             "/charts/",
             json={
@@ -176,7 +176,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
                 "mode": "single",
                 "level": level,
                 "player_count": 1,
-                "set_id": set_id,
+                "score_table_id": score_table_id,
             },
             headers=headers,
         )
@@ -213,7 +213,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     assert user_response.status_code == status.HTTP_200_OK
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    # Create one tournament, one category, one round, and one score-sum set.
+    # Create one tournament, one category, one round, and one score-sum score table.
     tournament_response = client.post(
         "/tournaments/",
         json={"name": "Late Insert Tournament", "country_code": "AR"},
@@ -238,8 +238,8 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     assert round_response.status_code == status.HTTP_200_OK
     round_id = round_response.json()["id"]
 
-    set_response = client.post(
-        "/sets/",
+    score_table_response = client.post(
+        "/score_tables/",
         json={
             "round_id": round_id,
             "levels": "S15 & S16",
@@ -248,16 +248,16 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
         },
         headers=headers,
     )
-    assert set_response.status_code == status.HTTP_200_OK
-    set_id = set_response.json()["id"]
+    assert score_table_response.status_code == status.HTTP_200_OK
+    score_table_id = score_table_response.json()["id"]
 
     # Create two different songs with single 15 and single 16 charts.
-    chart_15_id = create_song_chart("Single 15 Song", 15, set_id)
-    chart_16_id = create_song_chart("Single 16 Song", 16, set_id)
+    chart_15_id = create_song_chart("Single 15 Song", 15, score_table_id)
+    chart_16_id = create_song_chart("Single 16 Song", 16, score_table_id)
 
     chart_slot_15_response = client.post(
         "/chart_slots/",
-        json={"chart_id": chart_15_id, "set_id": set_id},
+        json={"chart_id": chart_15_id, "score_table_id": score_table_id},
         headers=headers,
     )
     assert chart_slot_15_response.status_code == status.HTTP_200_OK
@@ -265,7 +265,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
 
     chart_slot_16_response = client.post(
         "/chart_slots/",
-        json={"chart_id": chart_16_id, "set_id": set_id},
+        json={"chart_id": chart_16_id, "score_table_id": score_table_id},
         headers=headers,
     )
     assert chart_slot_16_response.status_code == status.HTTP_200_OK
@@ -289,12 +289,12 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     )
     assert add_category_players_response.status_code == status.HTTP_200_OK
 
-    add_set_players_response = client.post(
-        f"/sets/{set_id}/players/bulk",
+    add_score_table_players_response = client.post(
+        f"/score_tables/{score_table_id}/players/bulk",
         json=player_ids,
         headers=headers,
     )
-    assert add_set_players_response.status_code == status.HTTP_200_OK
+    assert add_score_table_players_response.status_code == status.HTTP_200_OK
 
     # Start the round before scores are entered.
     start_round_response = client.post(f"/rounds/{round_id}/start", headers=headers)
@@ -346,12 +346,12 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     )
     assert add_late_category_player_response.status_code == status.HTTP_200_OK
 
-    add_late_set_player_response = client.post(
-        f"/sets/{set_id}/players/bulk",
+    add_late_score_table_player_response = client.post(
+        f"/score_tables/{score_table_id}/players/bulk",
         json=[late_player_id],
         headers=headers,
     )
-    assert add_late_set_player_response.status_code == status.HTTP_200_OK
+    assert add_late_score_table_player_response.status_code == status.HTTP_200_OK
 
     ordered_player_ids = [
         player_ids[0],
@@ -364,13 +364,15 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
         player_ids[6],
         player_ids[7],
     ]
-    update_player_order_response = client.put(
-        f"/sets/{set_id}/players/order",
+    update_score_table_player_order_response = client.put(
+        f"/score_tables/{score_table_id}/players/order",
         json=ordered_player_ids,
         headers=headers,
     )
-    assert update_player_order_response.status_code == status.HTTP_200_OK
-    assert [p["id"] for p in update_player_order_response.json()] == ordered_player_ids
+    assert update_score_table_player_order_response.status_code == status.HTTP_200_OK
+    assert [
+        p["id"] for p in update_score_table_player_order_response.json()
+    ] == ordered_player_ids
 
     score_values[late_player_id] = (996000, 954000)
 
@@ -406,7 +408,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     assert finish_round_response.json()["state"] == "finished"
 
     # Fetch and verify final score-sum results are mixed by total score, not input order.
-    results_response = client.get(f"/sets/{set_id}/results")
+    results_response = client.get(f"/score_tables/{score_table_id}/results")
     assert results_response.status_code == status.HTTP_200_OK
     results = results_response.json()
 
