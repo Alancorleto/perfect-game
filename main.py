@@ -26,7 +26,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(api_router)
-app.mount("/images", StaticFiles(directory="image_storage_local"), name="images")
+
+if os.getenv("ENVIRONMENT") != "production":
+    os.makedirs("image_storage_local", exist_ok=True)
+    app.mount("/images", StaticFiles(directory="image_storage_local"), name="images")
 
 
 def create_db_and_tables():
