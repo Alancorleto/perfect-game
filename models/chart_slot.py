@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class ChartSlot(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    score_table_id: uuid.UUID = Field(foreign_key="score_table.id", ondelete="CASCADE")
+    score_table_id: uuid.UUID = Field(foreign_key="scoretable.id", ondelete="CASCADE")
     chart_id: uuid.UUID | None = Field(foreign_key="chart.id", ondelete="SET NULL")
     order_index: int = Field(ge=0, default=0)
     description: str | None = Field(default=None, max_length=20)

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 class PlayerRow(SQLModel, table=True):
     score_table_id: uuid.UUID = Field(
-        foreign_key="score_table.id", primary_key=True, ondelete="CASCADE"
+        foreign_key="scoretable.id", primary_key=True, ondelete="CASCADE"
     )
     player_id: uuid.UUID = Field(
         foreign_key="player.id", primary_key=True, ondelete="CASCADE"

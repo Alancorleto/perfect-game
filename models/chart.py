@@ -33,7 +33,7 @@ class Chart(ChartBase, table=True):
         default_factory=uuid.uuid4,
         primary_key=True,
     )
-    score_table_id: uuid.UUID = Field(foreign_key="score_table.id")
+    score_table_id: uuid.UUID = Field(foreign_key="scoretable.id")
 
     score_table: "ScoreTable" = Relationship(back_populates="charts")
 
