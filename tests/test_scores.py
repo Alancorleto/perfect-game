@@ -6,9 +6,9 @@ from tests.helpers import (
     add_player_to_score_table_in_db,
     create_category_in_db,
     create_chart_in_db,
-    create_chart_slot_in_db,
     create_player_in_db,
     create_round_in_db,
+    create_score_column_in_db,
     create_score_in_db,
     create_score_table_in_db,
     create_tournament_in_db,
@@ -17,11 +17,11 @@ from tests.helpers import (
 )
 
 
-def score_payload(player_id: str, chart_id: str, chart_slot_id: str, **overrides):
+def score_payload(player_id: str, chart_id: str, score_column_id: str, **overrides):
     payload = {
         "player_id": player_id,
         "chart_id": chart_id,
-        "chart_slot_id": chart_slot_id,
+        "score_column_id": score_column_id,
         "value": 950000,
         "perfect": 100,
         "great": 10,
@@ -49,7 +49,7 @@ def create_score_context(session: Session):
     player = create_player_in_db(session, nickname="PlayerA")
     chart = create_chart_in_db(session, score_table=score_table, song_name="Song A")
     add_player_to_score_table_in_db(session, score_table=score_table, player=player)
-    chart_slot = create_chart_slot_in_db(
+    score_column = create_score_column_in_db(
         session, score_table=score_table, chart=chart, order_index=0
     )
     return (
@@ -60,7 +60,7 @@ def create_score_context(session: Session):
         score_table,
         player,
         chart,
-        chart_slot,
+        score_column,
     )
 
 
@@ -70,18 +70,18 @@ def create_score_context(session: Session):
 
 
 def test_list_scores(session: Session, client: TestClient):
-    organizer, tournament, _, _, _, player_a, chart, chart_slot = create_score_context(
-        session
+    organizer, tournament, _, _, _, player_a, chart, score_column = (
+        create_score_context(session)
     )
     user_b = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     player_b = create_player_in_db(session, nickname="PlayerB", user=user_b)
     create_score_in_db(
-        session, player=player_a, chart=chart, chart_slot=chart_slot, value=900000
+        session, player=player_a, chart=chart, score_column=score_column, value=900000
     )
     create_score_in_db(
-        session, player=player_b, chart=chart, chart_slot=chart_slot, value=850000
+        session, player=player_b, chart=chart, score_column=score_column, value=850000
     )
 
     response = client.get("/scores/")
@@ -110,9 +110,9 @@ def test_list_scores_empty(client: TestClient):
 
 
 def test_get_score(session: Session, client: TestClient):
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot, value=900000
+        session, player=player, chart=chart, score_column=score_column, value=900000
     )
 
     response = client.get(f"/scores/{score.id}")
@@ -141,14 +141,14 @@ def test_create_score(session: Session, client: TestClient):
     other_chart = create_chart_in_db(
         session, score_table=score_table, song_name="Song B"
     )
-    chart_slot = create_chart_slot_in_db(
+    score_column = create_score_column_in_db(
         session, score_table=score_table, chart=other_chart, order_index=1
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
         "/scores/",
-        json=score_payload(str(player.id), str(other_chart.id), str(chart_slot.id)),
+        json=score_payload(str(player.id), str(other_chart.id), str(score_column.id)),
         headers=headers,
     )
     data = response.json()
@@ -162,7 +162,7 @@ def test_create_score(session: Session, client: TestClient):
 
 
 def test_create_score_player_not_found(session: Session, client: TestClient):
-    _, _, _, _, _, _, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, _, chart, score_column = create_score_context(session)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
@@ -170,7 +170,7 @@ def test_create_score_player_not_found(session: Session, client: TestClient):
         json=score_payload(
             "00000000-0000-0000-0000-000000000000",
             str(chart.id),
-            str(chart_slot.id),
+            str(score_column.id),
         ),
         headers=headers,
     )
@@ -179,7 +179,7 @@ def test_create_score_player_not_found(session: Session, client: TestClient):
 
 
 def test_create_score_chart_not_found(session: Session, client: TestClient):
-    _, _, _, _, _, player, _, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, _, score_column = create_score_context(session)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
@@ -187,7 +187,7 @@ def test_create_score_chart_not_found(session: Session, client: TestClient):
         json=score_payload(
             str(player.id),
             "00000000-0000-0000-0000-000000000000",
-            str(chart_slot.id),
+            str(score_column.id),
         ),
         headers=headers,
     )
@@ -195,7 +195,7 @@ def test_create_score_chart_not_found(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create_score_chart_slot_not_found(session: Session, client: TestClient):
+def test_create_score_score_column_not_found(session: Session, client: TestClient):
     _, _, _, _, _, player, chart, _ = create_score_context(session)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -220,12 +220,14 @@ def test_create_score_in_score_table_unauthorized(session: Session, client: Test
     score_table = create_score_table_in_db(session, round=round)
     player = create_player_in_db(session)
     chart = create_chart_in_db(session, score_table=score_table, song_name="Song A")
-    chart_slot = create_chart_slot_in_db(session, score_table=score_table, chart=chart)
+    score_column = create_score_column_in_db(
+        session, score_table=score_table, chart=chart
+    )
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
         "/scores/",
-        json=score_payload(str(player.id), str(chart.id), str(chart_slot.id)),
+        json=score_payload(str(player.id), str(chart.id), str(score_column.id)),
         headers=headers,
     )
 
@@ -233,13 +235,13 @@ def test_create_score_in_score_table_unauthorized(session: Session, client: Test
 
 
 def test_create_score_player_not_in_score_table(session: Session, client: TestClient):
-    _, _, _, _, _, _, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, _, chart, score_column = create_score_context(session)
     other_player = create_player_in_db(session, nickname="OtherPlayer")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
         "/scores/",
-        json=score_payload(str(other_player.id), str(chart.id), str(chart_slot.id)),
+        json=score_payload(str(other_player.id), str(chart.id), str(score_column.id)),
         headers=headers,
     )
 
@@ -247,12 +249,12 @@ def test_create_score_player_not_in_score_table(session: Session, client: TestCl
 
 
 def test_create_score_chart_not_in_score_table(session: Session, client: TestClient):
-    organizer, _, _, round, score_table, player, _, chart_slot = create_score_context(
+    organizer, _, _, round, score_table, player, _, score_column = create_score_context(
         session
     )
 
-    # Make sure it does not trigger the chart slot restriction
-    chart_slot.chart = None
+    # Make sure it does not trigger the score column restriction
+    score_column.chart = None
     session.commit()
 
     other_score_table = create_score_table_in_db(
@@ -266,23 +268,23 @@ def test_create_score_chart_not_in_score_table(session: Session, client: TestCli
 
     response = client.post(
         "/scores/",
-        json=score_payload(str(player.id), str(other_chart.id), str(chart_slot.id)),
+        json=score_payload(str(player.id), str(other_chart.id), str(score_column.id)),
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_create_score_duplicate_for_player_and_chart_slot(
+def test_create_score_duplicate_for_player_and_score_column(
     session: Session, client: TestClient
 ):
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
-    create_score_in_db(session, player=player, chart=chart, chart_slot=chart_slot)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
+    create_score_in_db(session, player=player, chart=chart, score_column=score_column)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
         "/scores/",
-        json=score_payload(str(player.id), str(chart.id), str(chart_slot.id)),
+        json=score_payload(str(player.id), str(chart.id), str(score_column.id)),
         headers=headers,
     )
 
@@ -290,18 +292,18 @@ def test_create_score_duplicate_for_player_and_chart_slot(
 
 
 def test_create_score_unauthenticated(session: Session, client: TestClient):
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
 
     response = client.post(
         "/scores/",
-        json=score_payload(str(player.id), str(chart.id), str(chart_slot.id)),
+        json=score_payload(str(player.id), str(chart.id), str(score_column.id)),
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 def test_create_score_invalid_negative_value(session: Session, client: TestClient):
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
@@ -309,7 +311,7 @@ def test_create_score_invalid_negative_value(session: Session, client: TestClien
         json=score_payload(
             str(player.id),
             str(chart.id),
-            str(chart_slot.id),
+            str(score_column.id),
             value=-1,
         ),
         headers=headers,
@@ -319,13 +321,13 @@ def test_create_score_invalid_negative_value(session: Session, client: TestClien
 
 
 def test_create_score_invalid_grade(session: Session, client: TestClient):
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
         "/scores/",
         json=score_payload(
-            str(player.id), str(chart.id), str(chart_slot.id), grade="INVALID"
+            str(player.id), str(chart.id), str(score_column.id), grade="INVALID"
         ),
         headers=headers,
     )
@@ -339,9 +341,9 @@ def test_create_score_invalid_grade(session: Session, client: TestClient):
 
 
 def test_update_score(session: Session, client: TestClient):
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -373,9 +375,9 @@ def test_update_score_not_found(session: Session, client: TestClient):
 
 def test_update_score_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
@@ -395,9 +397,9 @@ def test_update_score_as_super_admin(session: Session, client: TestClient):
         password="mypassword123",
         is_super_admin=True,
     )
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
@@ -412,9 +414,9 @@ def test_update_score_as_super_admin(session: Session, client: TestClient):
 
 
 def test_update_score_unauthenticated(session: Session, client: TestClient):
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
 
     response = client.patch(f"/scores/{score.id}", json={"value": 990000})
@@ -423,9 +425,9 @@ def test_update_score_unauthenticated(session: Session, client: TestClient):
 
 
 def test_update_score_invalid_negative_value(session: Session, client: TestClient):
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -444,9 +446,9 @@ def test_update_score_invalid_negative_value(session: Session, client: TestClien
 
 
 def test_delete_score(session: Session, client: TestClient):
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -469,9 +471,9 @@ def test_delete_score_not_found(session: Session, client: TestClient):
 
 def test_delete_score_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
@@ -487,9 +489,9 @@ def test_delete_score_as_super_admin(session: Session, client: TestClient):
         password="mypassword123",
         is_super_admin=True,
     )
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
@@ -499,9 +501,9 @@ def test_delete_score_as_super_admin(session: Session, client: TestClient):
 
 
 def test_delete_score_unauthenticated(session: Session, client: TestClient):
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
 
     response = client.delete(f"/scores/{score.id}")
@@ -517,9 +519,9 @@ def test_delete_chart_cascade(session: Session, client: TestClient):
         is_super_admin=True,
     )
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
 
     response = client.delete(f"/charts/{chart.id}", headers=headers)
@@ -537,9 +539,9 @@ def test_delete_player_cascade(session: Session, client: TestClient):
         password="mypassword123",
         is_super_admin=True,
     )
-    _, _, _, _, _, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, _, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
 
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
@@ -551,20 +553,20 @@ def test_delete_player_cascade(session: Session, client: TestClient):
     assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_delete_chart_slot_cascade(session: Session, client: TestClient):
+def test_delete_score_column_cascade(session: Session, client: TestClient):
     create_user_in_db(
         session,
         email="admin@example.com",
         password="mypassword123",
         is_super_admin=True,
     )
-    _, _, _, _, score_table, player, chart, chart_slot = create_score_context(session)
+    _, _, _, _, score_table, player, chart, score_column = create_score_context(session)
     score = create_score_in_db(
-        session, player=player, chart=chart, chart_slot=chart_slot
+        session, player=player, chart=chart, score_column=score_column
     )
 
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
-    response = client.delete(f"/chart_slots/{chart_slot.id}", headers=headers)
+    response = client.delete(f"/score_columns/{score_column.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 

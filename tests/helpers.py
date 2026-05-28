@@ -142,24 +142,24 @@ def create_score_table_in_db(
     return score_table
 
 
-def create_chart_slot_in_db(
+def create_score_column_in_db(
     session: Session,
     score_table: ScoreTable,
     chart: Chart,
     order_index: int = 0,
     description: str | None = None,
 ) -> ScoreColumn:
-    """Creates a chart slot directly in the test database."""
-    chart_slot = ScoreColumn(
+    """Creates a score column directly in the test database."""
+    score_column = ScoreColumn(
         score_table_id=score_table.id,
         chart_id=chart.id,
         order_index=order_index,
         description=description,
     )
-    session.add(chart_slot)
+    session.add(score_column)
     session.commit()
-    session.refresh(chart_slot)
-    return chart_slot
+    session.refresh(score_column)
+    return score_column
 
 
 def add_player_to_score_table_in_db(
@@ -182,14 +182,14 @@ def create_score_in_db(
     session: Session,
     player: Player,
     chart: Chart,
-    chart_slot: ScoreColumn,
+    score_column: ScoreColumn,
     value: int = 1000000,
 ) -> Score:
     """Creates a score directly in the test database."""
     score = Score(
         player_id=player.id,
         chart_id=chart.id,
-        score_column_id=chart_slot.id,
+        score_column_id=score_column.id,
         value=value,
         perfect=100,
         great=0,

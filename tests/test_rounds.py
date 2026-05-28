@@ -8,9 +8,9 @@ from tests.helpers import (
     add_player_to_score_table_in_db,
     create_category_in_db,
     create_chart_in_db,
-    create_chart_slot_in_db,
     create_player_in_db,
     create_round_in_db,
+    create_score_column_in_db,
     create_score_in_db,
     create_score_table_in_db,
     create_tournament_in_db,
@@ -53,7 +53,9 @@ def create_score_table_with_players(
         session.commit()
 
     chart = create_chart_in_db(session, score_table=score_table)
-    chart_slot = create_chart_slot_in_db(session, score_table=score_table, chart=chart)
+    score_column = create_score_column_in_db(
+        session, score_table=score_table, chart=chart
+    )
 
     players = []
     for player_order_index, (nickname, score_value) in enumerate(players_scores):
@@ -68,12 +70,12 @@ def create_score_table_with_players(
             session,
             player=player,
             chart=chart,
-            chart_slot=chart_slot,
+            score_column=score_column,
             value=score_value,
         )
         players.append(player)
 
-    return score_table, chart, chart_slot, players
+    return score_table, chart, score_column, players
 
 
 # ---------------------------------------------------------------------------
