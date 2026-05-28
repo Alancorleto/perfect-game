@@ -46,10 +46,10 @@ def test_list_score_columns(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     _, _, _, _, score_table, chart_a = create_editable_score_column_context(session)
     chart_b = create_chart_in_db(session, score_table, song_name="Chart B", level=12)
-    slot_a = create_score_column_in_db(
+    column_a = create_score_column_in_db(
         session, score_table, chart=chart_a, order_index=0
     )
-    slot_b = create_score_column_in_db(
+    column_b = create_score_column_in_db(
         session,
         score_table,
         chart=chart_b,
@@ -63,7 +63,7 @@ def test_list_score_columns(session: Session, client: TestClient):
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 2
-    assert {item["id"] for item in data} == {str(slot_a.id), str(slot_b.id)}
+    assert {item["id"] for item in data} == {str(column_a.id), str(column_b.id)}
     assert sorted(item["order_index"] for item in data) == [0, 1]
     assert data[0]["description"] is None
     assert data[1]["description"] == "Chart B description"
@@ -107,10 +107,10 @@ def test_create_score_column(session: Session, client: TestClient):
     assert data["order_index"] == 0
     assert data["description"] is None
 
-    created_slot = session.get(ScoreColumn, uuid.UUID(data["id"]))
-    assert created_slot is not None
-    assert created_slot.order_index == 0
-    assert created_slot.description is None
+    created_column = session.get(ScoreColumn, uuid.UUID(data["id"]))
+    assert created_column is not None
+    assert created_column.order_index == 0
+    assert created_column.description is None
 
 
 def test_create_score_column_without_chart(session: Session, client: TestClient):
@@ -182,7 +182,7 @@ def test_create_score_column_chart_not_found(session: Session, client: TestClien
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create_score_column_appends_to_existing_slots(
+def test_create_score_column_appends_to_existing_columns(
     session: Session, client: TestClient
 ):
     _, _, _, _, score_table, first_chart = create_editable_score_column_context(session)
@@ -372,23 +372,23 @@ def test_delete_score_column(session: Session, client: TestClient):
     _, _, _, _, score_table, chart_a = create_editable_score_column_context(session)
     chart_b = create_chart_in_db(session, score_table, song_name="Chart B", level=12)
     chart_c = create_chart_in_db(session, score_table, song_name="Chart C", level=14)
-    slot_a = create_score_column_in_db(
+    column_a = create_score_column_in_db(
         session, score_table, chart=chart_a, order_index=0
     )
-    slot_b = create_score_column_in_db(
+    column_b = create_score_column_in_db(
         session, score_table, chart=chart_b, order_index=1
     )
-    slot_c = create_score_column_in_db(
+    column_c = create_score_column_in_db(
         session, score_table, chart=chart_c, order_index=2
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    response = client.delete(f"/score_columns/{slot_b.id}", headers=headers)
+    response = client.delete(f"/score_columns/{column_b.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
-    assert session.get(ScoreColumn, slot_b.id) is None
-    assert session.get(ScoreColumn, slot_a.id).order_index == 0
-    assert session.get(ScoreColumn, slot_c.id).order_index == 1
+    assert session.get(ScoreColumn, column_b.id) is None
+    assert session.get(ScoreColumn, column_a.id).order_index == 0
+    assert session.get(ScoreColumn, column_c.id).order_index == 1
 
 
 def test_delete_score_column_not_found(session: Session, client: TestClient):

@@ -163,7 +163,7 @@ async def update_score_column_order_in_score_table(
             detail="Score column order must not contain duplicate ids",
         )
 
-    score_columns_dict = {slot.id: slot for slot in db_score_table.score_columns}
+    score_columns_dict = {column.id: column for column in db_score_table.score_columns}
 
     if set(new_order) != set(score_columns_dict.keys()):
         raise HTTPException(

@@ -941,10 +941,10 @@ def test_get_score_table_results_score_sum(session: Session, client: TestClient)
     chart_a = create_chart_in_db(session, score_table, song_name="Song A")
     chart_b = create_chart_in_db(session, score_table, song_name="Song B")
 
-    slot_a = create_score_column_in_db(
+    column_a = create_score_column_in_db(
         session, score_table, chart=chart_a, order_index=0
     )
-    slot_b = create_score_column_in_db(
+    column_b = create_score_column_in_db(
         session, score_table, chart=chart_b, order_index=1
     )
 
@@ -959,13 +959,13 @@ def test_get_score_table_results_score_sum(session: Session, client: TestClient)
     )
 
     create_score_in_db(
-        session, player=player_a, chart=chart_a, value=900000, score_column=slot_a
+        session, player=player_a, chart=chart_a, value=900000, score_column=column_a
     )
     create_score_in_db(
-        session, player=player_a, chart=chart_b, value=800000, score_column=slot_b
+        session, player=player_a, chart=chart_b, value=800000, score_column=column_b
     )
     create_score_in_db(
-        session, player=player_b, chart=chart_a, value=850000, score_column=slot_a
+        session, player=player_b, chart=chart_a, value=850000, score_column=column_a
     )
 
     response = client.get(f"/score_tables/{score_table.id}/results")
@@ -991,7 +991,7 @@ def test_get_score_table_results_battle(session: Session, client: TestClient):
         session, round=round, format=ScoreTableFormat.BATTLE
     )
     chart = create_chart_in_db(session, score_table, song_name="Battle Song")
-    slot = create_score_column_in_db(session, score_table, chart=chart, order_index=0)
+    column = create_score_column_in_db(session, score_table, chart=chart, order_index=0)
 
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
@@ -1004,10 +1004,10 @@ def test_get_score_table_results_battle(session: Session, client: TestClient):
     )
 
     create_score_in_db(
-        session, player=player_a, chart=chart, value=900000, score_column=slot
+        session, player=player_a, chart=chart, value=900000, score_column=column
     )
     create_score_in_db(
-        session, player=player_b, chart=chart, value=850000, score_column=slot
+        session, player=player_b, chart=chart, value=850000, score_column=column
     )
 
     response = client.get(f"/score_tables/{score_table.id}/results")
@@ -1033,7 +1033,7 @@ def test_get_score_table_results_battle_tie_scores_no_points(
         session, round=round, format=ScoreTableFormat.BATTLE
     )
     chart = create_chart_in_db(session, score_table, song_name="Tie Song")
-    slot = create_score_column_in_db(session, score_table, chart=chart, order_index=0)
+    column = create_score_column_in_db(session, score_table, chart=chart, order_index=0)
 
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
@@ -1046,10 +1046,10 @@ def test_get_score_table_results_battle_tie_scores_no_points(
     )
 
     create_score_in_db(
-        session, player=player_a, chart=chart, value=900000, score_column=slot
+        session, player=player_a, chart=chart, value=900000, score_column=column
     )
     create_score_in_db(
-        session, player=player_b, chart=chart, value=900000, score_column=slot
+        session, player=player_b, chart=chart, value=900000, score_column=column
     )
 
     response = client.get(f"/score_tables/{score_table.id}/results")

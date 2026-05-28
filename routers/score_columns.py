@@ -139,14 +139,14 @@ async def delete_score_column(
             status_code=status.HTTP_404_NOT_FOUND, detail="Score table not found"
         )
 
-    deleted_slot_order_index = db_score_column.order_index
+    deleted_column_order_index = db_score_column.order_index
 
     session.delete(db_score_column)
 
-    for slot in db_score_table.score_columns:
-        if slot.order_index > deleted_slot_order_index:
-            slot.order_index -= 1
-            session.add(slot)
+    for column in db_score_table.score_columns:
+        if column.order_index > deleted_column_order_index:
+            column.order_index -= 1
+            session.add(column)
 
     session.commit()
     session.refresh(db_score_table)
