@@ -9,7 +9,9 @@ from models.score_column import ScoreTable
 from models.user import User
 from tests.helpers import (
     create_category_in_db,
+    create_chart_column_in_db,
     create_chart_in_db,
+    create_player_in_db,
     create_round_in_db,
     create_score_column_in_db,
     create_score_table_in_db,
@@ -448,6 +450,93 @@ def test_create_chart_invalid_player_count(session: Session, client: TestClient)
     )
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+def test_create_chart_invalid_score_column_id(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.post(
+        "/charts/",
+        json={"song_name": "Invalid Score Column ID Song", "player_count": 1},
+        params={"score_column_id": "00000000-0000-0000-0000-000000000000"},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_create_chart_for_chart_column(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user)
+    score_column = create_chart_context_in_db(session, user)
+    chart_column = create_chart_column_in_db(session, score_column=score_column)
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.post(
+        "/charts/",
+        json={"song_name": "Chart Column Song", "player_count": 1},
+        params={
+            "chart_column_id": str(chart_column.id),
+            "chart_column_player_id": str(player.id),
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_create_chart_missing_ids(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.post(
+        "/charts/",
+        json={"song_name": "Missing IDs Song", "player_count": 1},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_create_chart_only_chart_column_player_id(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    player = create_player_in_db(session, user)
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.post(
+        "/charts/",
+        json={"song_name": "Only Chart Column Player ID Song", "player_count": 1},
+        params={"chart_column_player_id": str(player.id)},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_create_chart_only_chart_column_id(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    score_column = create_chart_context_in_db(session, user)
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.post(
+        "/charts/",
+        json={"song_name": "Only Chart Column ID Song", "player_count": 1},
+        params={"chart_column_id": str(score_column.id)},
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 # ---------------------------------------------------------------------------
