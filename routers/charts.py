@@ -9,6 +9,7 @@ from sqlmodel import select
 from database import SessionDep
 from image_storage import upload_image
 from models.chart import Chart, ChartCreate, ChartPublic, ChartUpdate
+from models.score_column import ScoreColumn
 from routers.users import UserDep
 
 router = APIRouter(prefix="/charts", tags=["charts"])
@@ -58,9 +59,22 @@ async def get_chart(chart_id: uuid.UUID, session: SessionDep):
 
 
 @router.post("/", response_model=ChartPublic)
-async def create_chart(chart: ChartCreate, session: SessionDep, user: UserDep):
+async def create_chart(
+    chart: ChartCreate,
+    score_column_id: uuid.UUID | None,
+    session: SessionDep,
+    user: UserDep,
+):
     """Create a new chart"""
     db_chart = Chart.model_validate(chart)
+
+    if score_column_id is not None:
+        db_score_column = session.get(ScoreColumn, score_column_id)
+        if db_score_column is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Score column not found"
+            )
+        db_chart.score_column = db_score_column
 
     session.add(db_chart)
     session.commit()

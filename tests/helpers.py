@@ -62,11 +62,11 @@ def create_player_in_db(
 
 def create_chart_in_db(
     session: Session,
-    score_table: ScoreTable,
     song_name: str = "Song",
     mode: Mode = Mode.SINGLE,
     level: int = 1,
     player_count: int = 1,
+    score_column: ScoreColumn | None = None,
     title_url: str | None = None,
 ) -> Chart:
     """Creates a chart directly in the test database."""
@@ -75,7 +75,7 @@ def create_chart_in_db(
         mode=mode,
         level=level,
         player_count=player_count,
-        score_table_id=score_table.id,
+        score_column=score_column,
         title_url=title_url,
     )
     session.add(chart)
@@ -145,14 +145,12 @@ def create_score_table_in_db(
 def create_score_column_in_db(
     session: Session,
     score_table: ScoreTable,
-    chart: Chart,
     order_index: int = 0,
     description: str | None = None,
 ) -> ScoreColumn:
     """Creates a score column directly in the test database."""
     score_column = ScoreColumn(
-        score_table_id=score_table.id,
-        chart_id=chart.id,
+        score_table=score_table,
         order_index=order_index,
         description=description,
     )

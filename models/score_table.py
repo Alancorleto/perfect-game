@@ -64,7 +64,6 @@ class ScoreTable(ScoreTableBase, table=True):
     player_rows: list["PlayerRow"] = Relationship(
         back_populates="score_table", cascade_delete=True
     )
-    charts: list[Chart] = Relationship(back_populates="score_table")
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.round.can_be_edited_by(user)

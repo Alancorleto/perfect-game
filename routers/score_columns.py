@@ -18,7 +18,7 @@ router = APIRouter(prefix="/score_columns", tags=["score_columns"])
 
 
 @router.get("/", response_model=list[ScoreColumnPublic])
-async def list_score_columns(session: SessionDep, user: UserDep):
+async def list_score_columns(session: SessionDep):
     """List all score columns."""
     score_columns = session.exec(select(ScoreColumn)).all()
     return score_columns
@@ -40,13 +40,6 @@ async def create_score_column(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not an organizer for this tournament",
         )
-
-    if score_column.chart_id is not None:
-        db_chart = session.get(Chart, score_column.chart_id)
-        if not db_chart:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
-            )
 
     db_score_column = ScoreColumn.model_validate(score_column)
 
@@ -92,19 +85,6 @@ async def update_score_column(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not an organizer for this tournament",
         )
-
-    if score_column_update.chart_id:
-        db_chart = session.get(Chart, score_column_update.chart_id)
-        if not db_chart:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
-            )
-
-        if db_chart not in db_score_column.score_table.charts:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Chart not in score table",
-            )
 
     score_column_data = score_column_update.model_dump(exclude_unset=True)
     db_score_column.sqlmodel_update(score_column_data)
