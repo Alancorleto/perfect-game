@@ -64,11 +64,11 @@ async def get_chart(chart_id: uuid.UUID, session: SessionDep):
 @router.post("/", response_model=ChartPublic)
 async def create_chart(
     chart: ChartCreate,
-    score_column_id: uuid.UUID | None,
-    chart_column_id: uuid.UUID | None,
-    chart_column_player_id: uuid.UUID | None,
     session: SessionDep,
     user: UserDep,
+    score_column_id: uuid.UUID | None = None,
+    chart_column_id: uuid.UUID | None = None,
+    chart_column_player_id: uuid.UUID | None = None,
 ):
     """Create a new chart"""
     db_chart = Chart.model_validate(chart)

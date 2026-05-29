@@ -55,6 +55,7 @@ def create_player_in_db(
         user_id=user.id if user else None,
         guest_tournament_id=guest_tournament.id if guest_tournament else None,
     )
+
     session.add(player)
     session.commit()
     session.refresh(player)
@@ -184,6 +185,9 @@ def add_player_to_score_table_in_db(
     order_index: int = 0,
 ) -> PlayerRow:
     """Adds a player to a score table directly in the test database."""
+    if player not in score_table.round.category.get_players_by_nickname():
+        score_table.round.category.add_player(player)
+
     row = PlayerRow(
         score_table_id=score_table.id, player_id=player.id, order_index=order_index
     )

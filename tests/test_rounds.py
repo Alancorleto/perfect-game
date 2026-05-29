@@ -52,10 +52,8 @@ def create_score_table_with_players(
         session.add(score_table)
         session.commit()
 
-    chart = create_chart_in_db(session, score_table=score_table)
-    score_column = create_score_column_in_db(
-        session, score_table=score_table, chart=chart
-    )
+    score_column = create_score_column_in_db(session, score_table=score_table)
+    chart = create_chart_in_db(session, score_column=score_column)
 
     players = []
     for player_order_index, (nickname, score_value) in enumerate(players_scores):
@@ -69,7 +67,6 @@ def create_score_table_with_players(
         create_score_in_db(
             session,
             player=player,
-            chart=chart,
             score_column=score_column,
             value=score_value,
         )

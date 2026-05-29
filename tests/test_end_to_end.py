@@ -77,7 +77,16 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
     assert score_table_response.status_code == status.HTTP_200_OK
     score_table_id = score_table_response.json()["id"]
 
-    # Create a chart for the song.
+    # Add the chart to the score table as the first score column.
+    score_column_response = client.post(
+        "/score_columns/",
+        json={"score_table_id": score_table_id},
+        headers=headers,
+    )
+    assert score_column_response.status_code == status.HTTP_200_OK
+    score_column_id = score_column_response.json()["id"]
+
+    # Create a chart for the column.
     chart_response = client.post(
         "/charts/",
         json={
@@ -85,21 +94,14 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
             "mode": "single",
             "level": 15,
             "player_count": 1,
-            "score_table_id": score_table_id,
+        },
+        params={
+            "score_column_id": score_column_id,
         },
         headers=headers,
     )
     assert chart_response.status_code == status.HTTP_200_OK
     chart_id = chart_response.json()["id"]
-
-    # Add the chart to the score table as the first score column.
-    score_column_response = client.post(
-        "/score_columns/",
-        json={"score_table_id": score_table_id, "chart_id": chart_id},
-        headers=headers,
-    )
-    assert score_column_response.status_code == status.HTTP_200_OK
-    score_column_id = score_column_response.json()["id"]
 
     # Add the organizer's player to the score table.
     add_player_response = client.post(
@@ -168,7 +170,7 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
 # 8. Finish the round.
 # 9. Fetch the score table results and verify that the ordering is by total score (sum of both charts) and not by input order, and that each player has results for both charts.
 def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
-    def create_song_chart(song_name: str, level: int, score_table_id: str) -> str:
+    def create_chart(song_name: str, level: int, score_column_id: str) -> str:
         chart_response = client.post(
             "/charts/",
             json={
@@ -176,7 +178,9 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
                 "mode": "single",
                 "level": level,
                 "player_count": 1,
-                "score_table_id": score_table_id,
+            },
+            params={
+                "score_column_id": score_column_id,
             },
             headers=headers,
         )
@@ -251,25 +255,25 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     assert score_table_response.status_code == status.HTTP_200_OK
     score_table_id = score_table_response.json()["id"]
 
-    # Create two different songs with single 15 and single 16 charts.
-    chart_15_id = create_song_chart("Single 15 Song", 15, score_table_id)
-    chart_16_id = create_song_chart("Single 16 Song", 16, score_table_id)
-
-    score_column_15_response = client.post(
+    score_column_s15_response = client.post(
         "/score_columns/",
-        json={"chart_id": chart_15_id, "score_table_id": score_table_id},
+        json={"score_table_id": score_table_id},
         headers=headers,
     )
-    assert score_column_15_response.status_code == status.HTTP_200_OK
-    score_column_15_id = score_column_15_response.json()["id"]
+    assert score_column_s15_response.status_code == status.HTTP_200_OK
+    score_column_15_id = score_column_s15_response.json()["id"]
 
-    score_column_16_response = client.post(
+    score_column_s16_response = client.post(
         "/score_columns/",
-        json={"chart_id": chart_16_id, "score_table_id": score_table_id},
+        json={"score_table_id": score_table_id},
         headers=headers,
     )
-    assert score_column_16_response.status_code == status.HTTP_200_OK
-    score_column_16_id = score_column_16_response.json()["id"]
+    assert score_column_s16_response.status_code == status.HTTP_200_OK
+    score_column_16_id = score_column_s16_response.json()["id"]
+
+    # Create two different charts.
+    chart_s15_id = create_chart("Single 15 Song", 15, score_column_15_id)
+    chart_s16_id = create_chart("Single 16 Song", 16, score_column_16_id)
 
     # Create 8 guest players so none of them is the tournament organizer.
     player_ids = []
@@ -318,16 +322,16 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
         (player_ids[2], player_ids[3]),
     ]:
         create_score(
-            player_a_id, chart_15_id, score_column_15_id, score_values[player_a_id][0]
+            player_a_id, chart_s15_id, score_column_15_id, score_values[player_a_id][0]
         )
         create_score(
-            player_b_id, chart_15_id, score_column_15_id, score_values[player_b_id][0]
+            player_b_id, chart_s15_id, score_column_15_id, score_values[player_b_id][0]
         )
         create_score(
-            player_a_id, chart_16_id, score_column_16_id, score_values[player_a_id][1]
+            player_a_id, chart_s16_id, score_column_16_id, score_values[player_a_id][1]
         )
         create_score(
-            player_b_id, chart_16_id, score_column_16_id, score_values[player_b_id][1]
+            player_b_id, chart_s16_id, score_column_16_id, score_values[player_b_id][1]
         )
 
     # After player 4 has both scores, add a new player and move them to order index 4.
@@ -382,24 +386,24 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
         (player_ids[5], player_ids[6]),
     ]:
         create_score(
-            player_a_id, chart_15_id, score_column_15_id, score_values[player_a_id][0]
+            player_a_id, chart_s15_id, score_column_15_id, score_values[player_a_id][0]
         )
         create_score(
-            player_b_id, chart_15_id, score_column_15_id, score_values[player_b_id][0]
+            player_b_id, chart_s15_id, score_column_15_id, score_values[player_b_id][0]
         )
         create_score(
-            player_a_id, chart_16_id, score_column_16_id, score_values[player_a_id][1]
+            player_a_id, chart_s16_id, score_column_16_id, score_values[player_a_id][1]
         )
         create_score(
-            player_b_id, chart_16_id, score_column_16_id, score_values[player_b_id][1]
+            player_b_id, chart_s16_id, score_column_16_id, score_values[player_b_id][1]
         )
 
     # The late insertion leaves the final original player without a pair.
     create_score(
-        player_ids[7], chart_15_id, score_column_15_id, score_values[player_ids[7]][0]
+        player_ids[7], chart_s15_id, score_column_15_id, score_values[player_ids[7]][0]
     )
     create_score(
-        player_ids[7], chart_16_id, score_column_16_id, score_values[player_ids[7]][1]
+        player_ids[7], chart_s16_id, score_column_16_id, score_values[player_ids[7]][1]
     )
 
     # Finish the round after all scores are loaded.

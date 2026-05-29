@@ -7,11 +7,11 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from models.chart import Chart
 from models.player import Player
+from models.player_row import PlayerRow
 from models.round import Round
 from models.user import User
 
 if TYPE_CHECKING:
-    from models.player_row import PlayerRow
     from models.score_column import ScoreColumn
 
 
@@ -61,7 +61,7 @@ class ScoreTable(ScoreTableBase, table=True):
     score_columns: list["ScoreColumn"] = Relationship(
         back_populates="score_table", cascade_delete=True
     )
-    player_rows: list["PlayerRow"] = Relationship(
+    player_rows: list[PlayerRow] = Relationship(
         back_populates="score_table", cascade_delete=True
     )
 
@@ -75,6 +75,11 @@ class ScoreTable(ScoreTableBase, table=True):
                 score_column.can_be_deleted(user) for score_column in self.score_columns
             )
         )
+
+    def add_player(self, player: Player) -> None:
+        order_index = len(self.player_rows)
+        player_row = PlayerRow(score_table=self, player=player, order_index=order_index)
+        self.player_rows.append(player_row)
 
     def get_players_by_order(self) -> list[Player]:
         sorted_player_rows = sorted(
@@ -177,7 +182,7 @@ def _sort_chart_results(chart_results: ChartResults):
 
 
 def _populate_player_results(
-    player_row: "PlayerRow", chart_results_list: list[ChartResults]
+    player_row: PlayerRow, chart_results_list: list[ChartResults]
 ) -> list[PlayerResults]:
     player = player_row.player
     score_table = player_row.score_table

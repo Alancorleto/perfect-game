@@ -212,20 +212,15 @@ async def bulk_add_players_to_score_table(
         player_ids,
     )
 
-    previous_player_count = len(db_score_table.player_rows)
-
-    for i, player_id in enumerate(player_ids):
+    for player_id in player_ids:
         db_player = session.get(Player, player_id)
         if not db_player:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Player with ID {player_id} not found",
             )
-        order_index = previous_player_count + i
-        player_row = PlayerRow(
-            score_table=db_score_table, player=db_player, order_index=order_index
-        )
-        db_score_table.player_rows.append(player_row)
+
+        db_score_table.add_player(db_player)
 
     session.add(db_score_table)
     session.commit()

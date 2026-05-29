@@ -2,7 +2,6 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from models import score_column
 from models.round import RoundState
 from models.score_table import ScoreTableFormat
 from tests.helpers import (
@@ -342,9 +341,8 @@ def test_delete_score_table_with_score(session: Session, client: TestClient):
         organizer_password="mypassword123",
     )
 
-    chart = create_chart_in_db(session, score_table, song_name="Song", level=10)
-
-    score_column = create_score_column_in_db(session, score_table, chart=chart)
+    score_column = create_score_column_in_db(session, score_table)
+    create_chart_in_db(session, score_column=score_column, song_name="Song", level=10)
 
     round.state = RoundState.IN_PROGRESS
     session.commit()
@@ -352,7 +350,6 @@ def test_delete_score_table_with_score(session: Session, client: TestClient):
     create_score_in_db(
         session,
         player=player,
-        chart=chart,
         score_column=score_column,
         value=1_000_000,
     )
@@ -457,7 +454,7 @@ def test_delete_tournament_cascade(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# GET /score_tables/{score_table_id}/charts
+# GET /score_tables/{score_table_id}/score_columns
 # ---------------------------------------------------------------------------
 
 
@@ -467,10 +464,10 @@ def test_list_score_columns_for_score_table(session: Session, client: TestClient
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_in_db(session, score_table, song_name="Song A")
-    chart_b = create_chart_in_db(session, score_table, song_name="Song B")
-    create_score_column_in_db(session, score_table, chart=chart_a, order_index=0)
-    create_score_column_in_db(session, score_table, chart=chart_b, order_index=1)
+    score_column_a = create_score_column_in_db(session, score_table, order_index=0)
+    create_chart_in_db(session, score_column=score_column_a, song_name="Song A")
+    score_column_b = create_score_column_in_db(session, score_table, order_index=1)
+    create_chart_in_db(session, score_column=score_column_b, song_name="Song B")
 
     response = client.get(f"/score_tables/{score_table.id}/score_columns")
     data = response.json()
@@ -482,7 +479,7 @@ def test_list_score_columns_for_score_table(session: Session, client: TestClient
     assert names[1] == "Song B"
 
 
-def test_list_charts_for_score_table_empty(session: Session, client: TestClient):
+def test_list_score_columns_for_score_table_empty(session: Session, client: TestClient):
     _, _, _, _, score_table = create_editable_score_table(
         session=session,
         organizer_email="organizer@example.com",
@@ -495,7 +492,7 @@ def test_list_charts_for_score_table_empty(session: Session, client: TestClient)
     assert response.json() == []
 
 
-def test_list_charts_for_score_table_not_found(client: TestClient):
+def test_list_score_columns_for_score_table_not_found(client: TestClient):
     response = client.get(
         "/score_tables/00000000-0000-0000-0000-000000000000/score_columns"
     )
@@ -504,24 +501,20 @@ def test_list_charts_for_score_table_not_found(client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# PUT /score_tables/{score_table_id}/charts/order
+# PUT /score_tables/{score_table_id}/score_columns/order
 # ---------------------------------------------------------------------------
 
 
-def test_update_chart_order_in_score_table(session: Session, client: TestClient):
+def test_update_score_column_order_in_score_table(session: Session, client: TestClient):
     organizer, _, _, _, score_table = create_editable_score_table(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_in_db(session, score_table, song_name="Song A")
-    chart_b = create_chart_in_db(session, score_table, song_name="Song B")
-    score_column_a = create_score_column_in_db(
-        session, score_table, chart=chart_a, order_index=0
-    )
-    score_column_b = create_score_column_in_db(
-        session, score_table, chart=chart_b, order_index=1
-    )
+    score_column_a = create_score_column_in_db(session, score_table, order_index=0)
+    create_chart_in_db(session, score_column=score_column_a, song_name="Song A")
+    score_column_b = create_score_column_in_db(session, score_table, order_index=1)
+    create_chart_in_db(session, score_column=score_column_b, song_name="Song B")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
@@ -535,7 +528,7 @@ def test_update_chart_order_in_score_table(session: Session, client: TestClient)
     assert [c["chart"]["song_name"] for c in data] == ["Song B", "Song A"]
 
 
-def test_update_chart_order_in_score_table_with_three_charts(
+def test_update_score_column_order_in_score_table_with_three_columns(
     session: Session, client: TestClient
 ):
     organizer, _, _, _, score_table = create_editable_score_table(
@@ -543,18 +536,12 @@ def test_update_chart_order_in_score_table_with_three_charts(
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_in_db(session, score_table, song_name="Song A")
-    chart_b = create_chart_in_db(session, score_table, song_name="Song B")
-    chart_c = create_chart_in_db(session, score_table, song_name="Song C")
-    score_column_a = create_score_column_in_db(
-        session, score_table, chart=chart_a, order_index=0
-    )
-    score_column_b = create_score_column_in_db(
-        session, score_table, chart=chart_b, order_index=1
-    )
-    score_column_c = create_score_column_in_db(
-        session, score_table, chart=chart_c, order_index=2
-    )
+    score_column_a = create_score_column_in_db(session, score_table, order_index=0)
+    create_chart_in_db(session, score_column=score_column_a, song_name="Song A")
+    score_column_b = create_score_column_in_db(session, score_table, order_index=1)
+    create_chart_in_db(session, score_column=score_column_b, song_name="Song B")
+    score_column_c = create_score_column_in_db(session, score_table, order_index=2)
+    create_chart_in_db(session, score_column=score_column_c, song_name="Song C")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
@@ -568,7 +555,7 @@ def test_update_chart_order_in_score_table_with_three_charts(
     assert [c["chart"]["song_name"] for c in data] == ["Song C", "Song A", "Song B"]
 
 
-def test_update_chart_order_in_score_table_wrong_count(
+def test_update_score_column_order_in_score_table_wrong_count(
     session: Session, client: TestClient
 ):
     organizer, _, _, _, score_table = create_editable_score_table(
@@ -576,8 +563,8 @@ def test_update_chart_order_in_score_table_wrong_count(
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart = create_chart_in_db(session, score_table)
-    score_column = create_score_column_in_db(session, score_table, chart=chart)
+    score_column = create_score_column_in_db(session, score_table)
+    create_chart_in_db(session, score_column=score_column)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
@@ -589,7 +576,7 @@ def test_update_chart_order_in_score_table_wrong_count(
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_update_chart_order_in_score_table_fewer_score_columns(
+def test_update_score_column_order_in_score_table_fewer_score_columns(
     session: Session, client: TestClient
 ):
     organizer, _, _, _, score_table = create_editable_score_table(
@@ -597,10 +584,10 @@ def test_update_chart_order_in_score_table_fewer_score_columns(
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
     )
-    chart_a = create_chart_in_db(session, score_table)
-    score_column_a = create_score_column_in_db(session, score_table, chart=chart_a)
-    chart_b = create_chart_in_db(session, score_table)
-    create_score_column_in_db(session, score_table, chart=chart_b)
+    score_column_a = create_score_column_in_db(session, score_table)
+    create_chart_in_db(session, score_column=score_column_a)
+    score_column_b = create_score_column_in_db(session, score_table)
+    create_chart_in_db(session, score_column=score_column_b)
 
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -938,15 +925,10 @@ def test_get_score_table_results_score_sum(session: Session, client: TestClient)
         session, round=round, format=ScoreTableFormat.SCORE_SUM
     )
 
-    chart_a = create_chart_in_db(session, score_table, song_name="Song A")
-    chart_b = create_chart_in_db(session, score_table, song_name="Song B")
-
-    column_a = create_score_column_in_db(
-        session, score_table, chart=chart_a, order_index=0
-    )
-    column_b = create_score_column_in_db(
-        session, score_table, chart=chart_b, order_index=1
-    )
+    column_a = create_score_column_in_db(session, score_table, order_index=0)
+    create_chart_in_db(session, score_column=column_a, song_name="Song A")
+    column_b = create_score_column_in_db(session, score_table, order_index=1)
+    create_chart_in_db(session, score_column=column_b, song_name="Song B")
 
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
@@ -958,15 +940,9 @@ def test_get_score_table_results_score_sum(session: Session, client: TestClient)
         session, score_table, player=player_b, order_index=1
     )
 
-    create_score_in_db(
-        session, player=player_a, chart=chart_a, value=900000, score_column=column_a
-    )
-    create_score_in_db(
-        session, player=player_a, chart=chart_b, value=800000, score_column=column_b
-    )
-    create_score_in_db(
-        session, player=player_b, chart=chart_a, value=850000, score_column=column_a
-    )
+    create_score_in_db(session, player=player_a, value=900000, score_column=column_a)
+    create_score_in_db(session, player=player_a, value=800000, score_column=column_b)
+    create_score_in_db(session, player=player_b, value=850000, score_column=column_a)
 
     response = client.get(f"/score_tables/{score_table.id}/results")
     data = response.json()
@@ -990,8 +966,8 @@ def test_get_score_table_results_battle(session: Session, client: TestClient):
     score_table = create_score_table_in_db(
         session, round=round, format=ScoreTableFormat.BATTLE
     )
-    chart = create_chart_in_db(session, score_table, song_name="Battle Song")
-    column = create_score_column_in_db(session, score_table, chart=chart, order_index=0)
+    column = create_score_column_in_db(session, score_table, order_index=0)
+    create_chart_in_db(session, score_column=column, song_name="Battle Song")
 
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
@@ -1003,12 +979,8 @@ def test_get_score_table_results_battle(session: Session, client: TestClient):
         session, score_table, player=player_b, order_index=1
     )
 
-    create_score_in_db(
-        session, player=player_a, chart=chart, value=900000, score_column=column
-    )
-    create_score_in_db(
-        session, player=player_b, chart=chart, value=850000, score_column=column
-    )
+    create_score_in_db(session, player=player_a, value=900000, score_column=column)
+    create_score_in_db(session, player=player_b, value=850000, score_column=column)
 
     response = client.get(f"/score_tables/{score_table.id}/results")
     data = response.json()
@@ -1032,8 +1004,8 @@ def test_get_score_table_results_battle_tie_scores_no_points(
     score_table = create_score_table_in_db(
         session, round=round, format=ScoreTableFormat.BATTLE
     )
-    chart = create_chart_in_db(session, score_table, song_name="Tie Song")
-    column = create_score_column_in_db(session, score_table, chart=chart, order_index=0)
+    column = create_score_column_in_db(session, score_table, order_index=0)
+    create_chart_in_db(session, score_column=column, song_name="Tie Song")
 
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
@@ -1045,12 +1017,8 @@ def test_get_score_table_results_battle_tie_scores_no_points(
         session, score_table, player=player_b, order_index=1
     )
 
-    create_score_in_db(
-        session, player=player_a, chart=chart, value=900000, score_column=column
-    )
-    create_score_in_db(
-        session, player=player_b, chart=chart, value=900000, score_column=column
-    )
+    create_score_in_db(session, player=player_a, value=900000, score_column=column)
+    create_score_in_db(session, player=player_b, value=900000, score_column=column)
 
     response = client.get(f"/score_tables/{score_table.id}/results")
     data = response.json()
@@ -1164,8 +1132,8 @@ def test_list_possible_players_for_score_table_second_round_uses_previous_qualif
     session.add(category)
     session.commit()
 
-    chart = create_chart_in_db(session, first_score_table)
-    score_column = create_score_column_in_db(session, first_score_table, chart=chart)
+    score_column = create_score_column_in_db(session, first_score_table)
+    create_chart_in_db(session, score_column=score_column)
 
     add_player_to_score_table_in_db(
         session, first_score_table, player=player_a, order_index=0
@@ -1175,10 +1143,10 @@ def test_list_possible_players_for_score_table_second_round_uses_previous_qualif
     )
 
     create_score_in_db(
-        session, player=player_a, chart=chart, score_column=score_column, value=900000
+        session, player=player_a, score_column=score_column, value=900000
     )
     create_score_in_db(
-        session, player=player_b, chart=chart, score_column=score_column, value=800000
+        session, player=player_b, score_column=score_column, value=800000
     )
 
     response = client.get(f"/score_tables/{second_score_table.id}/possible-players")
@@ -1209,8 +1177,8 @@ def test_list_possible_players_for_score_table_second_round_excludes_players_alr
     session.add(category)
     session.commit()
 
-    chart = create_chart_in_db(session, first_score_table)
-    score_column = create_score_column_in_db(session, first_score_table, chart=chart)
+    score_column = create_score_column_in_db(session, first_score_table)
+    create_chart_in_db(session, score_column=score_column)
 
     add_player_to_score_table_in_db(
         session, first_score_table, player=player_a, order_index=0
@@ -1223,10 +1191,10 @@ def test_list_possible_players_for_score_table_second_round_excludes_players_alr
     )
 
     create_score_in_db(
-        session, player=player_a, chart=chart, score_column=score_column, value=900000
+        session, player=player_a, score_column=score_column, value=900000
     )
     create_score_in_db(
-        session, player=player_b, chart=chart, score_column=score_column, value=800000
+        session, player=player_b, score_column=score_column, value=800000
     )
 
     response = client.get(f"/score_tables/{second_score_table.id}/possible-players")
