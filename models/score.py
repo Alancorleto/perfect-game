@@ -3,7 +3,6 @@ from enum import Enum
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from models.chart import Chart, ChartPublic
 from models.player import Player, PlayerPublic
 from models.score_column import ScoreColumn, ScoreColumnPublic
 from models.user import User
@@ -48,11 +47,9 @@ class Score(ScoreBase, table=True):
         primary_key=True,
     )
     player_id: uuid.UUID = Field(foreign_key="player.id", ondelete="CASCADE")
-    chart_id: uuid.UUID = Field(foreign_key="chart.id", ondelete="CASCADE")
     score_column_id: uuid.UUID = Field(foreign_key="scorecolumn.id", ondelete="CASCADE")
 
     player: Player = Relationship(back_populates="scores")
-    chart: Chart = Relationship(back_populates="scores")
     score_column: ScoreColumn = Relationship(back_populates="scores")
 
     def can_be_edited_by(self, user: User) -> bool:
@@ -67,7 +64,6 @@ class Score(ScoreBase, table=True):
 
 class ScoreCreate(ScoreBase):
     player_id: uuid.UUID
-    chart_id: uuid.UUID
     score_column_id: uuid.UUID
 
 
@@ -75,7 +71,6 @@ class ScorePublic(ScoreBase):
     id: uuid.UUID
 
     player: PlayerPublic
-    chart: ChartPublic
     score_column: ScoreColumnPublic
 
 

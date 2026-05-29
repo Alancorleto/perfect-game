@@ -1,5 +1,5 @@
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -10,6 +10,7 @@ from models.score_table import ScoreTable
 from models.user import User
 
 if TYPE_CHECKING:
+    from models.chart_column import ChartColumn
     from models.score import Score
 
 
@@ -25,6 +26,9 @@ class ScoreColumn(SQLModel, table=True):
         sa_relationship_kwargs={"viewonly": True},
     )
     scores: list["Score"] = Relationship(
+        back_populates="score_column", cascade_delete=True
+    )
+    chart_column: Optional["ChartColumn"] = Relationship(
         back_populates="score_column", cascade_delete=True
     )
 

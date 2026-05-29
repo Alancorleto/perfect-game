@@ -9,6 +9,9 @@ from sqlmodel import select
 from database import SessionDep
 from image_storage import upload_image
 from models.chart import Chart, ChartCreate, ChartPublic, ChartUpdate
+from models.chart_column import ChartColumn
+from models.chart_column_entry import ChartColumnEntry
+from models.player import Player
 from models.score_column import ScoreColumn
 from routers.users import UserDep
 
@@ -62,6 +65,8 @@ async def get_chart(chart_id: uuid.UUID, session: SessionDep):
 async def create_chart(
     chart: ChartCreate,
     score_column_id: uuid.UUID | None,
+    chart_column_id: uuid.UUID | None,
+    chart_column_player_id: uuid.UUID | None,
     session: SessionDep,
     user: UserDep,
 ):
@@ -74,7 +79,43 @@ async def create_chart(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Score column not found"
             )
+
+        if not db_score_column.can_be_edited_by(user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+            )
+
         db_chart.score_column = db_score_column
+    elif chart_column_id is not None and chart_column_player_id is not None:
+        db_chart_column = session.get(ChartColumn, chart_column_id)
+        if db_chart_column is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Chart column not found"
+            )
+
+        db_player = session.get(Player, chart_column_player_id)
+        if db_player is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
+            )
+
+        if not db_chart_column.can_be_edited_by(user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+            )
+
+        db_chart_column_entry = ChartColumnEntry(
+            chart_column=db_chart_column, player=db_player, chart=db_chart
+        )
+
+        db_chart_column.chart_entries.append(db_chart_column_entry)
+
+        session.add(db_chart_column)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="score_column_id or (chart_column_id and chart_column_player_id) must be provided",
+        )
 
     session.add(db_chart)
     session.commit()

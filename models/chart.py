@@ -8,7 +8,6 @@ from models.score_column_chart import ScoreColumnChartLink
 from models.user import User
 
 if TYPE_CHECKING:
-    from models.score import Score
     from models.score_column import ScoreColumn
 
 
@@ -38,9 +37,6 @@ class Chart(ChartBase, table=True):
     score_column: Optional["ScoreColumn"] = Relationship(
         link_model=ScoreColumnChartLink
     )
-
-    # This is not used but needed by SQLModel to work properly with cascade delete
-    scores: list["Score"] = Relationship(back_populates="chart", cascade_delete=True)
 
     def can_be_edited_by(self, user: User) -> bool:
         return user.is_super_admin or (

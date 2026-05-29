@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
-from models.chart import Chart
 from models.player import Player
 from models.score import Score, ScoreCreate, ScorePublic, ScoreUpdate
 from models.score_column import ScoreColumn
@@ -40,12 +39,6 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
         )
 
-    db_chart = session.get(Chart, score.chart_id)
-    if not db_chart:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found"
-        )
-
     db_score_column = session.get(ScoreColumn, score.score_column_id)
     if not db_score_column:
         raise HTTPException(
@@ -65,18 +58,6 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Player is not in the score table",
-        )
-
-    if db_chart not in db_score_column.score_table.charts:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Chart {db_chart} is not in the score table",
-        )
-
-    if db_score_column.chart is not None and db_score_column.chart != db_chart:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Chart {db_chart} does not correspond with column {db_score_column.order_index}",
         )
 
     if any(

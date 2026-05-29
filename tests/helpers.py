@@ -3,6 +3,7 @@ from sqlmodel import Session
 
 from models.category import Category
 from models.chart import Chart, Mode
+from models.chart_column import ChartColumn
 from models.player import Player
 from models.player_row import PlayerRow
 from models.round import Round, RoundState
@@ -160,6 +161,22 @@ def create_score_column_in_db(
     return score_column
 
 
+def create_chart_column_in_db(
+    session: Session,
+    score_column: ScoreColumn,
+    description: str | None = None,
+) -> ChartColumn:
+    """Creates a chart column directly in the test database."""
+    chart_column = ChartColumn(
+        score_column=score_column,
+        description=description,
+    )
+    session.add(chart_column)
+    session.commit()
+    session.refresh(chart_column)
+    return chart_column
+
+
 def add_player_to_score_table_in_db(
     session: Session,
     score_table: ScoreTable,
@@ -179,14 +196,12 @@ def add_player_to_score_table_in_db(
 def create_score_in_db(
     session: Session,
     player: Player,
-    chart: Chart,
     score_column: ScoreColumn,
     value: int = 1000000,
 ) -> Score:
     """Creates a score directly in the test database."""
     score = Score(
         player_id=player.id,
-        chart_id=chart.id,
         score_column_id=score_column.id,
         value=value,
         perfect=100,
@@ -199,10 +214,6 @@ def create_score_in_db(
         grade=Grade.S,
         stage_pass=True,
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-
     session.add(score)
     session.commit()
     session.refresh(score)
