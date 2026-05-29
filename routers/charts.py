@@ -108,9 +108,7 @@ async def create_chart(
             chart_column=db_chart_column, player=db_player, chart=db_chart
         )
 
-        db_chart_column.chart_entries.append(db_chart_column_entry)
-
-        session.add(db_chart_column)
+        session.add(db_chart_column_entry)
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
