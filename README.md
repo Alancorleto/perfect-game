@@ -87,7 +87,7 @@ If you'd like to run the project locally, here's the quickest way to get started
 ### Clone the repository
 
 ```bash
-git clone https://github.com/your-username/perfect-game.git
+git clone https://github.com/Alancorleto/perfect-game
 cd perfect-game
 ```
 
