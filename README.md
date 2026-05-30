@@ -1,16 +1,32 @@
 # Perfect Game
 
-Perfect Game is a backend API for organizing competitive rhythm game tournaments.
+Perfect Game is an app for organizing competitive rhythm game tournaments.
 
 It brings organizers everything they need into one place, from managing tournament settings to submitting player scores.
 
+This is the backend API for the Perfect Game app.
+
 ## Features
 
-- Support for multiple categories per tournament
-- Rounds with different formats, including score sum, battle, and custom set
-- Account management with authentication and password reset
-- Guest players for people who don't have an account
-- Image storage for tournament logos, player avatars, and song titles
+### As an organizer
+- Manage multiple categories inside your tournaments
+- Manage multiple rounds with two different possible formats: score sum and battle
+- Update player scores in real time
+- Upload images for your tournament logos and song titles
+- Invite players with a registered account to join your tournaments
+
+### As a player
+- Create an account and customize your profile
+- Upload an image for your player avatar
+- Search for tournaments in your country
+- Join tournaments organized by other users
+- View leaderboard rankings as they are updated in real time
+
+### Extra features
+- Fuzzy search for song titles by song name
+- Create chart columns for "choose your own chart" style rounds
+- Reset your password
+- Use refresh tokens for authenticating 
 
 ## Motivation
 
@@ -29,35 +45,58 @@ It's a sandbox environment, so feel free to experiment with the API 😄
 
 ## Usage
 
-All the endpoints are documented in detail in the FastAPI Swagger UI. However, here is a quick overview of the typical flow for a tournament with one category and one round.
+All the endpoints are documented in detail in the FastAPI Swagger UI. Here is a quick overview of the typical flow for a tournament with one category and one round.
 
 1. Create a user.
 2. Log in.
 3. Create a tournament.
-4. Add a category
-5. Create one or more guest players to play the category.
+4. Add a category.
+5. Create one or more guest players for the category.
 6. Create one round for the category.
-7. Create a score table for the round.
-8. Create one or more score columns for the table.
+7. Create a set for the round.
+8. Add one or more charts to the set.
 9. Start the round.
 10. Submit scores.
-11. Check the table results to see the calculated standings.
-
-### Additional functionality
-
-- Upload images for tournament banners, player avatars, and chart titles.
-- Configure round formats to score sum or battle.
-- Invite registered players to join a tournament.
-- If you are a player, request to join a tournament.
-- Search already existing chart titles by song name, to save the user the effort of uploading a new one.
-- Create chart columns for formats in which each player chooses their own chart to play.
-- Reset user password.
+11. Check the set results to see the calculated standings.
 
 ## Future Improvements
 
+- 🚀 A fully fledged client to talk with the API 🚀
 - Support for player teams
 - Support for custom scoring columns
+- Support for displaying notable placements in player profile
 
 ## Contributing
 
-<!-- How to run the project locally, tests, and contribution guidance. -->
+If you'd like to run the project locally or contribute changes, here's the quickest way to get started.
+
+### Clone the repository
+
+```bash
+git clone https://github.com/your-username/perfect-game.git
+cd perfect-game
+```
+
+### Install dependencies
+
+```bash
+uv sync
+```
+
+### Configure environment variables
+
+Create a `.env` file with the required values for your local setup, including `DATABASE_URL`, `JWT_SECRET_KEY`, and any mail or image storage settings you want to use.
+
+### Run the application
+
+```bash
+uv run fastapi dev
+```
+
+### Run the test suite
+
+```bash
+uv run pytest
+```
+
+If you'd like to contribute, fork the repository and open a pull request with a clear description of the change.
