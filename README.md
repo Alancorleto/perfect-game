@@ -1,6 +1,6 @@
 # Perfect Game
 
-Perfect Game is an application for organizing competitive rhythm game tournaments. ↙️↖️🟨↗️↘️
+Perfect Game is an application for organizing competitive rhythm game tournaments. ↙️↖️👣↗️↘️
 
 It gives organizers everything they need in one place, from managing tournament settings to submitting player scores.
 
@@ -69,16 +69,16 @@ All the endpoints are documented in detail in the FastAPI Swagger UI. Here is a 
 
 ## 🛠️ Stack
 
-- Language: Python
-- Framework: FastAPI
-- Database: SQLModel
-  - SQLite for local development
-  - PostgreSQL with Supabase for production
-- Code hosting: FastAPI Cloud
-- Image storage:
-  - Local file storage for local development
-  - ImageKit.io for production
-- Email: SMTP
+- **Language:** Python
+- **Framework:** FastAPI
+- **Database:** SQLModel
+  - **SQLite** for local development
+  - **PostgreSQL** with **Supabase** for production
+- **Code hosting:** FastAPI Cloud
+- **Image storage:**
+  - **Local file storage** for local development
+  - **ImageKit.io** for production
+- **Email:** SMTP
 
 ## 🧰 Local Development
 
