@@ -39,7 +39,7 @@ A lot of that work was handled with spreadsheets, manual payment tracking, and a
 
 1. Open the live API documentation at [https://perfect-game-sandbox.fastapicloud.dev/docs](https://perfect-game-sandbox.fastapicloud.dev/docs).
 2. Create an account by calling `POST /users`.
-3. Use the `Authorize` button in the top-right corner of the FastAPI docs to log in with your credentials.
+3. Use the `Authorize` button in the top-right corner of the FastAPI docs to log in with your credentials (use the email you registered with as the username and ignore the other fields).
 4. Test the available endpoints directly from the Swagger UI.
 
 It's a sandbox environment, so feel free to experiment with the API 😄
