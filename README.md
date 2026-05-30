@@ -1,41 +1,41 @@
 # Perfect Game
 
-Perfect Game is an app for organizing competitive rhythm game tournaments.
+Perfect Game is an application for organizing competitive rhythm game tournaments. ↙️↖️🟨↗️↘️
 
-It brings organizers everything they need into one place, from managing tournament settings to submitting player scores.
+It gives organizers everything they need in one place, from managing tournament settings to submitting player scores.
 
-This is the backend API for the Perfect Game app.
+This repository contains the backend API for the Perfect Game app.
 
-## Features
+## ✨ Features
 
-### As an organizer
+### 🗒️ As an organizer
 - Manage multiple categories inside your tournaments
-- Manage multiple rounds with two different possible formats: score sum and battle
+- Manage multiple rounds with two possible formats: score sum and battle
 - Update player scores in real time
-- Upload images for your tournament logos and song titles
+- Upload images for tournament logos and song titles
 - Invite players with a registered account to join your tournaments
-- Create guest players for participants that don't have a registered account
+- Create guest players for participants who don't have a registered account
 
-### As a player
+### 👾 As a player
 - Create an account and customize your profile
 - Upload an image for your player avatar
 - Search for tournaments in your country
 - Join tournaments organized by other users
-- View leaderboard rankings as they are updated in real time
+- View leaderboard rankings as they update in real time
 
-### Extra features
-- Fuzzy search for song titles by song name
+### ⚡ Extra features
+- Fuzzy search song titles by name
 - Create chart columns for "choose your own chart" style rounds
 - Reset your password with an email flow
-- Use refresh tokens for authenticating 
+- Use refresh tokens for authentication
 
-## Motivation
+## 💭 Motivation
 
 I've been involved in the rhythm game scene since I was a kid, and over the years I've organized many tournaments myself.
 
 A lot of that work was handled with spreadsheets, manual payment tracking, and a patchwork of tools that never quite fit the way rhythm game tournaments actually work. Those limitations were frustrating enough that I wanted to build something better: a platform designed to make organizing rhythm game tournaments as smooth and convenient as possible. Perfect Game is the result of that effort, turning a messy process into something much more organized, practical, and built for the scene.
 
-## Quick Start
+## 🚀 Quick Start
 
 1. Open the live API documentation at [https://perfect-game-sandbox.fastapicloud.dev/docs](https://perfect-game-sandbox.fastapicloud.dev/docs).
 2. Create an account by calling `POST /users`.
@@ -44,7 +44,7 @@ A lot of that work was handled with spreadsheets, manual payment tracking, and a
 
 It's a sandbox environment, so feel free to experiment with the API 😄
 
-## Usage
+## 📖 Usage
 
 All the endpoints are documented in detail in the FastAPI Swagger UI. Here is a quick overview of the typical flow for a tournament with one category and one round.
 
@@ -60,14 +60,14 @@ All the endpoints are documented in detail in the FastAPI Swagger UI. Here is a 
 10. Submit scores.
 11. Check the set results to see the calculated standings.
 
-## Future Improvements
+## 🔮 Future Improvements
 
-- 🚀 A fully fledged client to talk with the API 🚀
+- 🚀 A fully fledged client to interact with the API 🚀
 - Support for player teams
 - Support for custom scoring columns
-- Support for displaying notable placements in player profile
+- Support for displaying notable placements in player profiles
 
-## Stack
+## 🛠️ Stack
 
 - Language: Python
 - Framework: FastAPI
@@ -80,24 +80,24 @@ All the endpoints are documented in detail in the FastAPI Swagger UI. Here is a 
   - ImageKit.io for production
 - Email: SMTP
 
-## Local Development
+## 🧰 Local Development
 
 If you'd like to run the project locally, here's the quickest way to get started.
 
-### Clone the repository
+### 📦 Clone the repository
 
 ```bash
 git clone https://github.com/Alancorleto/perfect-game
 cd perfect-game
 ```
 
-### Install dependencies
+### 📥 Install dependencies
 
 ```bash
 uv sync
 ```
 
-### Configure environment variables
+### ⚙️ Configure environment variables
 
 Create a `.env` file with the required values for your local setup:
 
@@ -115,23 +115,23 @@ openssl rand -hex 32
 
 `JWT_ALGORITHM` can be any algorithm supported by `pyjwt`. `HS256` is a solid default for local development.
 
-### Run the application
+### ▶️ Run the application
 
 ```bash
 uv run fastapi dev
 ```
 
-### Run the test suite
+### 🧪 Run the test suite
 
 ```bash
 uv run pytest
 ```
 
-### Other environment variables
+### 🔐 Other environment variables
 
-These are not required to test the project locally, but are needed for production.
+These are not required to test the project locally, but they are needed for production.
 
-#### Image storage
+#### 🖼️ Image storage
 
 Image uploads use the local filesystem during development. If you want to store images remotely, set the following variables for ImageKit:
 
@@ -140,9 +140,9 @@ IMAGEKIT_PRIVATE_KEY=your-imagekit-private-key
 IMAGEKIT_URL_ENDPOINT=your-imagekit-url-endpoint
 ```
 
-#### Email service for password recovery
+#### ✉️ Email service for password recovery
 
-Perfect Game uses an SMTP-compatible mail provider through `FastAPI-Mail` to send password recovery emails. If you want password reset to work, set the following variables:
+Perfect Game uses an SMTP-compatible mail provider through `FastAPI-Mail` to send password recovery emails. If you want password recovery to work, set the following variables:
 
 ```env
 MAIL_USERNAME=your-smtp-username
@@ -156,6 +156,6 @@ MAIL_SSL_TLS=false
 
 If your mail provider uses different security settings, adjust `MAIL_STARTTLS` and `MAIL_SSL_TLS` accordingly.
 
-## Contributing
+## 🤝 Contributing
 
 If you'd like to contribute, fork the repository and open a pull request with a clear description of the change.
