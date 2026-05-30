@@ -14,6 +14,7 @@ This is the backend API for the Perfect Game app.
 - Update player scores in real time
 - Upload images for your tournament logos and song titles
 - Invite players with a registered account to join your tournaments
+- Create guest players for participants that don't have a registered account
 
 ### As a player
 - Create an account and customize your profile
