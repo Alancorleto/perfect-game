@@ -80,9 +80,9 @@ All the endpoints are documented in detail in the FastAPI Swagger UI. Here is a 
   - ImageKit.io for production
 - Email: SMTP
 
-## Contributing
+## Local Development
 
-If you'd like to run the project locally or contribute changes, here's the quickest way to get started.
+If you'd like to run the project locally, here's the quickest way to get started.
 
 ### Clone the repository
 
@@ -99,7 +99,21 @@ uv sync
 
 ### Configure environment variables
 
-Create a `.env` file with the required values for your local setup, including `DATABASE_URL`, `JWT_SECRET_KEY`, and any mail or image storage settings you want to use.
+Create a `.env` file with the required values for your local setup:
+
+```env
+DATABASE_URL=sqlite:///perfect_game.db
+JWT_SECRET_KEY=your-secret-key
+JWT_ALGORITHM=HS256
+```
+
+You can generate a strong JWT secret key with:
+
+```bash
+openssl rand -hex 32
+```
+
+`JWT_ALGORITHM` can be any algorithm supported by `pyjwt`. `HS256` is a solid default for local development.
 
 ### Run the application
 
@@ -112,5 +126,36 @@ uv run fastapi dev
 ```bash
 uv run pytest
 ```
+
+### Other environment variables
+
+These are not required to test the project locally, but are needed for production.
+
+#### Image storage
+
+Image uploads use the local filesystem during development. If you want to store images remotely, set the following variables for ImageKit:
+
+```env
+IMAGEKIT_PRIVATE_KEY=your-imagekit-private-key
+IMAGEKIT_URL_ENDPOINT=your-imagekit-url-endpoint
+```
+
+#### Email service for password recovery
+
+Perfect Game uses an SMTP-compatible mail provider through `FastAPI-Mail` to send password recovery emails. If you want password reset to work, set the following variables:
+
+```env
+MAIL_USERNAME=your-smtp-username
+MAIL_PASSWORD=your-smtp-password
+MAIL_FROM=noreply@example.com
+MAIL_PORT=587
+MAIL_SERVER=smtp.your-provider.com
+MAIL_STARTTLS=true
+MAIL_SSL_TLS=false
+```
+
+If your mail provider uses different security settings, adjust `MAIL_STARTTLS` and `MAIL_SSL_TLS` accordingly.
+
+## Contributing
 
 If you'd like to contribute, fork the repository and open a pull request with a clear description of the change.
