@@ -69,16 +69,16 @@ All the endpoints are documented in detail in the FastAPI Swagger UI. Here is a 
 
 ## 🛠️ Stack
 
-- **Language:** Python
-- **Framework:** FastAPI
-- **Database:** SQLModel
-  - **SQLite** for local development
-  - **PostgreSQL** with **Supabase** for production
-- **Code hosting:** FastAPI Cloud
+- **Language:** *Python*
+- **Framework:** *FastAPI*
+- **Database:** *SQLModel*
+  - *SQLite* for local development
+  - *PostgreSQL* with *Supabase* for production
+- **Code hosting:** *FastAPI Cloud*
 - **Image storage:**
-  - **Local file storage** for local development
-  - **ImageKit.io** for production
-- **Email:** SMTP
+  - *Local file storage* for local development
+  - *ImageKit.io* for production
+- **Email:** *SMTP*
 
 ## 🧰 Local Development
 
