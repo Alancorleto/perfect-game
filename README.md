@@ -20,26 +20,28 @@ A lot of that work was handled with spreadsheets, manual payment tracking, and a
 
 ## Quick Start
 
-1. Open the live API documentation at [https://perfect-game.fastapicloud.dev/docs](https://perfect-game.fastapicloud.dev/docs).
+1. Open the live API documentation at [https://perfect-game-sandbox.fastapicloud.dev/docs](https://perfect-game-sandbox.fastapicloud.dev/docs).
 2. Create an account by calling `POST /users`.
 3. Use the `Authorize` button in the top-right corner of the FastAPI docs to log in with your credentials.
 4. Test the available endpoints directly from the Swagger UI.
 
+It's a sandbox environment, so feel free to experiment with the API 😄
+
 ## Usage
 
-All the endpoints are documented in detail in the FastAPI Swagger UI. However, here is a quick overview of the typical flow.
+All the endpoints are documented in detail in the FastAPI Swagger UI. However, here is a quick overview of the typical flow for a tournament with one category and one round.
 
 1. Create a user.
 2. Log in.
 3. Create a tournament.
 4. Add a category
 5. Create one or more guest players to play the category.
-6. Create one or more rounds for the category.
-7. Create a score table for each round.
-8. Create one or more score columns for each set.
+6. Create one round for the category.
+7. Create a score table for the round.
+8. Create one or more score columns for the table.
 9. Start the round.
 10. Submit scores.
-11. Check the set results to see the calculated standings.
+11. Check the table results to see the calculated standings.
 
 ### Additional functionality
 
@@ -48,11 +50,13 @@ All the endpoints are documented in detail in the FastAPI Swagger UI. However, h
 - Invite registered players to join a tournament.
 - If you are a player, request to join a tournament.
 - Search already existing chart titles by song name, to save the user the effort of uploading a new one.
+- Create chart columns for formats in which each player chooses their own chart to play.
 - Reset user password.
 
 ## Future Improvements
 
-<!-- Planned enhancements and next steps. -->
+- Support for player teams
+- Support for custom scoring columns
 
 ## Contributing
 
