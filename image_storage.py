@@ -1,11 +1,11 @@
 import os
-from fastapi import UploadFile
-from imagekitio import ImageKit
 from pathlib import Path
 
-imagekit = ImageKit(
-    private_key=os.getenv("IMAGEKIT_PRIVATE_KEY")
-)
+from imagekitio import ImageKit
+
+imagekit = None
+if os.getenv("IMAGEKIT_PRIVATE_KEY"):
+    imagekit = ImageKit(private_key=os.getenv("IMAGEKIT_PRIVATE_KEY"))
 
 # Store URL endpoint for reuse
 URL_ENDPOINT = os.getenv("IMAGEKIT_URL_ENDPOINT")
