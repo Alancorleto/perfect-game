@@ -26,7 +26,7 @@ This is the backend API for the Perfect Game app.
 ### Extra features
 - Fuzzy search for song titles by song name
 - Create chart columns for "choose your own chart" style rounds
-- Reset your password
+- Reset your password with an email flow
 - Use refresh tokens for authenticating 
 
 ## Motivation
@@ -66,6 +66,19 @@ All the endpoints are documented in detail in the FastAPI Swagger UI. Here is a 
 - Support for player teams
 - Support for custom scoring columns
 - Support for displaying notable placements in player profile
+
+## Stack
+
+- Language: Python
+- Framework: FastAPI
+- Database: SQLModel
+  - SQLite for local development
+  - PostgreSQL with Supabase for production
+- Code hosting: FastAPI Cloud
+- Image storage:
+  - Local file storage for local development
+  - ImageKit.io for production
+- Email: SMTP
 
 ## Contributing
 
