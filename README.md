@@ -54,11 +54,13 @@ All the endpoints are documented in detail in the FastAPI Swagger UI. Here is a 
 4. Add a category.
 5. Create one or more guest players for the category.
 6. Create one round for the category.
-7. Create a set for the round.
-8. Add one or more charts to the set.
-9. Start the round.
-10. Submit scores.
-11. Check the set results to see the calculated standings.
+7. Create a score table for the round.
+8. Add your created players to the score table.
+9. Add one or more score columns to the score table.
+10. Add a chart to each score column.
+11. Start the round.
+12. Submit scores.
+13. Check the set results to see the calculated standings.
 
 ## 🔮 Future Improvements
 
