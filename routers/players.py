@@ -10,9 +10,16 @@ from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
 from models.tournament import Tournament
 from routers.users import UserDep
 
+description = """
+A player can either be:\n
+- created as the public profile of a user\n
+- created as a temporary guest for a tournament\n
+Typically, a user creates a player profile when they register.\n
+"""
+
 tag_metadata = {
     "name": "players",
-    "description": "Operations related to players",
+    "description": description,
 }
 
 router = APIRouter(prefix="/players", tags=["players"])
