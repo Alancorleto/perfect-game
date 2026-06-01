@@ -16,9 +16,16 @@ from models.tournament import (
 )
 from routers.users import UserDep
 
+description = """
+A tournament can have multiple categories.\n
+A tournament can also have multiple organizers.\n
+Each organizer has permissions to manage all the resources related to the tournament:
+categories, rounds, score tables, charts, and guest players.
+"""
+
 tag_metadata = {
     "name": "tournaments",
-    "description": "Operations related to tournaments",
+    "description": description,
 }
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
