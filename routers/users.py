@@ -47,9 +47,15 @@ ALGORITHM = os.getenv("JWT_ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 description = """
-# Users\n
-Description for users.\n
-Test.
+Users can manage tournaments and their player profile.\n
+To create a user account, use the `POST /users` endpoint.\n
+To authenticate in these docs, press the "Authorize" button
+in the top right corner.\n
+Otherwise, use the `/token` endpoint to authenticate.\n
+Users can also:\n
+- Refresh their access token\n
+- Revoke their refresh token\n
+- Request a password reset\n
 """
 
 tag_metadata = {
