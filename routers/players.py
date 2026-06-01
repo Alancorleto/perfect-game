@@ -10,6 +10,11 @@ from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
 from models.tournament import Tournament
 from routers.users import UserDep
 
+tag_metadata = {
+    "name": "players",
+    "description": "Operations related to players",
+}
+
 router = APIRouter(prefix="/players", tags=["players"])
 
 

@@ -16,6 +16,11 @@ from models.tournament import (
 )
 from routers.users import UserDep
 
+tag_metadata = {
+    "name": "tournaments",
+    "description": "Operations related to tournaments",
+}
+
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 

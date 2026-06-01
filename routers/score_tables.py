@@ -15,7 +15,13 @@ from models.score_table import (
     ScoreTablePublic,
     ScoreTableUpdate,
 )
+from routers.score_columns import tag_metadata
 from routers.users import UserDep
+
+tag_metadata = {
+    "name": "score_tables",
+    "description": "Operations related to score tables",
+}
 
 router = APIRouter(prefix="/score_tables", tags=["score_tables"])
 

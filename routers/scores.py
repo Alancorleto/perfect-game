@@ -9,6 +9,11 @@ from models.score import Score, ScoreCreate, ScorePublic, ScoreUpdate
 from models.score_column import ScoreColumn
 from routers.users import UserDep
 
+tag_metadata = {
+    "name": "scores",
+    "description": "Operations related to scores",
+}
+
 router = APIRouter(prefix="/scores", tags=["scores"])
 
 

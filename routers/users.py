@@ -46,6 +46,17 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = os.getenv("JWT_ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+description = """
+# Users\n
+Description for users.\n
+Test.
+"""
+
+tag_metadata = {
+    "name": "users",
+    "description": description,
+}
+
 router = APIRouter(tags=["users"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

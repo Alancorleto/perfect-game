@@ -13,6 +13,11 @@ from models.chart_column import (
 from models.score_column import ScoreColumn
 from routers.users import UserDep
 
+tag_metadata = {
+    "name": "chart_columns",
+    "description": "Operations related to chart columns",
+}
+
 router = APIRouter(prefix="/chart_columns", tags=["chart_columns"])
 
 

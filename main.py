@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel
 
 from database import SessionDep, engine
-from routers import api_router
+from routers import api_router, tag_metadata
 
 
 @asynccontextmanager
@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, openapi_tags=tag_metadata)
 app.include_router(api_router)
 
 if os.getenv("ENVIRONMENT") != "production":

@@ -23,6 +23,11 @@ from routers.players import Player, PlayerPublic
 from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
 
+tag_metadata = {
+    "name": "categories",
+    "description": "Manage categories for tournaments",
+}
+
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 

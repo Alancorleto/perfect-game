@@ -10,6 +10,11 @@ from models.round import Round, RoundCreate, RoundPublic, RoundState, RoundUpdat
 from models.score_table import ScoreTablePublic
 from routers.users import UserDep
 
+tag_metadata = {
+    "name": "rounds",
+    "description": "Operations related to rounds",
+}
+
 router = APIRouter(prefix="/rounds", tags=["rounds"])
 
 

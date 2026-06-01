@@ -15,6 +15,11 @@ from models.player import Player
 from models.score_column import ScoreColumn
 from routers.users import UserDep
 
+tag_metadata = {
+    "name": "charts",
+    "description": "Operations related to charts",
+}
+
 router = APIRouter(prefix="/charts", tags=["charts"])
 
 
