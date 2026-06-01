@@ -53,7 +53,7 @@ To authenticate in these docs, press the "Authorize" button
 in the top right corner.\n
 Otherwise, use the `/token` endpoint to authenticate.\n
 Users can also:\n
-- Refresh their access token\n
+- Refresh their access token via a refresh token\n
 - Revoke their refresh token\n
 - Request a password reset\n
 """
@@ -136,6 +136,12 @@ async def get_current_user(
 UserDep = Annotated[User, Depends(get_current_user)]
 
 
+@router.get("/users", response_model=list[UserPublic])
+async def list_users(session: SessionDep):
+    users = session.exec(select(User)).all()
+    return users
+
+
 @router.post("/users", response_model=UserPublic)
 async def create_user(user: UserCreate, session: SessionDep):
     existing_email = session.exec(select(User).where(User.email == user.email)).first()
@@ -157,81 +163,6 @@ async def create_user(user: UserCreate, session: SessionDep):
     session.refresh(db_user)
 
     return db_user
-
-
-@router.post("/token", response_model=Token)
-async def login(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: SessionDep,
-) -> Token:
-    user = authenticate_user(form_data.username, form_data.password, session)
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
-
-    refresh_token = RefreshToken.create(user_id=user.id, ttl=timedelta(days=30))
-    session.add(refresh_token)
-    session.commit()
-
-    return Token(
-        access_token=access_token,
-        token_type="bearer",
-        refresh_token=refresh_token.token,
-    )
-
-
-@router.post("/token/refresh", response_model=Token)
-async def refresh_access_token(refresh_token: str, session: SessionDep) -> Token:
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-
-    db_token = session.get(RefreshToken, refresh_token)
-
-    if not db_token or db_token.revoked_at is not None or db_token.expires_at < now:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token",
-        )
-
-    new_access_token = create_access_token(
-        data={"sub": db_token.user.email},
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
-
-    return Token(
-        access_token=new_access_token,
-        token_type="bearer",
-        refresh_token=refresh_token,
-    )
-
-
-@router.post("/token/revoke", status_code=status.HTTP_204_NO_CONTENT)
-async def revoke_refresh_token(refresh_token: str, session: SessionDep) -> None:
-    db_token = session.get(RefreshToken, refresh_token)
-    if db_token:
-        db_token.revoked_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        session.commit()
-
-
-@router.get("/users/me", response_model=UserPublic)
-async def get_currently_logged_user(
-    current_user: UserDep,
-):
-    return current_user
-
-
-@router.get("/users", response_model=list[UserPublic])
-async def list_users(session: SessionDep):
-    users = session.exec(select(User)).all()
-    return users
 
 
 @router.get("/users/{user_id}", response_model=UserPublic)
@@ -304,6 +235,75 @@ async def delete_user(
 
     session.delete(db_user)
     session.commit()
+
+
+@router.get("/users/me", response_model=UserPublic)
+async def get_currently_logged_user(
+    current_user: UserDep,
+):
+    return current_user
+
+
+@router.post("/token", response_model=Token)
+async def login(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    session: SessionDep,
+) -> Token:
+    user = authenticate_user(form_data.username, form_data.password, session)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
+
+    refresh_token = RefreshToken.create(user_id=user.id, ttl=timedelta(days=30))
+    session.add(refresh_token)
+    session.commit()
+
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        refresh_token=refresh_token.token,
+    )
+
+
+@router.post("/token/refresh", response_model=Token)
+async def refresh_access_token(refresh_token: str, session: SessionDep) -> Token:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    db_token = session.get(RefreshToken, refresh_token)
+
+    if not db_token or db_token.revoked_at is not None or db_token.expires_at < now:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+
+    new_access_token = create_access_token(
+        data={"sub": db_token.user.email},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+
+    return Token(
+        access_token=new_access_token,
+        token_type="bearer",
+        refresh_token=refresh_token,
+    )
+
+
+@router.post("/token/revoke", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_refresh_token(refresh_token: str, session: SessionDep) -> None:
+    db_token = session.get(RefreshToken, refresh_token)
+    if db_token:
+        db_token.revoked_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        session.commit()
 
 
 @router.post("/password-reset/request")
