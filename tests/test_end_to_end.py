@@ -4,9 +4,9 @@ from fastapi.testclient import TestClient
 from tests.helpers import get_auth_headers, get_grade
 
 
-# This test exercises the main tournament scoring flow through the public API.
+# This test exercises the main event scoring flow through the public API.
 # It creates an organizer account, signs in, creates the organizer's player
-# profile, builds a tournament structure, creates playable content, connects
+# profile, builds an event structure, creates playable content, connects
 # that content and player to a score table, submits a score, and verifies that
 # the score table results endpoint calculates the expected score and placement.
 def test_create_score_table_score_and_results_end_to_end(client: TestClient):
@@ -29,19 +29,19 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
     assert player_response.status_code == status.HTTP_200_OK
     player_id = player_response.json()["id"]
 
-    # Create the tournament owned by the organizer.
-    tournament_response = client.post(
-        "/tournaments/",
-        json={"name": "E2E Tournament", "country_code": "AR"},
+    # Create the event owned by the organizer.
+    event_response = client.post(
+        "/events/",
+        json={"name": "E2E Event", "country_code": "AR"},
         headers=headers,
     )
-    assert tournament_response.status_code == status.HTTP_200_OK
-    tournament_id = tournament_response.json()["id"]
+    assert event_response.status_code == status.HTTP_200_OK
+    event_id = event_response.json()["id"]
 
-    # Create a category inside the tournament.
+    # Create a category inside the event.
     category_response = client.post(
         "/categories/",
-        json={"name": "Main Category", "tournament_id": tournament_id},
+        json={"name": "Main Category", "event_id": event_id},
         headers=headers,
     )
     assert category_response.status_code == status.HTTP_200_OK
@@ -161,7 +161,7 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
 # This test verifies the score-sum format with a late player insertion in a round.
 # Steps:
 # 1. Create and authenticate an organizer.
-# 2. Create a tournament, category, round, and a score-sum score table with two charts (levels 15 and 16).
+# 2. Create an event, category, round, and a score-sum score table with two charts (levels 15 and 16).
 # 3. Create eight guest players and add them to the category and score table.
 # 4. Start the round.
 # 5. Enter scores for the first four player pairs (players 0-3) on both charts in two-player game order.
@@ -209,7 +209,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
         )
         assert response.status_code == status.HTTP_200_OK
 
-    # Create and authenticate the tournament organizer.
+    # Create and authenticate the event organizer.
     user_response = client.post(
         "/users",
         json={"email": "organizer@example.com", "password": "mypassword123"},
@@ -217,18 +217,18 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     assert user_response.status_code == status.HTTP_200_OK
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    # Create one tournament, one category, one round, and one score-sum score table.
-    tournament_response = client.post(
-        "/tournaments/",
-        json={"name": "Late Insert Tournament", "country_code": "AR"},
+    # Create one event, one category, one round, and one score-sum score table.
+    event_response = client.post(
+        "/events/",
+        json={"name": "Late Insert Event", "country_code": "AR"},
         headers=headers,
     )
-    assert tournament_response.status_code == status.HTTP_200_OK
-    tournament_id = tournament_response.json()["id"]
+    assert event_response.status_code == status.HTTP_200_OK
+    event_id = event_response.json()["id"]
 
     category_response = client.post(
         "/categories/",
-        json={"name": "Main Category", "tournament_id": tournament_id},
+        json={"name": "Main Category", "event_id": event_id},
         headers=headers,
     )
     assert category_response.status_code == status.HTTP_200_OK
@@ -275,11 +275,11 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     chart_s15_id = create_chart("Single 15 Song", 15, score_column_15_id)
     chart_s16_id = create_chart("Single 16 Song", 16, score_column_16_id)
 
-    # Create 8 guest players so none of them is the tournament organizer.
+    # Create 8 guest players so none of them is the event organizer.
     player_ids = []
     for index in range(1, 9):
         player_response = client.post(
-            f"/players/guest/{tournament_id}",
+            f"/players/guest/{event_id}",
             json={"nickname": f"Player {index}", "country_code": "AR"},
             headers=headers,
         )
@@ -336,7 +336,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
 
     # After player 4 has both scores, add a new player and move them to order index 4.
     late_player_response = client.post(
-        f"/players/guest/{tournament_id}",
+        f"/players/guest/{event_id}",
         json={"nickname": "Late Player", "country_code": "AR"},
         headers=headers,
     )

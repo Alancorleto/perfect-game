@@ -5,8 +5,8 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from tests.helpers import (
+    create_event_in_db,
     create_player_in_db,
-    create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
 )
@@ -137,7 +137,7 @@ def test_create_player_already_has_player(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# POST /players/guest/{tournament_id}
+# POST /players/guest/{event_id}
 # ---------------------------------------------------------------------------
 
 
@@ -145,11 +145,11 @@ def test_create_guest_player(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/players/guest/{tournament.id}",
+        f"/players/guest/{event.id}",
         json={"nickname": "GuestPlayer", "country_code": "AR"},
         headers=headers,
     )
@@ -161,7 +161,7 @@ def test_create_guest_player(session: Session, client: TestClient):
     assert data["country_code"] == "AR"
 
 
-def test_create_guest_player_tournament_not_found(session: Session, client: TestClient):
+def test_create_guest_player_event_not_found(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
@@ -176,11 +176,11 @@ def test_create_guest_player_tournament_not_found(session: Session, client: Test
 
 def test_create_guest_player_not_organizer(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
-    tournament = create_tournament_in_db(session)
+    event = create_event_in_db(session)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
-        f"/players/guest/{tournament.id}",
+        f"/players/guest/{event.id}",
         json={"nickname": "GuestPlayer", "country_code": "AR"},
         headers=headers,
     )
@@ -189,10 +189,10 @@ def test_create_guest_player_not_organizer(session: Session, client: TestClient)
 
 
 def test_create_guest_player_unauthenticated(session: Session, client: TestClient):
-    tournament = create_tournament_in_db(session)
+    event = create_event_in_db(session)
 
     response = client.post(
-        f"/players/guest/{tournament.id}",
+        f"/players/guest/{event.id}",
         json={"nickname": "GuestPlayer", "country_code": "AR"},
     )
 
@@ -271,15 +271,13 @@ def test_update_player_as_super_admin(session: Session, client: TestClient):
     assert response.json()["nickname"] == "AdminUpdated"
 
 
-def test_update_player_as_tournament_organizer(session: Session, client: TestClient):
-    """A tournament organizer can update a guest player of their tournament."""
+def test_update_player_as_event_organizer(session: Session, client: TestClient):
+    """An event organizer can update a guest player of their event."""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
-    guest_player = create_player_in_db(
-        session, guest_tournament=tournament, nickname="GuestNick"
-    )
+    event = create_event_in_db(session, organizer=organizer)
+    guest_player = create_player_in_db(session, guest_event=event, nickname="GuestNick")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.patch(

@@ -6,126 +6,124 @@ from sqlmodel import Session
 
 from models.round import RoundState
 from tests.helpers import (
-    add_organizer_to_tournament,
+    add_organizer_to_event,
     create_category_in_db,
+    create_event_in_db,
     create_player_in_db,
     create_round_in_db,
-    create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
 )
 
 # ---------------------------------------------------------------------------
-# GET /tournaments/
+# GET /events/
 # ---------------------------------------------------------------------------
 
 
-def test_list_tournaments(session: Session, client: TestClient):
-    create_tournament_in_db(session, name="Tournament A", country_code="AR")
-    create_tournament_in_db(session, name="Tournament B", country_code="BR")
+def test_list_events(session: Session, client: TestClient):
+    create_event_in_db(session, name="Event A", country_code="AR")
+    create_event_in_db(session, name="Event B", country_code="BR")
 
-    response = client.get("/tournaments/")
+    response = client.get("/events/")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 2
     names = [t["name"] for t in data]
-    assert "Tournament A" in names
-    assert "Tournament B" in names
+    assert "Event A" in names
+    assert "Event B" in names
 
 
-def test_list_tournaments_filtered_by_country(session: Session, client: TestClient):
-    create_tournament_in_db(session, name="Tournament A", country_code="AR")
-    create_tournament_in_db(session, name="Tournament B", country_code="BR")
+def test_list_events_filtered_by_country(session: Session, client: TestClient):
+    create_event_in_db(session, name="Event A", country_code="AR")
+    create_event_in_db(session, name="Event B", country_code="BR")
 
-    response = client.get("/tournaments/?country_code=ar")
+    response = client.get("/events/?country_code=ar")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 1
-    assert data[0]["name"] == "Tournament A"
+    assert data[0]["name"] == "Event A"
     assert data[0]["country_code"] == "AR"
 
 
-def test_list_tournaments_filtered_by_country_with_no_matches(
+def test_list_events_filtered_by_country_with_no_matches(
     session: Session, client: TestClient
 ):
-    create_tournament_in_db(session, name="Tournament A", country_code="AR")
+    create_event_in_db(session, name="Event A", country_code="AR")
 
-    response = client.get("/tournaments/?country_code=br")
+    response = client.get("/events/?country_code=br")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert data == []
 
 
-def test_list_tournaments_empty(client: TestClient):
-    response = client.get("/tournaments/")
+def test_list_events_empty(client: TestClient):
+    response = client.get("/events/")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
 # ---------------------------------------------------------------------------
-# GET /tournaments/{tournament_id}
+# GET /events/{event_id}
 # ---------------------------------------------------------------------------
 
 
-def test_get_tournament(session: Session, client: TestClient):
-    tournament = create_tournament_in_db(session, name="My Tournament")
+def test_get_event(session: Session, client: TestClient):
+    event = create_event_in_db(session, name="My Event")
 
-    response = client.get(f"/tournaments/{tournament.id}")
+    response = client.get(f"/events/{event.id}")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert data["name"] == "My Tournament"
-    assert data["id"] == str(tournament.id)
+    assert data["name"] == "My Event"
+    assert data["id"] == str(event.id)
 
 
-def test_get_tournament_not_found(client: TestClient):
-    response = client.get("/tournaments/00000000-0000-0000-0000-000000000000")
+def test_get_event_not_found(client: TestClient):
+    response = client.get("/events/00000000-0000-0000-0000-000000000000")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# POST /tournaments
+# POST /events
 # ---------------------------------------------------------------------------
 
 
-def test_create_tournament(session: Session, client: TestClient):
+def test_create_event(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
-        "/tournaments/",
-        json={"name": "New Tournament", "country_code": "AR"},
+        "/events/",
+        json={"name": "New Event", "country_code": "AR"},
         headers=headers,
     )
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert data["name"] == "New Tournament"
+    assert data["name"] == "New Event"
     assert data["id"] is not None
     assert data["country_code"] == "AR"
 
 
-def test_create_tournament_creator_becomes_organizer(
-    session: Session, client: TestClient
-):
+def test_create_event_creator_becomes_organizer(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     create_response = client.post(
-        "/tournaments/",
-        json={"name": "New Tournament", "country_code": "AR"},
+        "/events/",
+        json={"name": "New Event", "country_code": "AR"},
         headers=headers,
     )
-    tournament_id = create_response.json()["id"]
+    event_id = create_response.json()["id"]
 
-    # The creator should be able to update the tournament (only organizers can)
+    # The creator should be able to update the event (only organizers can)
     update_response = client.patch(
-        f"/tournaments/{tournament_id}",
+        f"/events/{event_id}",
         json={"name": "Updated Name"},
         headers=headers,
     )
@@ -133,23 +131,23 @@ def test_create_tournament_creator_becomes_organizer(
     assert update_response.status_code == status.HTTP_200_OK
 
 
-def test_create_tournament_unauthenticated(client: TestClient):
+def test_create_event_unauthenticated(client: TestClient):
     response = client.post(
-        "/tournaments/",
-        json={"name": "New Tournament", "country_code": "AR"},
+        "/events/",
+        json={"name": "New Event", "country_code": "AR"},
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_create_tournament_with_long_name(session: Session, client: TestClient):
-    """Test creating a tournament with an excessively long name."""
+def test_create_event_with_long_name(session: Session, client: TestClient):
+    """Test creating an event with an excessively long name."""
     create_user_in_db(session, email="organizer@example.com", password="mypassword123")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     long_name = "T" * 300
     response = client.post(
-        "/tournaments/",
+        "/events/",
         json={"name": long_name, "country_code": "AR"},
         headers=headers,
     )
@@ -157,13 +155,13 @@ def test_create_tournament_with_long_name(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
-def test_create_tournament_with_empty_name(session: Session, client: TestClient):
-    """Test creating a tournament with an empty name."""
+def test_create_event_with_empty_name(session: Session, client: TestClient):
+    """Test creating an event with an empty name."""
     create_user_in_db(session, email="organizer@example.com", password="mypassword123")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        "/tournaments/",
+        "/events/",
         json={"name": "", "country_code": "AR"},
         headers=headers,
     )
@@ -172,19 +170,19 @@ def test_create_tournament_with_empty_name(session: Session, client: TestClient)
 
 
 # ---------------------------------------------------------------------------
-# PATCH /tournaments/{tournament_id}
+# PATCH /events/{event_id}
 # ---------------------------------------------------------------------------
 
 
-def test_update_tournament(session: Session, client: TestClient):
+def test_update_event(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.patch(
-        f"/tournaments/{tournament.id}",
+        f"/events/{event.id}",
         json={"name": "Updated Name"},
         headers=headers,
     )
@@ -194,12 +192,12 @@ def test_update_tournament(session: Session, client: TestClient):
     assert data["name"] == "Updated Name"
 
 
-def test_update_tournament_not_found(session: Session, client: TestClient):
+def test_update_event_not_found(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.patch(
-        "/tournaments/00000000-0000-0000-0000-000000000000",
+        "/events/00000000-0000-0000-0000-000000000000",
         json={"name": "Updated Name"},
         headers=headers,
     )
@@ -207,13 +205,13 @@ def test_update_tournament_not_found(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_update_tournament_unauthorized(session: Session, client: TestClient):
+def test_update_event_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
-    tournament = create_tournament_in_db(session)
+    event = create_event_in_db(session)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.patch(
-        f"/tournaments/{tournament.id}",
+        f"/events/{event.id}",
         json={"name": "Hacked"},
         headers=headers,
     )
@@ -221,18 +219,18 @@ def test_update_tournament_unauthorized(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_update_tournament_as_super_admin(session: Session, client: TestClient):
+def test_update_event_as_super_admin(session: Session, client: TestClient):
     create_user_in_db(
         session,
         email="admin@example.com",
         password="mypassword123",
         is_super_admin=True,
     )
-    tournament = create_tournament_in_db(session)
+    event = create_event_in_db(session)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.patch(
-        f"/tournaments/{tournament.id}",
+        f"/events/{event.id}",
         json={"name": "Admin Updated"},
         headers=headers,
     )
@@ -241,146 +239,142 @@ def test_update_tournament_as_super_admin(session: Session, client: TestClient):
     assert response.json()["name"] == "Admin Updated"
 
 
-def test_update_tournament_unauthenticated(session: Session, client: TestClient):
-    tournament = create_tournament_in_db(session)
+def test_update_event_unauthenticated(session: Session, client: TestClient):
+    event = create_event_in_db(session)
 
-    response = client.patch(
-        f"/tournaments/{tournament.id}", json={"name": "Updated Name"}
-    )
+    response = client.patch(f"/events/{event.id}", json={"name": "Updated Name"})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
-# DELETE /tournaments/{tournament_id}
+# DELETE /events/{event_id}
 # ---------------------------------------------------------------------------
 
 
-def test_delete_tournament_empty(session: Session, client: TestClient):
+def test_delete_event_empty(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
+    response = client.delete(f"/events/{event.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    get_response = client.get(f"/tournaments/{tournament.id}", headers=headers)
+    get_response = client.get(f"/events/{event.id}", headers=headers)
     assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_delete_tournament_with_empty_category_and_round(
+def test_delete_event_with_empty_category_and_round(
     session: Session, client: TestClient
 ):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, tournament=tournament)
+    event = create_event_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, event=event)
     create_round_in_db(session, category=category)
 
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
+    response = client.delete(f"/events/{event.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    get_response = client.get(f"/tournaments/{tournament.id}", headers=headers)
+    get_response = client.get(f"/events/{event.id}", headers=headers)
     assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_delete_tournament_with_started_round(session: Session, client: TestClient):
+def test_delete_event_with_started_round(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, tournament=tournament)
+    event = create_event_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, event=event)
     create_round_in_db(session, category=category, state=RoundState.IN_PROGRESS)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
+    response = client.delete(f"/events/{event.id}", headers=headers)
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_delete_tournament_not_found(session: Session, client: TestClient):
+def test_delete_event_not_found(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.delete(
-        "/tournaments/00000000-0000-0000-0000-000000000000", headers=headers
+        "/events/00000000-0000-0000-0000-000000000000", headers=headers
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_delete_tournament_unauthorized(session: Session, client: TestClient):
+def test_delete_event_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
-    tournament = create_tournament_in_db(session)
+    event = create_event_in_db(session)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
-    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
+    response = client.delete(f"/events/{event.id}", headers=headers)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_delete_tournament_as_super_admin(session: Session, client: TestClient):
+def test_delete_event_as_super_admin(session: Session, client: TestClient):
     create_user_in_db(
         session,
         email="admin@example.com",
         password="mypassword123",
         is_super_admin=True,
     )
-    tournament = create_tournament_in_db(session)
+    event = create_event_in_db(session)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
-    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
+    response = client.delete(f"/events/{event.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
-def test_delete_tournament_unauthenticated(session: Session, client: TestClient):
-    tournament = create_tournament_in_db(session)
+def test_delete_event_unauthenticated(session: Session, client: TestClient):
+    event = create_event_in_db(session)
 
-    response = client.delete(f"/tournaments/{tournament.id}")
+    response = client.delete(f"/events/{event.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
-# GET /tournaments/{tournament_id}/categories
+# GET /events/{event_id}/categories
 # ---------------------------------------------------------------------------
 
 
-def test_list_tournament_categories_empty(session: Session, client: TestClient):
-    tournament = create_tournament_in_db(session)
+def test_list_event_categories_empty(session: Session, client: TestClient):
+    event = create_event_in_db(session)
 
-    response = client.get(f"/tournaments/{tournament.id}/categories")
+    response = client.get(f"/events/{event.id}/categories")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
-def test_list_tournament_categories_not_found(client: TestClient):
-    response = client.get(
-        "/tournaments/00000000-0000-0000-0000-000000000000/categories"
-    )
+def test_list_event_categories_not_found(client: TestClient):
+    response = client.get("/events/00000000-0000-0000-0000-000000000000/categories")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# GET /tournaments/{tournament_id}/organizers
+# GET /events/{event_id}/organizers
 # ---------------------------------------------------------------------------
 
 
-def test_list_tournament_organizers(session: Session, client: TestClient):
+def test_list_event_organizers(session: Session, client: TestClient):
     organizer = create_user_in_db(session, email="organizer@example.com")
     create_player_in_db(session, user=organizer, nickname="OrganizerPlayer")
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
 
-    response = client.get(f"/tournaments/{tournament.id}/organizers")
+    response = client.get(f"/events/{event.id}/organizers")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -388,29 +382,27 @@ def test_list_tournament_organizers(session: Session, client: TestClient):
     assert data[0]["nickname"] == "OrganizerPlayer"
 
 
-def test_list_tournament_organizers_without_player_profile(
+def test_list_event_organizers_without_player_profile(
     session: Session, client: TestClient
 ):
     """Organizers without a player profile are excluded from the response."""
     organizer = create_user_in_db(session, email="organizer@example.com")
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
 
-    response = client.get(f"/tournaments/{tournament.id}/organizers")
+    response = client.get(f"/events/{event.id}/organizers")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
-def test_list_tournament_organizers_not_found(client: TestClient):
-    response = client.get(
-        "/tournaments/00000000-0000-0000-0000-000000000000/organizers"
-    )
+def test_list_event_organizers_not_found(client: TestClient):
+    response = client.get("/events/00000000-0000-0000-0000-000000000000/organizers")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# POST /tournaments/{tournament_id}/organizers/{player_id}
+# POST /events/{event_id}/organizers/{player_id}
 # ---------------------------------------------------------------------------
 
 
@@ -418,14 +410,14 @@ def test_add_organizer(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     new_user = create_user_in_db(session, email="new@example.com")
     new_player = create_player_in_db(session, user=new_user, nickname="NewOrganizer")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/organizers/{new_player.id}",
+        f"/events/{event.id}/organizers/{new_player.id}",
         headers=headers,
     )
     data = response.json()
@@ -435,7 +427,7 @@ def test_add_organizer(session: Session, client: TestClient):
     assert "NewOrganizer" in nicknames
 
 
-def test_add_organizer_tournament_not_found(session: Session, client: TestClient):
+def test_add_organizer_event_not_found(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -443,7 +435,7 @@ def test_add_organizer_tournament_not_found(session: Session, client: TestClient
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/tournaments/00000000-0000-0000-0000-000000000000/organizers/{player.id}",
+        f"/events/00000000-0000-0000-0000-000000000000/organizers/{player.id}",
         headers=headers,
     )
 
@@ -452,13 +444,13 @@ def test_add_organizer_tournament_not_found(session: Session, client: TestClient
 
 def test_add_organizer_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
-    tournament = create_tournament_in_db(session)
+    event = create_event_in_db(session)
     new_user = create_user_in_db(session, email="new@example.com")
     new_player = create_player_in_db(session, user=new_user, nickname="NewOrganizer")
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/organizers/{new_player.id}",
+        f"/events/{event.id}/organizers/{new_player.id}",
         headers=headers,
     )
 
@@ -469,11 +461,11 @@ def test_add_organizer_player_not_found(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/organizers/00000000-0000-0000-0000-000000000000",
+        f"/events/{event.id}/organizers/00000000-0000-0000-0000-000000000000",
         headers=headers,
     )
 
@@ -485,14 +477,14 @@ def test_add_organizer_player_has_no_user(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     guest_player = create_player_in_db(
-        session, guest_tournament=tournament, nickname="GuestPlayer"
+        session, guest_event=event, nickname="GuestPlayer"
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/organizers/{guest_player.id}",
+        f"/events/{event.id}/organizers/{guest_player.id}",
         headers=headers,
     )
 
@@ -503,14 +495,14 @@ def test_add_organizer_already_organizer(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     organizer_player = create_player_in_db(
         session, user=organizer, nickname="OrganizerPlayer"
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/organizers/{organizer_player.id}",
+        f"/events/{event.id}/organizers/{organizer_player.id}",
         headers=headers,
     )
 
@@ -518,19 +510,19 @@ def test_add_organizer_already_organizer(session: Session, client: TestClient):
 
 
 def test_add_organizer_unauthenticated(session: Session, client: TestClient):
-    tournament = create_tournament_in_db(session)
+    event = create_event_in_db(session)
     user = create_user_in_db(session, email="user@example.com")
     player = create_player_in_db(session, user=user, nickname="SomePlayer")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/organizers/{player.id}",
+        f"/events/{event.id}/organizers/{player.id}",
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
-# DELETE /tournaments/{tournament_id}/organizers/{player_id}
+# DELETE /events/{event_id}/organizers/{player_id}
 # ---------------------------------------------------------------------------
 
 
@@ -538,7 +530,7 @@ def test_remove_organizer(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     # Add a second organizer (needed so the first can be removed)
@@ -546,10 +538,10 @@ def test_remove_organizer(session: Session, client: TestClient):
     second_player = create_player_in_db(
         session, user=second_user, nickname="SecondOrganizer"
     )
-    add_organizer_to_tournament(session, tournament, second_user)
+    add_organizer_to_event(session, event, second_user)
 
     response = client.delete(
-        f"/tournaments/{tournament.id}/organizers/{second_player.id}",
+        f"/events/{event.id}/organizers/{second_player.id}",
         headers=headers,
     )
     data = response.json()
@@ -559,7 +551,7 @@ def test_remove_organizer(session: Session, client: TestClient):
     assert "SecondOrganizer" not in nicknames
 
 
-def test_remove_organizer_tournament_not_found(session: Session, client: TestClient):
+def test_remove_organizer_event_not_found(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -567,7 +559,7 @@ def test_remove_organizer_tournament_not_found(session: Session, client: TestCli
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(
-        f"/tournaments/00000000-0000-0000-0000-000000000000/organizers/{player.id}",
+        f"/events/00000000-0000-0000-0000-000000000000/organizers/{player.id}",
         headers=headers,
     )
 
@@ -576,13 +568,13 @@ def test_remove_organizer_tournament_not_found(session: Session, client: TestCli
 
 def test_remove_organizer_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
-    tournament = create_tournament_in_db(session)
+    event = create_event_in_db(session)
     user = create_user_in_db(session, email="user@example.com")
     player = create_player_in_db(session, user=user, nickname="SomePlayer")
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.delete(
-        f"/tournaments/{tournament.id}/organizers/{player.id}",
+        f"/events/{event.id}/organizers/{player.id}",
         headers=headers,
     )
 
@@ -593,11 +585,11 @@ def test_remove_organizer_player_not_found(session: Session, client: TestClient)
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(
-        f"/tournaments/{tournament.id}/organizers/00000000-0000-0000-0000-000000000000",
+        f"/events/{event.id}/organizers/00000000-0000-0000-0000-000000000000",
         headers=headers,
     )
 
@@ -609,14 +601,14 @@ def test_remove_organizer_player_has_no_user(session: Session, client: TestClien
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     guest_player = create_player_in_db(
-        session, guest_tournament=tournament, nickname="GuestPlayer"
+        session, guest_event=event, nickname="GuestPlayer"
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(
-        f"/tournaments/{tournament.id}/organizers/{guest_player.id}",
+        f"/events/{event.id}/organizers/{guest_player.id}",
         headers=headers,
     )
 
@@ -627,7 +619,7 @@ def test_remove_organizer_not_an_organizer(session: Session, client: TestClient)
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     other_user = create_user_in_db(session, email="other@example.com")
@@ -636,7 +628,7 @@ def test_remove_organizer_not_an_organizer(session: Session, client: TestClient)
     )
 
     response = client.delete(
-        f"/tournaments/{tournament.id}/organizers/{other_player.id}",
+        f"/events/{event.id}/organizers/{other_player.id}",
         headers=headers,
     )
 
@@ -644,18 +636,18 @@ def test_remove_organizer_not_an_organizer(session: Session, client: TestClient)
 
 
 def test_remove_organizer_last_organizer(session: Session, client: TestClient):
-    """Cannot remove the last organizer from a tournament."""
+    """Cannot remove the last organizer from an event."""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     organizer_player = create_player_in_db(
         session, user=organizer, nickname="OnlyOrganizer"
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(
-        f"/tournaments/{tournament.id}/organizers/{organizer_player.id}",
+        f"/events/{event.id}/organizers/{organizer_player.id}",
         headers=headers,
     )
 
@@ -663,37 +655,37 @@ def test_remove_organizer_last_organizer(session: Session, client: TestClient):
 
 
 def test_remove_organizer_unauthenticated(session: Session, client: TestClient):
-    tournament = create_tournament_in_db(session)
+    event = create_event_in_db(session)
     user = create_user_in_db(session, email="user@example.com")
     player = create_player_in_db(session, user=user, nickname="SomePlayer")
 
     response = client.delete(
-        f"/tournaments/{tournament.id}/organizers/{player.id}",
+        f"/events/{event.id}/organizers/{player.id}",
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
-# POST /tournaments/{tournament_id}/logo
+# POST /events/{event_id}/logo
 # ---------------------------------------------------------------------------
 
 
-def test_upload_tournament_logo(session: Session, client: TestClient):
+def test_upload_event_logo(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
+    event = create_event_in_db(session, organizer=organizer)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    expected_url = "https://example.com/tournament-logo.png"
+    expected_url = "https://example.com/event-logo.png"
 
     with patch(
-        "routers.tournaments.upload_image",
+        "routers.events.upload_image",
         new=AsyncMock(return_value=expected_url),
     ) as mock_upload_image:
         response = client.post(
-            f"/tournaments/{tournament.id}/logo",
+            f"/events/{event.id}/logo",
             files={"logo": ("logo.png", b"fake image bytes", "image/png")},
             headers=headers,
         )
@@ -702,20 +694,20 @@ def test_upload_tournament_logo(session: Session, client: TestClient):
 
     assert response.status_code == status.HTTP_200_OK
     assert data["logo_url"] == expected_url
-    assert data["id"] == str(tournament.id)
+    assert data["id"] == str(event.id)
     mock_upload_image.assert_awaited_once_with(
         b"fake image bytes",
-        f"{tournament.id}.png",
-        "tournament_logos",
+        f"{event.id}.png",
+        "event_logos",
     )
 
 
-def test_upload_tournament_logo_not_found(session: Session, client: TestClient):
+def test_upload_event_logo_not_found(session: Session, client: TestClient):
     create_user_in_db(session, email="organizer@example.com", password="mypassword123")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        "/tournaments/00000000-0000-0000-0000-000000000000/logo",
+        "/events/00000000-0000-0000-0000-000000000000/logo",
         files={"logo": ("logo.png", b"fake image bytes", "image/png")},
         headers=headers,
     )
@@ -723,13 +715,13 @@ def test_upload_tournament_logo_not_found(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_upload_tournament_logo_unauthorized(session: Session, client: TestClient):
+def test_upload_event_logo_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
-    tournament = create_tournament_in_db(session)
+    event = create_event_in_db(session)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/logo",
+        f"/events/{event.id}/logo",
         files={"logo": ("logo.png", b"fake image bytes", "image/png")},
         headers=headers,
     )
@@ -737,11 +729,11 @@ def test_upload_tournament_logo_unauthorized(session: Session, client: TestClien
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_upload_tournament_logo_unauthenticated(session: Session, client: TestClient):
-    tournament = create_tournament_in_db(session)
+def test_upload_event_logo_unauthenticated(session: Session, client: TestClient):
+    event = create_event_in_db(session)
 
     response = client.post(
-        f"/tournaments/{tournament.id}/logo",
+        f"/events/{event.id}/logo",
         files={"logo": ("logo.png", b"fake image bytes", "image/png")},
     )
 

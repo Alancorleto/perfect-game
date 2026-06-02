@@ -46,14 +46,14 @@ def create_player_in_db(
     user: User | None = None,
     nickname: str = "TestPlayer",
     country_code: str = "AR",
-    guest_tournament: Event | None = None,
+    guest_event: Event | None = None,
 ) -> Player:
     """Creates a player directly in the test database."""
     player = Player(
         nickname=nickname,
         country_code=country_code,
         user_id=user.id if user else None,
-        guest_event_id=guest_tournament.id if guest_tournament else None,
+        guest_event_id=guest_event.id if guest_event else None,
     )
 
     session.add(player)
@@ -88,14 +88,14 @@ def create_chart_in_db(
 
 def create_category_in_db(
     session: Session,
-    tournament: Event,
+    event: Event,
     name: str = "Test Category",
     auto_accept_join_requests: bool = False,
 ) -> Category:
     """Creates a category directly in the test database."""
     category = Category(
         name=name,
-        event_id=tournament.id,
+        event_id=event.id,
         auto_accept_join_requests=auto_accept_join_requests,
     )
     session.add(category)
@@ -260,32 +260,32 @@ def get_grade(score: int) -> str:
         return "F"
 
 
-def create_tournament_in_db(
+def create_event_in_db(
     session: Session,
     organizer: User | None = None,
-    name: str = "Test Tournament",
+    name: str = "Test Event",
     country_code: str = "AR",
 ) -> Event:
-    """Creates a tournament in the test database, optionally with an organizer."""
-    tournament = Event(name=name, country_code=country_code)
-    session.add(tournament)
+    """Creates an event in the test database, optionally with an organizer."""
+    event = Event(name=name, country_code=country_code)
+    session.add(event)
     session.commit()
-    session.refresh(tournament)
+    session.refresh(event)
 
     if organizer:
-        link = EventOrganizer(event_id=tournament.id, user_id=organizer.id)
+        link = EventOrganizer(event_id=event.id, user_id=organizer.id)
         session.add(link)
         session.commit()
 
-    return tournament
+    return event
 
 
-def add_organizer_to_tournament(
+def add_organizer_to_event(
     session: Session,
-    tournament: Event,
+    event: Event,
     user: User,
 ) -> None:
-    """Adds a user as an organizer to an existing tournament."""
-    link = EventOrganizer(event_id=tournament.id, user_id=user.id)
+    """Adds a user as an organizer to an existing event."""
+    link = EventOrganizer(event_id=event.id, user_id=user.id)
     session.add(link)
     session.commit()

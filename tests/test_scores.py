@@ -6,12 +6,12 @@ from tests.helpers import (
     add_player_to_score_table_in_db,
     create_category_in_db,
     create_chart_in_db,
+    create_event_in_db,
     create_player_in_db,
     create_round_in_db,
     create_score_column_in_db,
     create_score_in_db,
     create_score_table_in_db,
-    create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
 )
@@ -41,8 +41,8 @@ def create_score_context(session: Session):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
-    tournament = create_tournament_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, tournament=tournament)
+    event = create_event_in_db(session, organizer=organizer)
+    category = create_category_in_db(session, event=event)
     round = create_round_in_db(session, category=category)
     score_table = create_score_table_in_db(session, round=round)
     player = create_player_in_db(session, nickname="PlayerA")
@@ -51,7 +51,7 @@ def create_score_context(session: Session):
     add_player_to_score_table_in_db(session, score_table=score_table, player=player)
     return (
         organizer,
-        tournament,
+        event,
         category,
         round,
         score_table,
@@ -67,7 +67,7 @@ def create_score_context(session: Session):
 
 
 def test_list_scores(session: Session, client: TestClient):
-    organizer, tournament, _, _, score_table, player_a, chart, score_column = (
+    organizer, event, _, _, score_table, player_a, chart, score_column = (
         create_score_context(session)
     )
     user_b = create_user_in_db(
