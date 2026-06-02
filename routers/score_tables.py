@@ -5,7 +5,6 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.player import Player, PlayerPublic
-from models.player_row import PlayerRow
 from models.round import Round
 from models.score_column import ScoreColumnPublic
 from models.score_table import (
@@ -15,12 +14,21 @@ from models.score_table import (
     ScoreTablePublic,
     ScoreTableUpdate,
 )
-from routers.score_columns import tag_metadata
 from routers.users import UserDep
+
+description = """
+Score table is the entity in which players compare their scores against each other.\n
+A score table is always associated with a **round** and has an **order_index**.\n
+A score table is composed of the **players** that are competing inside it
+and the **score columns** that contain the actual scores.\n
+A score table can be in any of the following formats:\n
+- **score_sum**: the final score is the sum of the scores of the players for each score column\n
+- **battle**: the final score is the number of wins of the players for each score column\n
+"""
 
 tag_metadata = {
     "name": "score_tables",
-    "description": "Operations related to score tables",
+    "description": description,
 }
 
 router = APIRouter(prefix="/score_tables", tags=["score_tables"])
