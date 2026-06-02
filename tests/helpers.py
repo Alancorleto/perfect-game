@@ -5,13 +5,13 @@ from models.category import Category
 from models.chart import Chart, Mode
 from models.chart_column import ChartColumn
 from models.event import Event
+from models.event_organizer import EventOrganizer
 from models.player import Player
 from models.player_row import PlayerRow
 from models.round import Round, RoundState
 from models.score import Grade, Score
 from models.score_column import ScoreColumn
 from models.score_table import ScoreTable, ScoreTableFormat
-from models.tournament_organizer import TournamentOrganizer
 from models.user import User
 from routers.users import get_password_hash
 
@@ -53,7 +53,7 @@ def create_player_in_db(
         nickname=nickname,
         country_code=country_code,
         user_id=user.id if user else None,
-        guest_tournament_id=guest_tournament.id if guest_tournament else None,
+        guest_event_id=guest_tournament.id if guest_tournament else None,
     )
 
     session.add(player)
@@ -95,7 +95,7 @@ def create_category_in_db(
     """Creates a category directly in the test database."""
     category = Category(
         name=name,
-        tournament_id=tournament.id,
+        event_id=tournament.id,
         auto_accept_join_requests=auto_accept_join_requests,
     )
     session.add(category)
@@ -273,7 +273,7 @@ def create_tournament_in_db(
     session.refresh(tournament)
 
     if organizer:
-        link = TournamentOrganizer(tournament_id=tournament.id, user_id=organizer.id)
+        link = EventOrganizer(event_id=tournament.id, user_id=organizer.id)
         session.add(link)
         session.commit()
 
@@ -286,6 +286,6 @@ def add_organizer_to_tournament(
     user: User,
 ) -> None:
     """Adds a user as an organizer to an existing tournament."""
-    link = TournamentOrganizer(tournament_id=tournament.id, user_id=user.id)
+    link = EventOrganizer(event_id=tournament.id, user_id=user.id)
     session.add(link)
     session.commit()

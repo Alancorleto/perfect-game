@@ -20,12 +20,12 @@ class CategoryBase(SQLModel):
 
 class Category(CategoryBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    tournament_id: uuid.UUID = Field(foreign_key="tournament.id", ondelete="CASCADE")
+    event_id: uuid.UUID = Field(foreign_key="event.id", ondelete="CASCADE")
 
     player_links: list[CategoryPlayerLink] = Relationship(
         back_populates="category", cascade_delete=True
     )
-    tournament: Event = Relationship(back_populates="categories")
+    event: Event = Relationship(back_populates="categories")
     rounds: list["Round"] = Relationship(back_populates="category", cascade_delete=True)
 
     invitations: list["CategoryInvitation"] = Relationship(
@@ -36,7 +36,7 @@ class Category(CategoryBase, table=True):
     )
 
     def can_be_edited_by(self, user: User) -> bool:
-        return self.tournament.can_be_edited_by(user)
+        return self.event.can_be_edited_by(user)
 
     def can_be_deleted(self, user: User) -> bool:
         return user.is_super_admin or all(
@@ -67,12 +67,12 @@ class Category(CategoryBase, table=True):
 
 
 class CategoryCreate(CategoryBase):
-    tournament_id: uuid.UUID
+    event_id: uuid.UUID
 
 
 class CategoryPublic(CategoryBase):
     id: uuid.UUID
-    tournament_id: uuid.UUID
+    event_id: uuid.UUID
 
 
 class CategoryUpdate(SQLModel):

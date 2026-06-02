@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from models.tournament_organizer import TournamentOrganizer
+from models.event_organizer import EventOrganizer
 from models.user import User
 
 if TYPE_CHECKING:
@@ -32,13 +32,13 @@ class Event(EventBase, table=True):
         primary_key=True,
     )
     categories: list["Category"] = Relationship(
-        back_populates="tournament", cascade_delete=True
+        back_populates="event", cascade_delete=True
     )
     organizers: list["User"] = Relationship(
-        back_populates="tournaments", link_model=TournamentOrganizer
+        back_populates="events", link_model=EventOrganizer
     )
     guest_players: list["Player"] = Relationship(
-        back_populates="guest_tournament",
+        back_populates="guest_event",
         cascade_delete=True,
     )
 

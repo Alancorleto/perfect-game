@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
-from models.tournament_organizer import TournamentOrganizer
+from models.event_organizer import EventOrganizer
 
 if TYPE_CHECKING:
     from models.event import Event
@@ -30,8 +30,8 @@ class User(UserBase, table=True):
     hashed_password: str
     is_super_admin: bool = False
 
-    tournaments: list["Event"] = Relationship(
-        back_populates="organizers", link_model=TournamentOrganizer
+    events: list["Event"] = Relationship(
+        back_populates="organizers", link_model=EventOrganizer
     )
     player: Optional["Player"] = Relationship(back_populates="user")
 

@@ -90,7 +90,7 @@ async def create_guest_player(
         )
 
     db_player = Player.model_validate(player)
-    db_player.guest_tournament_id = tournament_id
+    db_player.guest_event_id = tournament_id
 
     session.add(db_player)
     session.commit()

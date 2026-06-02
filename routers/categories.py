@@ -62,7 +62,7 @@ async def get_category(category_id: uuid.UUID, session: SessionDep):
 async def create_category(category: CategoryCreate, session: SessionDep, user: UserDep):
     """Create a new category"""
 
-    tournament = session.get(Event, category.tournament_id)
+    tournament = session.get(Event, category.event_id)
     if not tournament:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
