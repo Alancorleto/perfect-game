@@ -23,9 +23,18 @@ from routers.players import Player, PlayerPublic
 from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
 
+description = """
+A **category** is always associated with a **tournament**.\n
+Categories can have multiple **rounds** with an **associated order**.\n
+An organizer can add **guest players** to a category.\n
+An organizer can **invite** a player with a registered account to a category, and the player can **accept** or **decline** the invitation.\n
+A player can **request to join** a category, and an organizer can **accept** or **decline** the request.\n
+An organizer can **track** wether a player has paid their entry fee.\n
+"""
+
 tag_metadata = {
     "name": "categories",
-    "description": "Manage categories for tournaments",
+    "description": description,
 }
 
 router = APIRouter(prefix="/categories", tags=["categories"])
