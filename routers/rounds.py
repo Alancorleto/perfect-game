@@ -4,14 +4,14 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
-from models.category import Category
 from models.player import PlayerPublic
 from models.round import Round, RoundCreate, RoundPublic, RoundState, RoundUpdate
 from models.score_table import ScoreTablePublic
+from models.tournament import Tournament
 from routers.users import UserDep
 
 description = """
-A round is a stage of competition within a **category**.\n
+A round is a stage of competition within a **tournament**.\n
 A round has one or more **score tables** associated with it
 (multiple score tables are needed for battle formats).\n
 A round is always in one of the following **states**:\n
@@ -51,13 +51,13 @@ async def get_round(round_id: uuid.UUID, session: SessionDep):
 @router.post("/", response_model=RoundPublic)
 async def create_round(round: RoundCreate, session: SessionDep, user: UserDep):
     """Create a new round"""
-    category = session.get(Category, round.category_id)
-    if not category:
+    tournament = session.get(Tournament, round.tournament_id)
+    if not tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not category.can_be_edited_by(user):
+    if not tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not an organizer for this event",
@@ -65,7 +65,7 @@ async def create_round(round: RoundCreate, session: SessionDep, user: UserDep):
 
     db_round = Round.model_validate(round)
 
-    db_round.order_index = len(category.rounds)
+    db_round.order_index = len(tournament.rounds)
 
     session.add(db_round)
     session.commit()
@@ -114,11 +114,11 @@ async def delete_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
         )
 
     round_order_index = db_round.order_index
-    db_category = db_round.category
+    db_tournament = db_round.tournament
 
     session.delete(db_round)
 
-    for round in db_category.rounds:
+    for round in db_tournament.rounds:
         if round.order_index > round_order_index:
             round.order_index -= 1
 
@@ -232,8 +232,8 @@ async def start_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
         )
 
     if db_round.order_index > 0:
-        db_category = db_round.category
-        sorted_rounds = db_category.get_rounds_by_order()
+        db_tournament = db_round.tournament
+        sorted_rounds = db_tournament.get_rounds_by_order()
         previous_round = sorted_rounds[db_round.order_index - 1]
 
         if not previous_round:
@@ -396,9 +396,9 @@ async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep, user: Us
             status_code=status.HTTP_400_BAD_REQUEST, detail="Round is not finished"
         )
 
-    db_category = db_round.category
-    if db_round.order_index < len(db_category.rounds) - 1:
-        sorted_rounds = db_category.get_rounds_by_order()
+    db_tournament = db_round.tournament
+    if db_round.order_index < len(db_tournament.rounds) - 1:
+        sorted_rounds = db_tournament.get_rounds_by_order()
         next_round = sorted_rounds[db_round.order_index + 1]
         if next_round.state != RoundState.NOT_STARTED:
             raise HTTPException(

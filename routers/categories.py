@@ -29,47 +29,47 @@ from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
 
 description = """
-A category is a competition that happens within a **event**.\n
-A category has one or more **rounds**. Each round has a specific order.\n
-An organizer can add **guest players** to a category.\n
-An organizer can **invite** a player with a registered account to a category, and the player can **accept** or **decline** the invitation.\n
-A player can **request to join** a category, and an organizer can **accept** or **decline** the request.\n
+A tournament is a competition that happens within a **event**.\n
+A tournament has one or more **rounds**. Each round has a specific order.\n
+An organizer can add **guest players** to a tournament.\n
+An organizer can **invite** a player with a registered account to a tournament, and the player can **accept** or **decline** the invitation.\n
+A player can **request to join** a tournament, and an organizer can **accept** or **decline** the request.\n
 An organizer can **track** wether a player has paid their entry fee.\n
 """
 
 tag_metadata = {
-    "name": "categories",
+    "name": "tournaments",
     "description": description,
 }
 
-router = APIRouter(prefix="/categories", tags=["categories"])
+router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 
 @router.get("/", response_model=list[TournamentPublic])
-async def list_categories(session: SessionDep):
-    """List all categories"""
-    categories = session.exec(select(Tournament)).all()
-    return categories
+async def list_tournaments(session: SessionDep):
+    """List all tournaments"""
+    tournaments = session.exec(select(Tournament)).all()
+    return tournaments
 
 
-@router.get("/{category_id}", response_model=TournamentPublic)
-async def get_category(category_id: uuid.UUID, session: SessionDep):
-    """Get a specific category"""
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+@router.get("/{tournament_id}", response_model=TournamentPublic)
+async def get_tournament(tournament_id: uuid.UUID, session: SessionDep):
+    """Get a specific tournament"""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
-    return db_category
+    return db_tournament
 
 
 @router.post("/", response_model=TournamentPublic)
-async def create_category(
-    category: TournamentCreate, session: SessionDep, user: UserDep
+async def create_tournament(
+    tournament: TournamentCreate, session: SessionDep, user: UserDep
 ):
-    """Create a new category"""
+    """Create a new tournament"""
 
-    event = session.get(Event, category.event_id)
+    event = session.get(Event, tournament.event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
@@ -81,79 +81,81 @@ async def create_category(
             detail="You are not an organizer for this event",
         )
 
-    db_category = Tournament.model_validate(category)
+    db_tournament = Tournament.model_validate(tournament)
 
-    session.add(db_category)
+    session.add(db_tournament)
     session.commit()
-    session.refresh(db_category)
+    session.refresh(db_tournament)
 
-    return db_category
+    return db_tournament
 
 
-@router.patch("/{category_id}", response_model=TournamentPublic)
-async def update_category(
-    category_id: uuid.UUID,
-    category: TournamentUpdate,
+@router.patch("/{tournament_id}", response_model=TournamentPublic)
+async def update_tournament(
+    tournament_id: uuid.UUID,
+    tournament: TournamentUpdate,
     session: SessionDep,
     user: UserDep,
 ):
-    """Update a category"""
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    """Update a tournament"""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_category.can_be_edited_by(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not an organizer for this event",
         )
 
-    category_data = category.model_dump(exclude_unset=True)
-    db_category.sqlmodel_update(category_data)
+    tournament_data = tournament.model_dump(exclude_unset=True)
+    db_tournament.sqlmodel_update(tournament_data)
 
-    session.add(db_category)
+    session.add(db_tournament)
     session.commit()
-    session.refresh(db_category)
+    session.refresh(db_tournament)
 
-    return db_category
+    return db_tournament
 
 
-@router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_category(category_id: uuid.UUID, session: SessionDep, user: UserDep):
-    """Delete a category"""
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+@router.delete("/{tournament_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_tournament(
+    tournament_id: uuid.UUID, session: SessionDep, user: UserDep
+):
+    """Delete a tournament"""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_category.can_be_edited_by(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied",
         )
 
-    session.delete(db_category)
+    session.delete(db_tournament)
     session.commit()
 
 
-@router.post("/{category_id}/players/guest", response_model=list[PlayerPublic])
-async def add_guest_player_to_category(
-    category_id: uuid.UUID,
+@router.post("/{tournament_id}/players/guest", response_model=list[PlayerPublic])
+async def add_guest_player_to_tournament(
+    tournament_id: uuid.UUID,
     player_id: uuid.UUID,
     session: SessionDep,
     user: UserDep,
 ):
-    """Add a guest player to a category"""
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    """Add a guest player to a tournament"""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_category.can_be_edited_by(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied",
@@ -171,28 +173,28 @@ async def add_guest_player_to_category(
             detail="Player is already registered",
         )
 
-    db_category.add_player(db_player)
+    db_tournament.add_player(db_player)
     session.commit()
-    session.refresh(db_category)
+    session.refresh(db_tournament)
 
-    return db_category.get_players_by_nickname()
+    return db_tournament.get_players_by_nickname()
 
 
-@router.post("/{category_id}/players/bulk", response_model=list[PlayerPublic])
-async def bulk_add_guest_players_to_category(
-    category_id: uuid.UUID,
+@router.post("/{tournament_id}/players/bulk", response_model=list[PlayerPublic])
+async def bulk_add_guest_players_to_tournament(
+    tournament_id: uuid.UUID,
     player_ids: list[uuid.UUID],
     session: SessionDep,
     user: UserDep,
 ):
-    """Bulk add guest players to a category"""
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    """Bulk add guest players to a tournament"""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_category.can_be_edited_by(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not an organizer for this event",
@@ -212,42 +214,42 @@ async def bulk_add_guest_players_to_category(
                 detail=f"Player with ID {player_id} is already registered",
             )
 
-        db_category.add_player(db_player)
+        db_tournament.add_player(db_player)
 
-    session.add(db_category)
+    session.add(db_tournament)
     session.commit()
-    session.refresh(db_category)
+    session.refresh(db_tournament)
 
-    return db_category.get_players_by_nickname()
+    return db_tournament.get_players_by_nickname()
 
 
 @router.get(
-    "/{category_id}/invitations", response_model=list[TournamentInvitationPublic]
+    "/{tournament_id}/invitations", response_model=list[TournamentInvitationPublic]
 )
-async def list_category_invitations(
-    category_id: uuid.UUID, session: SessionDep, user: UserDep
+async def list_tournament_invitations(
+    tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """List all invitations for a category"""
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    """List all invitations for a tournament"""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_category.can_be_edited_by(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to view this category's invitations",
+            detail="You are not authorized to view this tournament's invitations",
         )
 
     invitations: list[TournamentInvitationPublic] = []
-    for invitation in db_category.invitations:
+    for invitation in db_tournament.invitations:
         if invitation.issued_at < datetime.datetime.now() - datetime.timedelta(days=1):
             continue
 
         invitations.append(
             TournamentInvitationPublic(
-                category_id=invitation.category_id,
+                tournament_id=invitation.tournament_id,
                 player=invitation.player,
                 status=invitation.status,
             )
@@ -257,22 +259,22 @@ async def list_category_invitations(
 
 
 @router.post(
-    "/{category_id}/invitations/{player_id}/", status_code=status.HTTP_204_NO_CONTENT
+    "/{tournament_id}/invitations/{player_id}/", status_code=status.HTTP_204_NO_CONTENT
 )
-async def invite_player_to_category(
-    category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
+async def invite_player_to_tournament(
+    tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Invite a player to a category"""
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    """Invite a player to a tournament"""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_category.can_be_edited_by(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to edit this category",
+            detail="You are not authorized to edit this tournament",
         )
 
     db_player = session.get(Player, player_id)
@@ -287,24 +289,24 @@ async def invite_player_to_category(
             detail="Player is not registered",
         )
 
-    if db_player in db_category.get_players_by_nickname():
+    if db_player in db_tournament.get_players_by_nickname():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Player is already in the category",
+            detail="Player is already in the tournament",
         )
 
     if db_player.user == user:
-        db_category.add_player(db_player)
+        db_tournament.add_player(db_player)
         session.commit()
         return
 
     db_invitation = next(
         (
             invitation
-            for invitation in db_category.invitations
+            for invitation in db_tournament.invitations
             if invitation.player_id == player_id
         ),
-        TournamentInvitation(category_id=category_id, player_id=player_id),
+        TournamentInvitation(tournament_id=tournament_id, player_id=player_id),
     )
 
     db_invitation.status = RequestStatus.PENDING
@@ -313,9 +315,9 @@ async def invite_player_to_category(
     session.commit()
 
 
-@router.post("/{category_id}/invitations/accept")
-async def accept_category_invitation(
-    category_id: uuid.UUID, session: SessionDep, user: UserDep
+@router.post("/{tournament_id}/invitations/accept")
+async def accept_tournament_invitation(
+    tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     player = user.player
     if not player:
@@ -324,13 +326,13 @@ async def accept_category_invitation(
             detail="User has no player associated",
         )
 
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    db_invitation = session.get(TournamentInvitation, (category_id, player.id))
+    db_invitation = session.get(TournamentInvitation, (tournament_id, player.id))
     if not db_invitation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found"
@@ -344,13 +346,13 @@ async def accept_category_invitation(
 
     db_invitation.status = RequestStatus.ACCEPTED
 
-    db_category.add_player(player)
+    db_tournament.add_player(player)
     session.commit()
 
 
-@router.post("/{category_id}/invitations/decline")
-async def decline_category_invitation(
-    category_id: uuid.UUID, session: SessionDep, user: UserDep
+@router.post("/{tournament_id}/invitations/decline")
+async def decline_tournament_invitation(
+    tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     player = user.player
     if not player:
@@ -359,13 +361,13 @@ async def decline_category_invitation(
             detail="User has no player associated",
         )
 
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    db_invitation = session.get(TournamentInvitation, (category_id, player.id))
+    db_invitation = session.get(TournamentInvitation, (tournament_id, player.id))
     if not db_invitation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found"
@@ -389,33 +391,33 @@ async def decline_category_invitation(
 
 
 @router.get(
-    "/{category_id}/join_requests", response_model=list[TournamentJoinRequestPublic]
+    "/{tournament_id}/join_requests", response_model=list[TournamentJoinRequestPublic]
 )
-async def list_category_join_requests(
-    category_id: uuid.UUID, session: SessionDep, user: UserDep
+async def list_tournament_join_requests(
+    tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """List all join requests for a category"""
-    category = session.get(Tournament, category_id)
-    if not category:
+    """List all join requests for a tournament"""
+    tournament = session.get(Tournament, tournament_id)
+    if not tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not category.can_be_edited_by(user):
+    if not tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to edit category",
+            detail="Not authorized to edit tournament",
         )
 
     join_requests: list[TournamentJoinRequestPublic] = []
-    for request in category.join_requests:
+    for request in tournament.join_requests:
         if request.issued_at < datetime.datetime.now() - datetime.timedelta(days=1):
             continue
 
         join_requests.append(
             TournamentJoinRequestPublic(
                 player_id=request.player_id,
-                category=request.category,
+                tournament=request.tournament,
                 status=request.status,
             )
         )
@@ -423,11 +425,11 @@ async def list_category_join_requests(
     return join_requests
 
 
-@router.post("/{category_id}/join_requests", status_code=status.HTTP_204_NO_CONTENT)
-async def request_join_category(
-    category_id: uuid.UUID, session: SessionDep, user: UserDep
+@router.post("/{tournament_id}/join_requests", status_code=status.HTTP_204_NO_CONTENT)
+async def request_join_tournament(
+    tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Request to join a category"""
+    """Request to join a tournament"""
     player = user.player
 
     if not player:
@@ -436,26 +438,30 @@ async def request_join_category(
             detail="User has no player associated",
         )
 
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if player in db_category.get_players_by_nickname():
+    if player in db_tournament.get_players_by_nickname():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Player already in category",
+            detail="Player already in tournament",
         )
 
-    if db_category.auto_accept_join_requests:
-        db_category.add_player(player)
+    if db_tournament.auto_accept_join_requests:
+        db_tournament.add_player(player)
         session.commit()
         return
 
     join_request = next(
-        (request for request in db_category.join_requests if request.player == player),
-        TournamentJoinRequest(category_id=category_id, player_id=player.id),
+        (
+            request
+            for request in db_tournament.join_requests
+            if request.player == player
+        ),
+        TournamentJoinRequest(tournament_id=tournament_id, player_id=player.id),
     )
 
     join_request.status = RequestStatus.PENDING
@@ -465,20 +471,20 @@ async def request_join_category(
     session.commit()
 
 
-@router.post("/{category_id}/join_requests/{player_id}/accept")
-async def accept_category_join_request(
-    category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
+@router.post("/{tournament_id}/join_requests/{player_id}/accept")
+async def accept_tournament_join_request(
+    tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_category.can_be_edited_by(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to edit this category",
+            detail="You do not have permission to edit this tournament",
         )
 
     player = session.get(Player, player_id)
@@ -487,16 +493,16 @@ async def accept_category_join_request(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
         )
 
-    if player in db_category.get_players_by_nickname():
+    if player in db_tournament.get_players_by_nickname():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Player is already in the category",
+            detail="Player is already in the tournament",
         )
 
     join_request = next(
         (
             request
-            for request in db_category.join_requests
+            for request in db_tournament.join_requests
             if request.player_id == player_id
         ),
         None,
@@ -514,25 +520,25 @@ async def accept_category_join_request(
 
     join_request.status = RequestStatus.ACCEPTED
 
-    db_category.add_player(player)
+    db_tournament.add_player(player)
 
     session.commit()
 
 
-@router.post("/{category_id}/join_requests/{player_id}/decline")
-async def decline_category_join_request(
-    category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
+@router.post("/{tournament_id}/join_requests/{player_id}/decline")
+async def decline_tournament_join_request(
+    tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_category.can_be_edited_by(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to edit this category",
+            detail="You do not have permission to edit this tournament",
         )
 
     player = session.get(Player, player_id)
@@ -541,16 +547,16 @@ async def decline_category_join_request(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
         )
 
-    if player in db_category.get_players_by_nickname():
+    if player in db_tournament.get_players_by_nickname():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Player is already in the category",
+            detail="Player is already in the tournament",
         )
 
     join_request = next(
         (
             request
-            for request in db_category.join_requests
+            for request in db_tournament.join_requests
             if request.player_id == player_id
         ),
         None,
@@ -571,70 +577,70 @@ async def decline_category_join_request(
     session.commit()
 
 
-@router.get("/{category_id}/players", response_model=list[PlayerInTournament])
-async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
-    """List all players in a category"""
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+@router.get("/{tournament_id}/players", response_model=list[PlayerInTournament])
+async def list_players_in_tournament(tournament_id: uuid.UUID, session: SessionDep):
+    """List all players in a tournament"""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
-    return db_category.player_links
+    return db_tournament.player_links
 
 
 @router.put(
-    "/{category_id}/players/{player_id}",
+    "/{tournament_id}/players/{player_id}",
     response_model=PlayerInTournament,
 )
-async def update_player_in_category(
-    category_id: uuid.UUID,
+async def update_player_in_tournament(
+    tournament_id: uuid.UUID,
     player_id: uuid.UUID,
-    category_player_link: TournamentPlayerLinkUpdate,
+    tournament_player_link: TournamentPlayerLinkUpdate,
     session: SessionDep,
     user: UserDep,
 ):
-    db_category_player_link = session.get(
-        TournamentPlayerLink, (category_id, player_id)
+    db_tournament_player_link = session.get(
+        TournamentPlayerLink, (tournament_id, player_id)
     )
-    if not db_category_player_link:
+    if not db_tournament_player_link:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category player link not found",
+            detail="Tournament player link not found",
         )
 
-    if not db_category_player_link.category.can_be_edited_by(user):
+    if not db_tournament_player_link.tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Unauthorized to edit category",
+            detail="Unauthorized to edit tournament",
         )
 
-    category_player_link_data = category_player_link.model_dump(exclude_unset=True)
-    db_category_player_link.sqlmodel_update(category_player_link_data)
+    tournament_player_link_data = tournament_player_link.model_dump(exclude_unset=True)
+    db_tournament_player_link.sqlmodel_update(tournament_player_link_data)
 
-    session.add(db_category_player_link)
+    session.add(db_tournament_player_link)
     session.commit()
-    session.refresh(db_category_player_link)
+    session.refresh(db_tournament_player_link)
 
-    return db_category_player_link
+    return db_tournament_player_link
 
 
 @router.delete(
-    "/{category_id}/players/{player_id}", response_model=list[PlayerInTournament]
+    "/{tournament_id}/players/{player_id}", response_model=list[PlayerInTournament]
 )
-async def remove_player_from_category(
-    category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
+async def remove_player_from_tournament(
+    tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Remove a player from a category"""
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    """Remove a player from a tournament"""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_category.can_be_edited_by(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Unauthorized to edit category",
+            detail="Unauthorized to edit tournament",
         )
 
     db_player = session.get(Player, player_id)
@@ -643,67 +649,68 @@ async def remove_player_from_category(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
         )
 
-    db_category_player_link = session.get(
-        TournamentPlayerLink, (category_id, player_id)
+    db_tournament_player_link = session.get(
+        TournamentPlayerLink, (tournament_id, player_id)
     )
-    if not db_category_player_link:
+    if not db_tournament_player_link:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Player not found in category"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Player not found in tournament",
         )
 
-    session.delete(db_category_player_link)
+    session.delete(db_tournament_player_link)
     session.commit()
-    session.refresh(db_category)
+    session.refresh(db_tournament)
 
-    return db_category.player_links
+    return db_tournament.player_links
 
 
-@router.get("/{category_id}/rounds", response_model=list[RoundPublic])
-async def list_rounds_in_category(
-    category_id: uuid.UUID,
+@router.get("/{tournament_id}/rounds", response_model=list[RoundPublic])
+async def list_rounds_in_tournament(
+    tournament_id: uuid.UUID,
     session: SessionDep,
 ):
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    return db_category.get_rounds_by_order()
+    return db_tournament.get_rounds_by_order()
 
 
-@router.put("/{category_id}/rounds/order", response_model=list[RoundPublic])
-async def change_round_order_in_category(
-    category_id: uuid.UUID,
+@router.put("/{tournament_id}/rounds/order", response_model=list[RoundPublic])
+async def change_round_order_in_tournament(
+    tournament_id: uuid.UUID,
     round_order: list[uuid.UUID],
     session: SessionDep,
     user: UserDep,
 ):
-    """Change the order of rounds within a category."""
-    db_category = session.get(Tournament, category_id)
-    if not db_category:
+    """Change the order of rounds within a tournament."""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_category.can_be_edited_by(user):
+    if not db_tournament.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not an organizer for this event",
         )
 
-    existing_rounds = {round.id: round for round in db_category.rounds}
+    existing_rounds = {round.id: round for round in db_tournament.rounds}
 
     if len(round_order) != len(existing_rounds):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Round order must match the number of rounds in the category",
+            detail="Round order must match the number of rounds in the tournament",
         )
 
     if set(round_order) != set(existing_rounds.keys()):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Round order must have the same rounds as the category",
+            detail="Round order must have the same rounds as the tournament",
         )
 
     if any(
@@ -727,6 +734,6 @@ async def change_round_order_in_category(
         session.add(round)
 
     session.commit()
-    session.refresh(db_category)
+    session.refresh(db_tournament)
 
-    return db_category.get_rounds_by_order()
+    return db_tournament.get_rounds_by_order()

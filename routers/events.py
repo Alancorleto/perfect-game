@@ -6,7 +6,6 @@ from sqlmodel import select
 
 from database import SessionDep
 from image_storage import upload_image
-from models.category import CategoryPublic
 from models.event import (
     Event,
     EventCreate,
@@ -14,14 +13,15 @@ from models.event import (
     EventUpdate,
 )
 from models.player import Player, PlayerPublic
+from models.tournament import TournamentPublic
 from routers.users import UserDep
 
 description = """
 An event is a collection of competitions that happen at a specified time and location.\n
-An event is composed of one or more **categories**.\n
+An event is composed of one or more **tournaments**.\n
 An event has one or more **organizers**.\n
 Each organizer has permissions to manage all the resources related to the event:
-categories, rounds, score tables, charts, and guest players.
+tournaments, rounds, score tables, charts, and guest players.
 """
 
 tag_metadata = {
@@ -121,15 +121,15 @@ async def delete_event(event_id: uuid.UUID, session: SessionDep, user: UserDep) 
     session.commit()
 
 
-@router.get("/{event_id}/categories", response_model=list[CategoryPublic])
-async def list_event_categories(event_id: uuid.UUID, session: SessionDep):
-    """List all categories for an event"""
+@router.get("/{event_id}/tournaments", response_model=list[TournamentPublic])
+async def list_event_tournaments(event_id: uuid.UUID, session: SessionDep):
+    """List all tournaments for an event"""
     db_event = session.get(Event, event_id)
     if not db_event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
         )
-    return db_event.categories
+    return db_event.tournaments
 
 
 @router.get("/{event_id}/organizers", response_model=list[PlayerPublic])

@@ -11,7 +11,7 @@ from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
 from routers.users import UserDep
 
 description = """
-A player is the profile of a competitor within a category.\n
+A player is the profile of a competitor within a tournament.\n
 There are two types of players:
 - **Registered players**: These represent the public profile of a **user**.
 - **Unregistered players**: These are created as **temporary guests** for a **event** when a competitor is not registered as a user.\n

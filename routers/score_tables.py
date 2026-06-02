@@ -382,8 +382,8 @@ async def list_possible_players_for_score_table(
         )
 
     current_round = score_table.round
-    category = score_table.round.category
-    sorted_rounds = category.get_rounds_by_order()
+    tournament = score_table.round.tournament
+    sorted_rounds = tournament.get_rounds_by_order()
 
     previous_round = (
         sorted_rounds[sorted_rounds.index(current_round) - 1]
@@ -394,7 +394,7 @@ async def list_possible_players_for_score_table(
     if not previous_round:
         return [
             player
-            for player in category.get_players_by_nickname()
+            for player in tournament.get_players_by_nickname()
             if player not in score_table.get_players_by_order()
         ]
     else:
