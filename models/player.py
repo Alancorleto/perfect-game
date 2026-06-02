@@ -45,13 +45,13 @@ class Player(PlayerBase, table=True):
 
     # This is not used but needed by SQLModel to work properly with cascade delete
     scores: list["Score"] = Relationship(back_populates="player", cascade_delete=True)
-    category_invitations: list["TournamentInvitation"] = Relationship(
+    tournament_invitations: list["TournamentInvitation"] = Relationship(
         back_populates="player", cascade_delete=True
     )
-    category_join_requests: list["TournamentJoinRequest"] = Relationship(
+    tournament_join_requests: list["TournamentJoinRequest"] = Relationship(
         back_populates="player", cascade_delete=True
     )
-    category_links: list["TournamentPlayerLink"] = Relationship(
+    tournament_links: list["TournamentPlayerLink"] = Relationship(
         back_populates="player", cascade_delete=True
     )
 

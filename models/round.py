@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from models.category import Category
 from models.player import Player
+from models.tournament import Tournament
 from models.user import User
 
 if TYPE_CHECKING:
@@ -28,16 +28,16 @@ class RoundBase(SQLModel):
 
 class Round(RoundBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    category_id: uuid.UUID = Field(foreign_key="category.id", ondelete="CASCADE")
+    tournament_id: uuid.UUID = Field(foreign_key="tournament.id", ondelete="CASCADE")
 
-    category: Category = Relationship(back_populates="rounds")
+    tournament: Tournament = Relationship(back_populates="rounds")
 
     score_tables: list["ScoreTable"] = Relationship(
         back_populates="round", cascade_delete=True
     )
 
     def can_be_edited_by(self, user: User) -> bool:
-        return self.category.can_be_edited_by(user)
+        return self.tournament.can_be_edited_by(user)
 
     def can_be_deleted(self, user: User) -> bool:
         return self.can_be_edited_by(user) and self.state == RoundState.NOT_STARTED
@@ -55,12 +55,12 @@ class Round(RoundBase, table=True):
 
 
 class RoundCreate(RoundBase):
-    category_id: uuid.UUID
+    tournament_id: uuid.UUID
 
 
 class RoundPublic(RoundBase):
     id: uuid.UUID
-    category_id: uuid.UUID
+    tournament_id: uuid.UUID
 
 
 class RoundUpdate(SQLModel):

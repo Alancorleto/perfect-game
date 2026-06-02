@@ -7,7 +7,7 @@ from sqlmodel.main import Relationship
 from models.player import Player
 
 if TYPE_CHECKING:
-    from models.category import Category
+    from models.tournament import Tournament
 
 
 class TournamentPlayerLinkBase(SQLModel):
@@ -15,15 +15,15 @@ class TournamentPlayerLinkBase(SQLModel):
 
 
 class TournamentPlayerLink(TournamentPlayerLinkBase, SQLModel, table=True):
-    category_id: uuid.UUID = Field(
-        foreign_key="category.id", primary_key=True, ondelete="CASCADE"
+    tournament_id: uuid.UUID = Field(
+        foreign_key="tournament.id", primary_key=True, ondelete="CASCADE"
     )
     player_id: uuid.UUID = Field(
         foreign_key="player.id", primary_key=True, ondelete="CASCADE"
     )
 
-    category: "Category" = Relationship(back_populates="player_links")
-    player: Player = Relationship(back_populates="category_links")
+    tournament: "Tournament" = Relationship(back_populates="player_links")
+    player: Player = Relationship(back_populates="tournament_links")
 
 
 class TournamentPlayerLinkCreate(TournamentPlayerLinkBase):

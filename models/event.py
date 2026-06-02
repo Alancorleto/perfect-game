@@ -8,8 +8,8 @@ from models.event_organizer import EventOrganizer
 from models.user import User
 
 if TYPE_CHECKING:
-    from models.category import Category
     from models.player import Player
+    from models.tournament import Tournament
     from models.user import User
 
 NAME_MIN_LENGTH = 3
@@ -31,7 +31,7 @@ class Event(EventBase, table=True):
         default_factory=uuid.uuid4,
         primary_key=True,
     )
-    categories: list["Category"] = Relationship(
+    tournaments: list["Tournament"] = Relationship(
         back_populates="event", cascade_delete=True
     )
     organizers: list["User"] = Relationship(
@@ -47,11 +47,11 @@ class Event(EventBase, table=True):
 
     def can_be_deleted(self, user: User) -> bool:
         return self.can_be_edited_by(user) and all(
-            category.can_be_deleted(user) for category in self.categories
+            tournament.can_be_deleted(user) for tournament in self.tournaments
         )
 
-    def get_categories_by_name(self) -> list["Category"]:
-        return sorted(self.categories, key=lambda c: c.name)
+    def get_tournaments_by_name(self) -> list["Tournament"]:
+        return sorted(self.tournaments, key=lambda c: c.name)
 
 
 class EventCreate(EventBase):

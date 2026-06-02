@@ -4,8 +4,8 @@ from enum import Enum
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from models.category import Category
 from models.player import Player
+from models.tournament import Tournament
 
 
 class RequestStatus(Enum):
@@ -20,36 +20,36 @@ class TournamentRequestBase(SQLModel):
 
 
 class TournamentInvitation(TournamentRequestBase, table=True):
-    category_id: uuid.UUID = Field(
-        primary_key=True, foreign_key="category.id", ondelete="CASCADE"
+    tournament_id: uuid.UUID = Field(
+        primary_key=True, foreign_key="tournament.id", ondelete="CASCADE"
     )
     player_id: uuid.UUID = Field(
         primary_key=True, foreign_key="player.id", ondelete="CASCADE"
     )
 
-    category: Category = Relationship(back_populates="invitations")
-    player: Player = Relationship(back_populates="category_invitations")
+    tournament: Tournament = Relationship(back_populates="invitations")
+    player: Player = Relationship(back_populates="tournament_invitations")
 
 
 class TournamentInvitationPublic(SQLModel):
-    category_id: uuid.UUID
+    tournament_id: uuid.UUID
     player: Player
     status: RequestStatus = Field(default=RequestStatus.PENDING)
 
 
 class TournamentJoinRequest(TournamentRequestBase, table=True):
-    category_id: uuid.UUID = Field(
-        primary_key=True, foreign_key="category.id", ondelete="CASCADE"
+    tournament_id: uuid.UUID = Field(
+        primary_key=True, foreign_key="tournament.id", ondelete="CASCADE"
     )
     player_id: uuid.UUID = Field(
         primary_key=True, foreign_key="player.id", ondelete="CASCADE"
     )
 
-    category: Category = Relationship(back_populates="join_requests")
-    player: Player = Relationship(back_populates="category_join_requests")
+    tournament: Tournament = Relationship(back_populates="join_requests")
+    player: Player = Relationship(back_populates="tournament_join_requests")
 
 
 class TournamentJoinRequestPublic(TournamentRequestBase):
     player_id: uuid.UUID
-    category: Category
+    tournament: Tournament
     status: RequestStatus = Field(default=RequestStatus.PENDING)
