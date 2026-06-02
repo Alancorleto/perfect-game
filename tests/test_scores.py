@@ -4,7 +4,6 @@ from sqlmodel import Session
 
 from tests.helpers import (
     add_player_to_score_table_in_db,
-    create_category_in_db,
     create_chart_in_db,
     create_event_in_db,
     create_player_in_db,
@@ -12,6 +11,7 @@ from tests.helpers import (
     create_score_column_in_db,
     create_score_in_db,
     create_score_table_in_db,
+    create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
 )
@@ -42,8 +42,8 @@ def create_score_context(session: Session):
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
     player = create_player_in_db(session, nickname="PlayerA")
     score_column = create_score_column_in_db(session, score_table=score_table)
@@ -52,7 +52,7 @@ def create_score_context(session: Session):
     return (
         organizer,
         event,
-        category,
+        tournament,
         round,
         score_table,
         player,

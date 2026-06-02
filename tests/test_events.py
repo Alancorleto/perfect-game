@@ -7,10 +7,10 @@ from sqlmodel import Session
 from models.round import RoundState
 from tests.helpers import (
     add_organizer_to_event,
-    create_category_in_db,
     create_event_in_db,
     create_player_in_db,
     create_round_in_db,
+    create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
 )
@@ -267,15 +267,15 @@ def test_delete_event_empty(session: Session, client: TestClient):
     assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_delete_event_with_empty_category_and_round(
+def test_delete_event_with_empty_tournament_and_round(
     session: Session, client: TestClient
 ):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    create_round_in_db(session, tournament=tournament)
 
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -292,8 +292,8 @@ def test_delete_event_with_started_round(session: Session, client: TestClient):
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    create_round_in_db(session, category=category, state=RoundState.IN_PROGRESS)
+    tournament = create_tournament_in_db(session, event=event)
+    create_round_in_db(session, tournament=tournament, state=RoundState.IN_PROGRESS)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(f"/events/{event.id}", headers=headers)
@@ -345,21 +345,21 @@ def test_delete_event_unauthenticated(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# GET /events/{event_id}/categories
+# GET /events/{event_id}/tournaments
 # ---------------------------------------------------------------------------
 
 
-def test_list_event_categories_empty(session: Session, client: TestClient):
+def test_list_event_tournaments_empty(session: Session, client: TestClient):
     event = create_event_in_db(session)
 
-    response = client.get(f"/events/{event.id}/categories")
+    response = client.get(f"/events/{event.id}/tournaments")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
-def test_list_event_categories_not_found(client: TestClient):
-    response = client.get("/events/00000000-0000-0000-0000-000000000000/categories")
+def test_list_event_tournaments_not_found(client: TestClient):
+    response = client.get("/events/00000000-0000-0000-0000-000000000000/tournaments")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 

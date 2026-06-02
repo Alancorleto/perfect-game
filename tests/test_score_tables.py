@@ -8,13 +8,13 @@ from tests.helpers import (
     add_player_to_score_table_in_db as add_player_to_score_table_in_db,
 )
 from tests.helpers import (
-    create_category_in_db,
     create_chart_in_db,
     create_event_in_db,
     create_player_in_db,
     create_round_in_db,
     create_score_column_in_db,
     create_score_in_db,
+    create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
 )
@@ -30,10 +30,10 @@ def create_editable_score_table(
         session, email=organizer_email, password=organizer_password
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
-    return organizer, event, category, round, score_table
+    return organizer, event, tournament, round, score_table
 
 
 # ---------------------------------------------------------------------------
@@ -46,8 +46,8 @@ def test_create_score_table(session: Session, client: TestClient):
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
@@ -82,8 +82,8 @@ def test_create_score_table_round_not_found(session: Session, client: TestClient
 def test_create_score_table_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
@@ -103,8 +103,8 @@ def test_create_score_table_as_super_admin(session: Session, client: TestClient)
         is_super_admin=True,
     )
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.post(
@@ -119,8 +119,8 @@ def test_create_score_table_as_super_admin(session: Session, client: TestClient)
 
 def test_create_score_table_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
 
     response = client.post("/score_tables/", json={"round_id": str(round.id)})
 
@@ -153,8 +153,8 @@ def test_create_score_table_invalid_qualifiers_count(
 
 def test_list_score_tables(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table_a = create_score_table_in_db(session, round=round)
     score_table_b = create_score_table_in_db(session, round=round)
 
@@ -182,8 +182,8 @@ def test_list_score_tables_empty(client: TestClient):
 
 def test_get_score_table(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
 
     response = client.get(f"/score_tables/{score_table.id}")
@@ -239,8 +239,8 @@ def test_update_score_table_not_found(session: Session, client: TestClient):
 def test_update_score_table_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
@@ -261,8 +261,8 @@ def test_update_score_table_as_super_admin(session: Session, client: TestClient)
         is_super_admin=True,
     )
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
@@ -277,8 +277,8 @@ def test_update_score_table_as_super_admin(session: Session, client: TestClient)
 
 def test_update_score_table_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
 
     response = client.patch(
@@ -374,8 +374,8 @@ def test_delete_score_table_not_found(session: Session, client: TestClient):
 def test_delete_score_table_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
@@ -392,8 +392,8 @@ def test_delete_score_table_as_super_admin(session: Session, client: TestClient)
         is_super_admin=True,
     )
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
@@ -404,8 +404,8 @@ def test_delete_score_table_as_super_admin(session: Session, client: TestClient)
 
 def test_delete_score_table_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
 
     response = client.delete(f"/score_tables/{score_table.id}")
@@ -422,8 +422,8 @@ def test_delete_round_cascade(session: Session, client: TestClient):
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
 
     response = client.delete(f"/rounds/{round.id}", headers=headers)
@@ -442,8 +442,8 @@ def test_delete_event_cascade(session: Session, client: TestClient):
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
 
     response = client.delete(f"/events/{event.id}", headers=headers)
@@ -676,8 +676,8 @@ def test_bulk_add_players_to_score_table_unauthorized(
 ):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
     player = create_player_in_db(session, nickname="PlayerA")
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
@@ -896,8 +896,8 @@ def test_remove_player_from_score_table_unauthorized(
 ):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
     player = create_player_in_db(session, nickname="PlayerA")
     add_player_to_score_table_in_db(session, score_table, player=player)
@@ -1055,18 +1055,20 @@ def test_list_possible_players_for_score_table_first_round_excludes_current_play
     session: Session, client: TestClient
 ):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category, state=RoundState.NOT_STARTED)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(
+        session, tournament=tournament, state=RoundState.NOT_STARTED
+    )
     score_table = create_score_table_in_db(session, round=round)
 
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
     player_c = create_player_in_db(session, nickname="PlayerC")
 
-    category.add_player(player_a)
-    category.add_player(player_b)
-    category.add_player(player_c)
-    session.add(category)
+    tournament.add_player(player_a)
+    tournament.add_player(player_b)
+    tournament.add_player(player_c)
+    session.add(tournament)
     session.commit()
 
     add_player_to_score_table_in_db(
@@ -1084,16 +1086,18 @@ def test_list_possible_players_for_score_table_first_round_empty_when_all_are_in
     session: Session, client: TestClient
 ):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category, state=RoundState.NOT_STARTED)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(
+        session, tournament=tournament, state=RoundState.NOT_STARTED
+    )
     score_table = create_score_table_in_db(session, round=round)
 
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
 
-    category.add_player(player_a)
-    category.add_player(player_b)
-    session.add(category)
+    tournament.add_player(player_a)
+    tournament.add_player(player_b)
+    session.add(tournament)
     session.commit()
 
     add_player_to_score_table_in_db(
@@ -1113,9 +1117,9 @@ def test_list_possible_players_for_score_table_second_round_uses_previous_qualif
     session: Session, client: TestClient
 ):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    first_round = create_round_in_db(session, category=category)
-    second_round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    first_round = create_round_in_db(session, tournament=tournament)
+    second_round = create_round_in_db(session, tournament=tournament)
 
     first_score_table = create_score_table_in_db(
         session, round=first_round, qualifiers_count=1
@@ -1126,10 +1130,10 @@ def test_list_possible_players_for_score_table_second_round_uses_previous_qualif
     player_b = create_player_in_db(session, nickname="PlayerB")
     player_c = create_player_in_db(session, nickname="PlayerC")
 
-    category.add_player(player_a)
-    category.add_player(player_b)
-    category.add_player(player_c)
-    session.add(category)
+    tournament.add_player(player_a)
+    tournament.add_player(player_b)
+    tournament.add_player(player_c)
+    session.add(tournament)
     session.commit()
 
     score_column = create_score_column_in_db(session, first_score_table)
@@ -1160,9 +1164,9 @@ def test_list_possible_players_for_score_table_second_round_excludes_players_alr
     session: Session, client: TestClient
 ):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    first_round = create_round_in_db(session, category=category)
-    second_round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    first_round = create_round_in_db(session, tournament=tournament)
+    second_round = create_round_in_db(session, tournament=tournament)
 
     first_score_table = create_score_table_in_db(
         session, round=first_round, qualifiers_count=1
@@ -1172,9 +1176,9 @@ def test_list_possible_players_for_score_table_second_round_excludes_players_alr
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
 
-    category.add_player(player_a)
-    category.add_player(player_b)
-    session.add(category)
+    tournament.add_player(player_a)
+    tournament.add_player(player_b)
+    session.add(tournament)
     session.commit()
 
     score_column = create_score_column_in_db(session, first_score_table)

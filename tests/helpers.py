@@ -86,27 +86,27 @@ def create_chart_in_db(
     return chart
 
 
-def create_category_in_db(
+def create_tournament_in_db(
     session: Session,
     event: Event,
-    name: str = "Test Category",
+    name: str = "Test Tournament",
     auto_accept_join_requests: bool = False,
 ) -> Tournament:
-    """Creates a category directly in the test database."""
-    category = Tournament(
+    """Creates a tournament directly in the test database."""
+    tournament = Tournament(
         name=name,
         event_id=event.id,
         auto_accept_join_requests=auto_accept_join_requests,
     )
-    session.add(category)
+    session.add(tournament)
     session.commit()
-    session.refresh(category)
-    return category
+    session.refresh(tournament)
+    return tournament
 
 
 def create_round_in_db(
     session: Session,
-    category: Tournament,
+    tournament: Tournament,
     name: str | None = "Test Round",
     state: RoundState = RoundState.NOT_STARTED,
 ) -> Round:
@@ -114,8 +114,8 @@ def create_round_in_db(
     round = Round(
         name=name,
         state=state,
-        category_id=category.id,
-        order_index=len(category.rounds),
+        tournament_id=tournament.id,
+        order_index=len(tournament.rounds),
     )
     session.add(round)
     session.commit()
@@ -185,8 +185,8 @@ def add_player_to_score_table_in_db(
     order_index: int = 0,
 ) -> PlayerRow:
     """Adds a player to a score table directly in the test database."""
-    if player not in score_table.round.category.get_players_by_nickname():
-        score_table.round.category.add_player(player)
+    if player not in score_table.round.tournament.get_players_by_nickname():
+        score_table.round.tournament.add_player(player)
 
     row = PlayerRow(
         score_table_id=score_table.id, player_id=player.id, order_index=order_index

@@ -2,78 +2,78 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from models.round import RoundState
 from models.tournament_invitation import (
+    RequestStatus,
     TournamentInvitation,
     TournamentJoinRequest,
-    RequestStatus,
 )
-from models.round import RoundState
 from tests.helpers import (
-    create_category_in_db,
     create_event_in_db,
     create_player_in_db,
     create_round_in_db,
+    create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
 )
 
 # ---------------------------------------------------------------------------
-# GET /categories/
+# GET /tournaments/
 # ---------------------------------------------------------------------------
 
 
-def test_list_categories(session: Session, client: TestClient):
+def test_list_tournaments(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    create_category_in_db(session, event=event, name="Category A")
-    create_category_in_db(session, event=event, name="Category B")
+    create_tournament_in_db(session, event=event, name="Tournament A")
+    create_tournament_in_db(session, event=event, name="Tournament B")
 
-    response = client.get("/categories/")
+    response = client.get("/tournaments/")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 2
     names = [c["name"] for c in data]
-    assert "Category A" in names
-    assert "Category B" in names
+    assert "Tournament A" in names
+    assert "Tournament B" in names
 
 
-def test_list_categories_empty(client: TestClient):
-    response = client.get("/categories/")
+def test_list_tournaments_empty(client: TestClient):
+    response = client.get("/tournaments/")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
 # ---------------------------------------------------------------------------
-# GET /categories/{category_id}
+# GET /tournaments/{tournament_id}
 # ---------------------------------------------------------------------------
 
 
-def test_get_category(session: Session, client: TestClient):
+def test_get_tournament(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event, name="My Category")
+    tournament = create_tournament_in_db(session, event=event, name="My Tournament")
 
-    response = client.get(f"/categories/{category.id}")
+    response = client.get(f"/tournaments/{tournament.id}")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert data["id"] == str(category.id)
-    assert data["name"] == "My Category"
+    assert data["id"] == str(tournament.id)
+    assert data["name"] == "My Tournament"
     assert data["event_id"] == str(event.id)
 
 
-def test_get_category_not_found(client: TestClient):
-    response = client.get("/categories/00000000-0000-0000-0000-000000000000")
+def test_get_tournament_not_found(client: TestClient):
+    response = client.get("/tournaments/00000000-0000-0000-0000-000000000000")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# POST /categories/
+# POST /tournaments/
 # ---------------------------------------------------------------------------
 
 
-def test_create_category(session: Session, client: TestClient):
+def test_create_tournament(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -81,26 +81,26 @@ def test_create_category(session: Session, client: TestClient):
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        "/categories/",
-        json={"name": "New Category", "event_id": str(event.id)},
+        "/tournaments/",
+        json={"name": "New Tournament", "event_id": str(event.id)},
         headers=headers,
     )
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
     assert data["id"] is not None
-    assert data["name"] == "New Category"
+    assert data["name"] == "New Tournament"
     assert data["event_id"] == str(event.id)
 
 
-def test_create_category_event_not_found(session: Session, client: TestClient):
+def test_create_tournament_event_not_found(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
-        "/categories/",
+        "/tournaments/",
         json={
-            "name": "New Category",
+            "name": "New Tournament",
             "event_id": "00000000-0000-0000-0000-000000000000",
         },
         headers=headers,
@@ -109,21 +109,21 @@ def test_create_category_event_not_found(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create_category_unauthorized(session: Session, client: TestClient):
+def test_create_tournament_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
-        "/categories/",
-        json={"name": "New Category", "event_id": str(event.id)},
+        "/tournaments/",
+        json={"name": "New Tournament", "event_id": str(event.id)},
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_create_category_as_super_admin(session: Session, client: TestClient):
+def test_create_tournament_as_super_admin(session: Session, client: TestClient):
     create_user_in_db(
         session,
         email="admin@example.com",
@@ -134,27 +134,27 @@ def test_create_category_as_super_admin(session: Session, client: TestClient):
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.post(
-        "/categories/",
-        json={"name": "Admin Category", "event_id": str(event.id)},
+        "/tournaments/",
+        json={"name": "Admin Tournament", "event_id": str(event.id)},
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["name"] == "Admin Category"
+    assert response.json()["name"] == "Admin Tournament"
 
 
-def test_create_category_unauthenticated(session: Session, client: TestClient):
+def test_create_tournament_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
 
     response = client.post(
-        "/categories/",
-        json={"name": "New Category", "event_id": str(event.id)},
+        "/tournaments/",
+        json={"name": "New Tournament", "event_id": str(event.id)},
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_create_category_missing_name(session: Session, client: TestClient):
+def test_create_tournament_missing_name(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -162,7 +162,7 @@ def test_create_category_missing_name(session: Session, client: TestClient):
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        "/categories/",
+        "/tournaments/",
         json={"event_id": str(event.id)},
         headers=headers,
     )
@@ -171,20 +171,20 @@ def test_create_category_missing_name(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# PATCH /categories/{category_id}
+# PATCH /tournaments/{tournament_id}
 # ---------------------------------------------------------------------------
 
 
-def test_update_category(session: Session, client: TestClient):
+def test_update_tournament(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event, name="Old Name")
+    tournament = create_tournament_in_db(session, event=event, name="Old Name")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.patch(
-        f"/categories/{category.id}",
+        f"/tournaments/{tournament.id}",
         json={"name": "Updated Name"},
         headers=headers,
     )
@@ -195,12 +195,12 @@ def test_update_category(session: Session, client: TestClient):
     assert data["event_id"] == str(event.id)
 
 
-def test_update_category_not_found(session: Session, client: TestClient):
+def test_update_tournament_not_found(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.patch(
-        "/categories/00000000-0000-0000-0000-000000000000",
+        "/tournaments/00000000-0000-0000-0000-000000000000",
         json={"name": "Updated Name"},
         headers=headers,
     )
@@ -208,14 +208,14 @@ def test_update_category_not_found(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_update_category_unauthorized(session: Session, client: TestClient):
+def test_update_tournament_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.patch(
-        f"/categories/{category.id}",
+        f"/tournaments/{tournament.id}",
         json={"name": "Hacked"},
         headers=headers,
     )
@@ -223,7 +223,7 @@ def test_update_category_unauthorized(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_update_category_as_super_admin(session: Session, client: TestClient):
+def test_update_tournament_as_super_admin(session: Session, client: TestClient):
     create_user_in_db(
         session,
         email="admin@example.com",
@@ -231,11 +231,11 @@ def test_update_category_as_super_admin(session: Session, client: TestClient):
         is_super_admin=True,
     )
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.patch(
-        f"/categories/{category.id}",
+        f"/tournaments/{tournament.id}",
         json={"name": "Admin Updated"},
         headers=headers,
     )
@@ -244,73 +244,73 @@ def test_update_category_as_super_admin(session: Session, client: TestClient):
     assert response.json()["name"] == "Admin Updated"
 
 
-def test_update_category_unauthenticated(session: Session, client: TestClient):
+def test_update_tournament_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
-    response = client.patch(f"/categories/{category.id}", json={"name": "Updated"})
+    response = client.patch(f"/tournaments/{tournament.id}", json={"name": "Updated"})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
-# DELETE /categories/{category_id}
+# DELETE /tournaments/{tournament_id}
 # ---------------------------------------------------------------------------
 
 
-def test_delete_category_empty(session: Session, client: TestClient):
+def test_delete_tournament_empty(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    response = client.delete(f"/categories/{category.id}", headers=headers)
+    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    get_response = client.get(f"/categories/{category.id}", headers=headers)
+    get_response = client.get(f"/tournaments/{tournament.id}", headers=headers)
     assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_delete_category_with_a_started_round(session: Session, client: TestClient):
+def test_delete_tournament_with_a_started_round(session: Session, client: TestClient):
     create_user_in_db(session, email="organizer@example.com", password="mypassword123")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    create_round_in_db(session, category=category, state=RoundState.IN_PROGRESS)
+    tournament = create_tournament_in_db(session, event=event)
+    create_round_in_db(session, tournament=tournament, state=RoundState.IN_PROGRESS)
 
-    response = client.delete(f"/categories/{category.id}", headers=headers)
+    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_delete_category_not_found(session: Session, client: TestClient):
+def test_delete_tournament_not_found(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.delete(
-        "/categories/00000000-0000-0000-0000-000000000000",
+        "/tournaments/00000000-0000-0000-0000-000000000000",
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_delete_category_unauthorized(session: Session, client: TestClient):
+def test_delete_tournament_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
-    response = client.delete(f"/categories/{category.id}", headers=headers)
+    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_delete_category_as_super_admin(session: Session, client: TestClient):
+def test_delete_tournament_as_super_admin(session: Session, client: TestClient):
     create_user_in_db(
         session,
         email="admin@example.com",
@@ -318,19 +318,19 @@ def test_delete_category_as_super_admin(session: Session, client: TestClient):
         is_super_admin=True,
     )
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
-    response = client.delete(f"/categories/{category.id}", headers=headers)
+    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
-def test_delete_category_unauthenticated(session: Session, client: TestClient):
+def test_delete_tournament_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
-    response = client.delete(f"/categories/{category.id}")
+    response = client.delete(f"/tournaments/{tournament.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -344,33 +344,33 @@ def test_delete_event_cascade(session: Session, client: TestClient):
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.delete(f"/events/{event.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    response = client.get(f"/categories/{category.id}")
+    response = client.get(f"/tournaments/{tournament.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# POST /categories/{category_id}/players/bulk
+# POST /tournaments/{tournament_id}/players/bulk
 # ---------------------------------------------------------------------------
 
 
-def test_bulk_add_players_to_category(session: Session, client: TestClient):
+def test_bulk_add_players_to_tournament(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/categories/{category.id}/players/bulk",
+        f"/tournaments/{tournament.id}/players/bulk",
         json=[str(player_a.id), str(player_b.id)],
         headers=headers,
     )
@@ -383,13 +383,13 @@ def test_bulk_add_players_to_category(session: Session, client: TestClient):
     assert "PlayerB" in nicknames
 
 
-def test_bulk_add_players_category_not_found(session: Session, client: TestClient):
+def test_bulk_add_players_tournament_not_found(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     player = create_player_in_db(session, nickname="PlayerA")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
-        "/categories/00000000-0000-0000-0000-000000000000/players/bulk",
+        "/tournaments/00000000-0000-0000-0000-000000000000/players/bulk",
         json=[str(player.id)],
         headers=headers,
     )
@@ -400,12 +400,12 @@ def test_bulk_add_players_category_not_found(session: Session, client: TestClien
 def test_bulk_add_players_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     player = create_player_in_db(session, nickname="PlayerA")
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
-        f"/categories/{category.id}/players/bulk",
+        f"/tournaments/{tournament.id}/players/bulk",
         json=[str(player.id)],
         headers=headers,
     )
@@ -418,11 +418,11 @@ def test_bulk_add_players_player_not_found(session: Session, client: TestClient)
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/categories/{category.id}/players/bulk",
+        f"/tournaments/{tournament.id}/players/bulk",
         json=["00000000-0000-0000-0000-000000000000"],
         headers=headers,
     )
@@ -432,11 +432,11 @@ def test_bulk_add_players_player_not_found(session: Session, client: TestClient)
 
 def test_bulk_add_players_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     player = create_player_in_db(session, nickname="PlayerA")
 
     response = client.post(
-        f"/categories/{category.id}/players/bulk",
+        f"/tournaments/{tournament.id}/players/bulk",
         json=[str(player.id)],
     )
 
@@ -444,17 +444,17 @@ def test_bulk_add_players_unauthenticated(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# POST /categories/{category_id}/invitations/{player_id}/
+# POST /tournaments/{tournament_id}/invitations/{player_id}/
 # ---------------------------------------------------------------------------
 
 
-def test_invite_player_to_category(session: Session, client: TestClient):
-    """Test inviting a player to a category"""
+def test_invite_player_to_tournament(session: Session, client: TestClient):
+    """Test inviting a player to a tournament"""
     organizer_user = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer_user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     player_user = create_user_in_db(
         session, email="player@example.com", password="mypassword123"
@@ -464,96 +464,96 @@ def test_invite_player_to_category(session: Session, client: TestClient):
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/categories/{category.id}/invitations/{player.id}/",
+        f"/tournaments/{tournament.id}/invitations/{player.id}/",
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    session.refresh(category)
-    assert len(category.invitations) == 1
-    assert category.invitations[0].player_id == player.id
+    session.refresh(tournament)
+    assert len(tournament.invitations) == 1
+    assert tournament.invitations[0].player_id == player.id
 
 
-def test_invite_player_to_category_organizer(session: Session, client: TestClient):
-    """Test inviting an organizer to their own category"""
+def test_invite_player_to_tournament_organizer(session: Session, client: TestClient):
+    """Test inviting an organizer to their own tournament"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     player = create_player_in_db(session, user=user)
 
     response = client.post(
-        f"/categories/{category.id}/invitations/{player.id}/",
+        f"/tournaments/{tournament.id}/invitations/{player.id}/",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    session.refresh(category)
-    assert len(category.get_players_by_nickname()) == 1
-    assert category.get_players_by_nickname()[0].id == player.id
+    session.refresh(tournament)
+    assert len(tournament.get_players_by_nickname()) == 1
+    assert tournament.get_players_by_nickname()[0].id == player.id
 
 
-def test_invite_player_to_category_category_not_found(
+def test_invite_player_to_tournament_tournament_not_found(
     session: Session, client: TestClient
 ):
-    """Test inviting a player to a non-existent category"""
+    """Test inviting a player to a non-existent tournament"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     player = create_player_in_db(session, user=user)
 
     response = client.post(
-        f"/categories/00000000-0000-0000-0000-000000000000/invitations/{player.id}/",
+        f"/tournaments/00000000-0000-0000-0000-000000000000/invitations/{player.id}/",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_invite_player_to_category_player_not_found(
+def test_invite_player_to_tournament_player_not_found(
     session: Session, client: TestClient
 ):
-    """Test inviting a non-existent player to a category"""
+    """Test inviting a non-existent player to a tournament"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/categories/{category.id}/invitations/00000000-0000-0000-0000-000000000000/",
+        f"/tournaments/{tournament.id}/invitations/00000000-0000-0000-0000-000000000000/",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_invite_player_to_category_player_not_registered(
+def test_invite_player_to_tournament_player_not_registered(
     session: Session, client: TestClient
 ):
-    """Test inviting a player without a user to a category"""
+    """Test inviting a player without a user to a tournament"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     player = create_player_in_db(session, user=None)
 
     response = client.post(
-        f"/categories/{category.id}/invitations/{player.id}/",
+        f"/tournaments/{tournament.id}/invitations/{player.id}/",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_invite_player_to_category_player_already_in_category(
+def test_invite_player_to_tournament_player_already_in_tournament(
     session: Session, client: TestClient
 ):
-    """Test inviting a player who is already in the category"""
+    """Test inviting a player who is already in the tournament"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -562,19 +562,19 @@ def test_invite_player_to_category_player_already_in_category(
     )
     player = create_player_in_db(session, user=player_user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    category.add_player(player)
+    tournament = create_tournament_in_db(session, event=event)
+    tournament.add_player(player)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/invitations/{player.id}/",
+        f"/tournaments/{tournament.id}/invitations/{player.id}/",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_invite_player_to_category_invitation_declined(
+def test_invite_player_to_tournament_invitation_declined(
     session: Session, client: TestClient
 ):
     """Test inviting a player who has declined the invitation"""
@@ -586,17 +586,17 @@ def test_invite_player_to_category_invitation_declined(
     )
     player = create_player_in_db(session, user=player_user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     invitation = TournamentInvitation(
         player_id=player.id,
-        category_id=category.id,
+        tournament_id=tournament.id,
         status=RequestStatus.DECLINED,
     )
     session.add(invitation)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/invitations/{player.id}/",
+        f"/tournaments/{tournament.id}/invitations/{player.id}/",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -607,85 +607,85 @@ def test_invite_player_to_category_invitation_declined(
 
 
 # ---------------------------------------------------------------------------
-# POST /categories/{category_id}/invitations/accept
+# POST /tournaments/{tournament_id}/invitations/accept
 # ---------------------------------------------------------------------------
 
 
-def test_accept_category_invitation(session: Session, client: TestClient):
-    """Test accepting a category invitation"""
+def test_accept_tournament_invitation(session: Session, client: TestClient):
+    """Test accepting a tournament invitation"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
-    invitation = TournamentInvitation(category_id=category.id, player_id=player.id)
+    tournament = create_tournament_in_db(session, event=event)
+    invitation = TournamentInvitation(tournament_id=tournament.id, player_id=player.id)
     session.add(invitation)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/invitations/accept",
+        f"/tournaments/{tournament.id}/invitations/accept",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_200_OK
 
-    session.refresh(category)
-    assert len(category.get_players_by_nickname()) == 1
-    assert category.get_players_by_nickname()[0].id == player.id
+    session.refresh(tournament)
+    assert len(tournament.get_players_by_nickname()) == 1
+    assert tournament.get_players_by_nickname()[0].id == player.id
 
 
-def test_accept_category_invitation_no_player(session: Session, client: TestClient):
+def test_accept_tournament_invitation_no_player(session: Session, client: TestClient):
     """Test accepting an invitation without an associated player"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/categories/{category.id}/invitations/accept",
+        f"/tournaments/{tournament.id}/invitations/accept",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_accept_category_invitation_category_not_found(
+def test_accept_tournament_invitation_tournament_not_found(
     session: Session, client: TestClient
 ):
-    """Test accepting an invitation for a non-existent category"""
+    """Test accepting an invitation for a non-existent tournament"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     create_player_in_db(session, user=user)
 
     response = client.post(
-        "/categories/00000000-0000-0000-0000-000000000000/invitations/accept",
+        "/tournaments/00000000-0000-0000-0000-000000000000/invitations/accept",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_accept_category_invitation_not_found(session: Session, client: TestClient):
+def test_accept_tournament_invitation_not_found(session: Session, client: TestClient):
     """Test accepting a non-existent invitation"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/categories/{category.id}/invitations/accept",
+        f"/tournaments/{tournament.id}/invitations/accept",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_accept_category_invitation_already_accepted(
+def test_accept_tournament_invitation_already_accepted(
     session: Session, client: TestClient
 ):
     """Test accepting an already accepted invitation"""
@@ -694,15 +694,15 @@ def test_accept_category_invitation_already_accepted(
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     invitation = TournamentInvitation(
-        category_id=category.id, player_id=player.id, status=RequestStatus.ACCEPTED
+        tournament_id=tournament.id, player_id=player.id, status=RequestStatus.ACCEPTED
     )
     session.add(invitation)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/invitations/accept",
+        f"/tournaments/{tournament.id}/invitations/accept",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
@@ -710,24 +710,24 @@ def test_accept_category_invitation_already_accepted(
 
 
 # ---------------------------------------------------------------------------
-# POST /categories/{category_id}/invitations/decline
+# POST /tournaments/{tournament_id}/invitations/decline
 # ---------------------------------------------------------------------------
 
 
-def test_decline_category_invitation(session: Session, client: TestClient):
-    """Test declining a category invitation"""
+def test_decline_tournament_invitation(session: Session, client: TestClient):
+    """Test declining a tournament invitation"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
-    invitation = TournamentInvitation(category_id=category.id, player_id=player.id)
+    tournament = create_tournament_in_db(session, event=event)
+    invitation = TournamentInvitation(tournament_id=tournament.id, player_id=player.id)
     session.add(invitation)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/invitations/decline",
+        f"/tournaments/{tournament.id}/invitations/decline",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
@@ -735,61 +735,61 @@ def test_decline_category_invitation(session: Session, client: TestClient):
 
     session.refresh(invitation)
     assert invitation.status == RequestStatus.DECLINED
-    session.refresh(category)
-    assert len(category.get_players_by_nickname()) == 0
+    session.refresh(tournament)
+    assert len(tournament.get_players_by_nickname()) == 0
 
 
-def test_decline_category_invitation_no_player(session: Session, client: TestClient):
+def test_decline_tournament_invitation_no_player(session: Session, client: TestClient):
     """Test declining an invitation without an associated player"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/categories/{category.id}/invitations/decline",
+        f"/tournaments/{tournament.id}/invitations/decline",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_decline_category_invitation_category_not_found(
+def test_decline_tournament_invitation_tournament_not_found(
     session: Session, client: TestClient
 ):
-    """Test declining an invitation for a non-existent category"""
+    """Test declining an invitation for a non-existent tournament"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     create_player_in_db(session, user=user)
 
     response = client.post(
-        "/categories/00000000-0000-0000-0000-000000000000/invitations/decline",
+        "/tournaments/00000000-0000-0000-0000-000000000000/invitations/decline",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_decline_category_invitation_not_found(session: Session, client: TestClient):
+def test_decline_tournament_invitation_not_found(session: Session, client: TestClient):
     """Test declining a non-existent invitation"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/categories/{category.id}/invitations/decline",
+        f"/tournaments/{tournament.id}/invitations/decline",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_decline_category_invitation_already_declined(
+def test_decline_tournament_invitation_already_declined(
     session: Session, client: TestClient
 ):
     """Test declining an already declined invitation"""
@@ -798,22 +798,22 @@ def test_decline_category_invitation_already_declined(
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     invitation = TournamentInvitation(
-        category_id=category.id, player_id=player.id, status=RequestStatus.DECLINED
+        tournament_id=tournament.id, player_id=player.id, status=RequestStatus.DECLINED
     )
     session.add(invitation)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/invitations/decline",
+        f"/tournaments/{tournament.id}/invitations/decline",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_decline_category_invitation_already_accepted(
+def test_decline_tournament_invitation_already_accepted(
     session: Session, client: TestClient
 ):
     """Test declining an already accepted invitation"""
@@ -822,15 +822,15 @@ def test_decline_category_invitation_already_accepted(
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     invitation = TournamentInvitation(
-        category_id=category.id, player_id=player.id, status=RequestStatus.ACCEPTED
+        tournament_id=tournament.id, player_id=player.id, status=RequestStatus.ACCEPTED
     )
     session.add(invitation)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/invitations/decline",
+        f"/tournaments/{tournament.id}/invitations/decline",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
@@ -838,12 +838,12 @@ def test_decline_category_invitation_already_accepted(
 
 
 # ---------------------------------------------------------------------------
-# GET /categories/{category_id}/invitations
+# GET /tournaments/{tournament_id}/invitations
 # ---------------------------------------------------------------------------
 
 
-def test_list_category_invitations(session: Session, client: TestClient):
-    """Test listing category invitations"""
+def test_list_tournament_invitations(session: Session, client: TestClient):
+    """Test listing tournament invitations"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -852,9 +852,9 @@ def test_list_category_invitations(session: Session, client: TestClient):
     )
     invited_player = create_player_in_db(session, user=invited_user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     invitation = TournamentInvitation(
-        category_id=category.id,
+        tournament_id=tournament.id,
         player_id=invited_player.id,
         status=RequestStatus.PENDING,
     )
@@ -862,7 +862,7 @@ def test_list_category_invitations(session: Session, client: TestClient):
     session.commit()
 
     response = client.get(
-        f"/categories/{category.id}/invitations",
+        f"/tournaments/{tournament.id}/invitations",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
     data = response.json()
@@ -870,20 +870,20 @@ def test_list_category_invitations(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 1
     assert data[0]["status"] == RequestStatus.PENDING.value
-    assert data[0]["category_id"] == str(category.id)
+    assert data[0]["tournament_id"] == str(tournament.id)
     assert data[0]["player"]["id"] == str(invited_player.id)
 
 
-def test_list_category_invitations_empty(session: Session, client: TestClient):
-    """Test listing invitations for a category without invitations"""
+def test_list_tournament_invitations_empty(session: Session, client: TestClient):
+    """Test listing invitations for a tournament without invitations"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.get(
-        f"/categories/{category.id}/invitations",
+        f"/tournaments/{tournament.id}/invitations",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -891,36 +891,36 @@ def test_list_category_invitations_empty(session: Session, client: TestClient):
     assert response.json() == []
 
 
-def test_list_category_invitations_not_found(session: Session, client: TestClient):
-    """Test listing invitations for a non-existent category"""
+def test_list_tournament_invitations_not_found(session: Session, client: TestClient):
+    """Test listing invitations for a non-existent tournament"""
     create_user_in_db(session, email="organizer@example.com", password="mypassword123")
 
     response = client.get(
-        "/categories/00000000-0000-0000-0000-000000000000/invitations",
+        "/tournaments/00000000-0000-0000-0000-000000000000/invitations",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_list_category_invitations_unauthorized(session: Session, client: TestClient):
+def test_list_tournament_invitations_unauthorized(session: Session, client: TestClient):
     """Test listing invitations without permission"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.get(
-        f"/categories/{category.id}/invitations",
+        f"/tournaments/{tournament.id}/invitations",
         headers=get_auth_headers(client, "attacker@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_list_category_invitations_unauthenticated(
+def test_list_tournament_invitations_unauthenticated(
     session: Session, client: TestClient
 ):
     """Test listing invitations without authentication"""
@@ -928,20 +928,20 @@ def test_list_category_invitations_unauthenticated(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
-    response = client.get(f"/categories/{category.id}/invitations")
+    response = client.get(f"/tournaments/{tournament.id}/invitations")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
-# GET /categories/{category_id}/join_requests
+# GET /tournaments/{tournament_id}/join_requests
 # ---------------------------------------------------------------------------
 
 
-def test_list_category_join_requests(session: Session, client: TestClient):
-    """Test listing category join requests"""
+def test_list_tournament_join_requests(session: Session, client: TestClient):
+    """Test listing tournament join requests"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -950,9 +950,9 @@ def test_list_category_join_requests(session: Session, client: TestClient):
     )
     joining_player = create_player_in_db(session, user=joining_user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     join_request = TournamentJoinRequest(
-        category_id=category.id,
+        tournament_id=tournament.id,
         player_id=joining_player.id,
         status=RequestStatus.PENDING,
     )
@@ -960,7 +960,7 @@ def test_list_category_join_requests(session: Session, client: TestClient):
     session.commit()
 
     response = client.get(
-        f"/categories/{category.id}/join_requests",
+        f"/tournaments/{tournament.id}/join_requests",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
     data = response.json()
@@ -968,20 +968,20 @@ def test_list_category_join_requests(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_200_OK
     assert len(data) == 1
     assert data[0]["status"] == RequestStatus.PENDING.value
-    assert data[0]["category"]["id"] == str(category.id)
+    assert data[0]["tournament"]["id"] == str(tournament.id)
     assert data[0]["player_id"] == str(joining_player.id)
 
 
-def test_list_category_join_requests_empty(session: Session, client: TestClient):
-    """Test listing join requests for a category without join requests"""
+def test_list_tournament_join_requests_empty(session: Session, client: TestClient):
+    """Test listing join requests for a tournament without join requests"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.get(
-        f"/categories/{category.id}/join_requests",
+        f"/tournaments/{tournament.id}/join_requests",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -989,36 +989,38 @@ def test_list_category_join_requests_empty(session: Session, client: TestClient)
     assert response.json() == []
 
 
-def test_list_category_join_requests_not_found(session: Session, client: TestClient):
-    """Test listing join requests for a non-existent category"""
+def test_list_tournament_join_requests_not_found(session: Session, client: TestClient):
+    """Test listing join requests for a non-existent tournament"""
     create_user_in_db(session, email="organizer@example.com", password="mypassword123")
 
     response = client.get(
-        "/categories/00000000-0000-0000-0000-000000000000/join_requests",
+        "/tournaments/00000000-0000-0000-0000-000000000000/join_requests",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_list_category_join_requests_unauthorized(session: Session, client: TestClient):
+def test_list_tournament_join_requests_unauthorized(
+    session: Session, client: TestClient
+):
     """Test listing join requests without permission"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.get(
-        f"/categories/{category.id}/join_requests",
+        f"/tournaments/{tournament.id}/join_requests",
         headers=get_auth_headers(client, "attacker@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_list_category_join_requests_unauthenticated(
+def test_list_tournament_join_requests_unauthenticated(
     session: Session, client: TestClient
 ):
     """Test listing join requests without authentication"""
@@ -1026,45 +1028,45 @@ def test_list_category_join_requests_unauthenticated(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
-    response = client.get(f"/categories/{category.id}/join_requests")
+    response = client.get(f"/tournaments/{tournament.id}/join_requests")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
-# POST /categories/{category_id}/join_requests
+# POST /tournaments/{tournament_id}/join_requests
 # ---------------------------------------------------------------------------
 
 
-def test_request_join_category(session: Session, client: TestClient):
-    """Test requesting to join a category"""
+def test_request_join_tournament(session: Session, client: TestClient):
+    """Test requesting to join a tournament"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/categories/{category.id}/join_requests",
+        f"/tournaments/{tournament.id}/join_requests",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    session.refresh(category)
+    session.refresh(tournament)
 
-    assert len(category.join_requests) == 1
+    assert len(tournament.join_requests) == 1
 
-    join_request = category.join_requests[0]
+    join_request = tournament.join_requests[0]
     assert join_request.status == RequestStatus.PENDING
-    assert len(category.get_players_by_nickname()) == 0
+    assert len(tournament.get_players_by_nickname()) == 0
 
 
-def test_request_join_category_auto_accept(session: Session, client: TestClient):
-    """Test requesting to join a category with auto-accept enabled"""
+def test_request_join_tournament_auto_accept(session: Session, client: TestClient):
+    """Test requesting to join a tournament with auto-accept enabled"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -1073,41 +1075,43 @@ def test_request_join_category_auto_accept(session: Session, client: TestClient)
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(
+    tournament = create_tournament_in_db(
         session, event=event, auto_accept_join_requests=True
     )
 
     response = client.post(
-        f"/categories/{category.id}/join_requests",
+        f"/tournaments/{tournament.id}/join_requests",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
-    session.refresh(category)
-    assert len(category.get_players_by_nickname()) == 1
-    assert category.get_players_by_nickname()[0] == player
-    assert len(category.join_requests) == 0
+    session.refresh(tournament)
+    assert len(tournament.get_players_by_nickname()) == 1
+    assert tournament.get_players_by_nickname()[0] == player
+    assert len(tournament.join_requests) == 0
 
 
-def test_request_join_category_category_not_found(session: Session, client: TestClient):
-    """Test requesting to join a non-existent category"""
+def test_request_join_tournament_tournament_not_found(
+    session: Session, client: TestClient
+):
+    """Test requesting to join a non-existent tournament"""
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     create_player_in_db(session, user=user)
 
     response = client.post(
-        "/categories/00000000-0000-0000-0000-000000000000/join_requests",
+        "/tournaments/00000000-0000-0000-0000-000000000000/join_requests",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_request_join_category_player_already_in_category(
+def test_request_join_tournament_player_already_in_tournament(
     session: Session, client: TestClient
 ):
-    """Test requesting to join a category when the player is already in it"""
+    """Test requesting to join a tournament when the player is already in it"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -1116,23 +1120,23 @@ def test_request_join_category_player_already_in_category(
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    category.add_player(player)
-    session.add(category)
+    tournament = create_tournament_in_db(session, event=event)
+    tournament.add_player(player)
+    session.add(tournament)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests",
+        f"/tournaments/{tournament.id}/join_requests",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_request_join_category_existing_request_reopens(
+def test_request_join_tournament_existing_request_reopens(
     session: Session, client: TestClient
 ):
-    """Test requesting to join a category with an existing declined request"""
+    """Test requesting to join a tournament with an existing declined request"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -1141,9 +1145,9 @@ def test_request_join_category_existing_request_reopens(
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     join_request = TournamentJoinRequest(
-        category_id=category.id,
+        tournament_id=tournament.id,
         player_id=player.id,
         status=RequestStatus.DECLINED,
     )
@@ -1151,7 +1155,7 @@ def test_request_join_category_existing_request_reopens(
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests",
+        f"/tournaments/{tournament.id}/join_requests",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
@@ -1162,12 +1166,12 @@ def test_request_join_category_existing_request_reopens(
 
 
 # ---------------------------------------------------------------------------
-# POST /categories/{category_id}/join_requests/{player_id}/accept
+# POST /tournaments/{tournament_id}/join_requests/{player_id}/accept
 # ---------------------------------------------------------------------------
 
 
-def test_accept_category_join_request(session: Session, client: TestClient):
-    """Test accepting a category join request"""
+def test_accept_tournament_join_request(session: Session, client: TestClient):
+    """Test accepting a tournament join request"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -1176,15 +1180,15 @@ def test_accept_category_join_request(session: Session, client: TestClient):
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     join_request = TournamentJoinRequest(
-        category_id=category.id, player_id=player.id, status=RequestStatus.PENDING
+        tournament_id=tournament.id, player_id=player.id, status=RequestStatus.PENDING
     )
     session.add(join_request)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1192,14 +1196,14 @@ def test_accept_category_join_request(session: Session, client: TestClient):
 
     session.refresh(join_request)
     assert join_request.status == RequestStatus.ACCEPTED
-    session.refresh(category)
-    assert player in category.get_players_by_nickname()
+    session.refresh(tournament)
+    assert player in tournament.get_players_by_nickname()
 
 
-def test_accept_category_join_request_unauthorized(
+def test_accept_tournament_join_request_unauthorized(
     session: Session, client: TestClient
 ):
-    """Test accepting a category join request without permission"""
+    """Test accepting a tournament join request without permission"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -1211,13 +1215,15 @@ def test_accept_category_join_request_unauthorized(
     )
     player = create_player_in_db(session, user=player_user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    join_request = TournamentJoinRequest(category_id=category.id, player_id=player.id)
+    tournament = create_tournament_in_db(session, event=event)
+    join_request = TournamentJoinRequest(
+        tournament_id=tournament.id, player_id=player.id
+    )
     session.add(join_request)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
         headers=get_auth_headers(client, attacker.email, "mypassword123"),
     )
 
@@ -1226,10 +1232,10 @@ def test_accept_category_join_request_unauthorized(
     assert join_request.status == RequestStatus.PENDING
 
 
-def test_accept_category_join_request_category_not_found(
+def test_accept_tournament_join_request_tournament_not_found(
     session: Session, client: TestClient
 ):
-    """Test accepting a join request for a non-existent category"""
+    """Test accepting a join request for a non-existent tournament"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -1240,14 +1246,14 @@ def test_accept_category_join_request_category_not_found(
     create_event_in_db(session, organizer=organizer)
 
     response = client.post(
-        f"/categories/00000000-0000-0000-0000-000000000000/join_requests/{player.id}/accept",
+        f"/tournaments/00000000-0000-0000-0000-000000000000/join_requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_accept_category_join_request_player_not_found(
+def test_accept_tournament_join_request_player_not_found(
     session: Session, client: TestClient
 ):
     """Test accepting a join request for a non-existent player"""
@@ -1255,20 +1261,20 @@ def test_accept_category_join_request_player_not_found(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/00000000-0000-0000-0000-000000000000/accept",
+        f"/tournaments/{tournament.id}/join_requests/00000000-0000-0000-0000-000000000000/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_accept_category_join_request_player_already_in_category(
+def test_accept_tournament_join_request_player_already_in_tournament(
     session: Session, client: TestClient
 ):
-    """Test accepting a join request when the player is already in the category"""
+    """Test accepting a join request when the player is already in the tournament"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -1277,23 +1283,25 @@ def test_accept_category_join_request_player_already_in_category(
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    category.add_player(player)
-    session.add(category)
+    tournament = create_tournament_in_db(session, event=event)
+    tournament.add_player(player)
+    session.add(tournament)
     session.commit()
-    join_request = TournamentJoinRequest(category_id=category.id, player_id=player.id)
+    join_request = TournamentJoinRequest(
+        tournament_id=tournament.id, player_id=player.id
+    )
     session.add(join_request)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_accept_category_join_request_not_found(session: Session, client: TestClient):
+def test_accept_tournament_join_request_not_found(session: Session, client: TestClient):
     """Test accepting a non-existent join request"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
@@ -1303,17 +1311,17 @@ def test_accept_category_join_request_not_found(session: Session, client: TestCl
     )
     player = create_player_in_db(session, user=player_user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_accept_category_join_request_not_pending_accepted(
+def test_accept_tournament_join_request_not_pending_accepted(
     session: Session, client: TestClient
 ):
     """Test accepting a join request that is already accepted"""
@@ -1325,22 +1333,22 @@ def test_accept_category_join_request_not_pending_accepted(
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     join_request = TournamentJoinRequest(
-        category_id=category.id, player_id=player.id, status=RequestStatus.ACCEPTED
+        tournament_id=tournament.id, player_id=player.id, status=RequestStatus.ACCEPTED
     )
     session.add(join_request)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_accept_category_join_request_not_pending_declined(
+def test_accept_tournament_join_request_not_pending_declined(
     session: Session, client: TestClient
 ):
     """Test accepting a join request that is declined"""
@@ -1352,15 +1360,15 @@ def test_accept_category_join_request_not_pending_declined(
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     join_request = TournamentJoinRequest(
-        category_id=category.id, player_id=player.id, status=RequestStatus.DECLINED
+        tournament_id=tournament.id, player_id=player.id, status=RequestStatus.DECLINED
     )
     session.add(join_request)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1368,12 +1376,12 @@ def test_accept_category_join_request_not_pending_declined(
 
 
 # ---------------------------------------------------------------------------
-# POST /categories/{category_id}/join_requests/{player_id}/decline
+# POST /tournaments/{tournament_id}/join_requests/{player_id}/decline
 # ---------------------------------------------------------------------------
 
 
-def test_decline_category_join_request(session: Session, client: TestClient):
-    """Test declining a category join request"""
+def test_decline_tournament_join_request(session: Session, client: TestClient):
+    """Test declining a tournament join request"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -1382,15 +1390,15 @@ def test_decline_category_join_request(session: Session, client: TestClient):
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     join_request = TournamentJoinRequest(
-        category_id=category.id, player_id=player.id, status=RequestStatus.PENDING
+        tournament_id=tournament.id, player_id=player.id, status=RequestStatus.PENDING
     )
     session.add(join_request)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1398,14 +1406,14 @@ def test_decline_category_join_request(session: Session, client: TestClient):
 
     session.refresh(join_request)
     assert join_request.status == RequestStatus.DECLINED
-    session.refresh(category)
-    assert player not in category.get_players_by_nickname()
+    session.refresh(tournament)
+    assert player not in tournament.get_players_by_nickname()
 
 
-def test_decline_category_join_request_unauthorized(
+def test_decline_tournament_join_request_unauthorized(
     session: Session, client: TestClient
 ):
-    """Test declining a category join request without permission"""
+    """Test declining a tournament join request without permission"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -1417,13 +1425,15 @@ def test_decline_category_join_request_unauthorized(
     )
     player = create_player_in_db(session, user=player_user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    join_request = TournamentJoinRequest(category_id=category.id, player_id=player.id)
+    tournament = create_tournament_in_db(session, event=event)
+    join_request = TournamentJoinRequest(
+        tournament_id=tournament.id, player_id=player.id
+    )
     session.add(join_request)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
         headers=get_auth_headers(client, attacker.email, "mypassword123"),
     )
 
@@ -1432,10 +1442,10 @@ def test_decline_category_join_request_unauthorized(
     assert join_request.status == RequestStatus.PENDING
 
 
-def test_decline_category_join_request_category_not_found(
+def test_decline_tournament_join_request_tournament_not_found(
     session: Session, client: TestClient
 ):
-    """Test declining a join request for a non-existent category"""
+    """Test declining a join request for a non-existent tournament"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -1446,14 +1456,14 @@ def test_decline_category_join_request_category_not_found(
     create_event_in_db(session, organizer=organizer)
 
     response = client.post(
-        f"/categories/00000000-0000-0000-0000-000000000000/join_requests/{player.id}/decline",
+        f"/tournaments/00000000-0000-0000-0000-000000000000/join_requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_decline_category_join_request_player_not_found(
+def test_decline_tournament_join_request_player_not_found(
     session: Session, client: TestClient
 ):
     """Test declining a join request for a non-existent player"""
@@ -1461,20 +1471,20 @@ def test_decline_category_join_request_player_not_found(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/00000000-0000-0000-0000-000000000000/decline",
+        f"/tournaments/{tournament.id}/join_requests/00000000-0000-0000-0000-000000000000/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_decline_category_join_request_player_already_in_category(
+def test_decline_tournament_join_request_player_already_in_tournament(
     session: Session, client: TestClient
 ):
-    """Test declining a join request when the player is already in the category"""
+    """Test declining a join request when the player is already in the tournament"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
@@ -1483,23 +1493,27 @@ def test_decline_category_join_request_player_already_in_category(
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    category.add_player(player)
-    session.add(category)
+    tournament = create_tournament_in_db(session, event=event)
+    tournament.add_player(player)
+    session.add(tournament)
     session.commit()
-    join_request = TournamentJoinRequest(category_id=category.id, player_id=player.id)
+    join_request = TournamentJoinRequest(
+        tournament_id=tournament.id, player_id=player.id
+    )
     session.add(join_request)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_decline_category_join_request_not_found(session: Session, client: TestClient):
+def test_decline_tournament_join_request_not_found(
+    session: Session, client: TestClient
+):
     """Test declining a non-existent join request"""
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
@@ -1509,17 +1523,17 @@ def test_decline_category_join_request_not_found(session: Session, client: TestC
     )
     player = create_player_in_db(session, user=player_user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_decline_category_join_request_not_pending_accepted(
+def test_decline_tournament_join_request_not_pending_accepted(
     session: Session, client: TestClient
 ):
     """Test declining a join request that is already accepted"""
@@ -1531,22 +1545,22 @@ def test_decline_category_join_request_not_pending_accepted(
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     join_request = TournamentJoinRequest(
-        category_id=category.id, player_id=player.id, status=RequestStatus.ACCEPTED
+        tournament_id=tournament.id, player_id=player.id, status=RequestStatus.ACCEPTED
     )
     session.add(join_request)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_decline_category_join_request_not_pending_declined(
+def test_decline_tournament_join_request_not_pending_declined(
     session: Session, client: TestClient
 ):
     """Test declining a join request that is already declined"""
@@ -1558,15 +1572,15 @@ def test_decline_category_join_request_not_pending_declined(
     )
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     join_request = TournamentJoinRequest(
-        category_id=category.id, player_id=player.id, status=RequestStatus.DECLINED
+        tournament_id=tournament.id, player_id=player.id, status=RequestStatus.DECLINED
     )
     session.add(join_request)
     session.commit()
 
     response = client.post(
-        f"/categories/{category.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1574,21 +1588,21 @@ def test_decline_category_join_request_not_pending_declined(
 
 
 # ---------------------------------------------------------------------------
-# GET /categories/{category_id}/players
+# GET /tournaments/{tournament_id}/players
 # ---------------------------------------------------------------------------
 
 
-def test_list_players_in_category(session: Session, client: TestClient):
+def test_list_players_in_tournament(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
-    category.add_player(player_a)
-    category.add_player(player_b)
-    session.add(category)
+    tournament.add_player(player_a)
+    tournament.add_player(player_b)
+    session.add(tournament)
     session.commit()
 
-    response = client.get(f"/categories/{category.id}/players")
+    response = client.get(f"/tournaments/{tournament.id}/players")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -1598,43 +1612,43 @@ def test_list_players_in_category(session: Session, client: TestClient):
     assert "PlayerB" in nicknames
 
 
-def test_list_players_in_category_empty(session: Session, client: TestClient):
+def test_list_players_in_tournament_empty(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
-    response = client.get(f"/categories/{category.id}/players")
+    response = client.get(f"/tournaments/{tournament.id}/players")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
-def test_list_players_in_category_not_found(client: TestClient):
-    response = client.get("/categories/00000000-0000-0000-0000-000000000000/players")
+def test_list_players_in_tournament_not_found(client: TestClient):
+    response = client.get("/tournaments/00000000-0000-0000-0000-000000000000/players")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# DELETE /categories/{category_id}/players/{player_id}
+# DELETE /tournaments/{tournament_id}/players/{player_id}
 # ---------------------------------------------------------------------------
 
 
-def test_remove_player_from_category(session: Session, client: TestClient):
+def test_remove_player_from_tournament(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     player_a = create_player_in_db(session, nickname="PlayerA")
     player_b = create_player_in_db(session, nickname="PlayerB")
-    category.add_player(player_a)
-    category.add_player(player_b)
-    session.add(category)
+    tournament.add_player(player_a)
+    tournament.add_player(player_b)
+    session.add(tournament)
     session.commit()
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(
-        f"/categories/{category.id}/players/{player_a.id}",
+        f"/tournaments/{tournament.id}/players/{player_a.id}",
         headers=headers,
     )
     data = response.json()
@@ -1645,26 +1659,26 @@ def test_remove_player_from_category(session: Session, client: TestClient):
     assert data[0]["has_paid_entry"] is False
 
 
-def test_remove_player_from_category_when_player_not_in_category(
+def test_remove_player_from_tournament_when_player_not_in_tournament(
     session: Session, client: TestClient
 ):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     player = create_player_in_db(session, nickname="PlayerA")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(
-        f"/categories/{category.id}/players/{player.id}",
+        f"/tournaments/{tournament.id}/players/{player.id}",
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_remove_player_from_category_category_not_found(
+def test_remove_player_from_tournament_tournament_not_found(
     session: Session, client: TestClient
 ):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
@@ -1672,77 +1686,79 @@ def test_remove_player_from_category_category_not_found(
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.delete(
-        f"/categories/00000000-0000-0000-0000-000000000000/players/{player.id}",
+        f"/tournaments/00000000-0000-0000-0000-000000000000/players/{player.id}",
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_remove_player_from_category_unauthorized(session: Session, client: TestClient):
+def test_remove_player_from_tournament_unauthorized(
+    session: Session, client: TestClient
+):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     player = create_player_in_db(session, nickname="PlayerA")
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.delete(
-        f"/categories/{category.id}/players/{player.id}",
+        f"/tournaments/{tournament.id}/players/{player.id}",
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_remove_player_from_category_player_not_found(
+def test_remove_player_from_tournament_player_not_found(
     session: Session, client: TestClient
 ):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(
-        f"/categories/{category.id}/players/00000000-0000-0000-0000-000000000000",
+        f"/tournaments/{tournament.id}/players/00000000-0000-0000-0000-000000000000",
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_remove_player_from_category_unauthenticated(
+def test_remove_player_from_tournament_unauthenticated(
     session: Session, client: TestClient
 ):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     player = create_player_in_db(session, nickname="PlayerA")
 
-    response = client.delete(f"/categories/{category.id}/players/{player.id}")
+    response = client.delete(f"/tournaments/{tournament.id}/players/{player.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
-# PUT /categories/{category_id}/players/{player_id}
+# PUT /tournaments/{tournament_id}/players/{player_id}
 # ---------------------------------------------------------------------------
 
 
-def test_update_player_in_category(session: Session, client: TestClient):
+def test_update_player_in_tournament(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     player = create_player_in_db(session, nickname="PlayerA")
-    category.add_player(player)
-    session.add(category)
+    tournament.add_player(player)
+    session.add(tournament)
     session.commit()
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/categories/{category.id}/players/{player.id}",
+        f"/tournaments/{tournament.id}/players/{player.id}",
         json={"has_paid_entry": True},
         headers=headers,
     )
@@ -1753,16 +1769,16 @@ def test_update_player_in_category(session: Session, client: TestClient):
     assert data["has_paid_entry"] is True
 
 
-def test_update_player_in_category_not_found(session: Session, client: TestClient):
+def test_update_player_in_tournament_not_found(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/categories/{category.id}/players/00000000-0000-0000-0000-000000000000",
+        f"/tournaments/{tournament.id}/players/00000000-0000-0000-0000-000000000000",
         json={"has_paid_entry": True},
         headers=headers,
     )
@@ -1771,18 +1787,18 @@ def test_update_player_in_category_not_found(session: Session, client: TestClien
 
 
 # ---------------------------------------------------------------------------
-# GET /categories/{category_id}/rounds
+# GET /tournaments/{tournament_id}/rounds
 # ---------------------------------------------------------------------------
 
 
-def test_list_rounds_in_category(session: Session, client: TestClient):
+def test_list_rounds_in_tournament(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    create_round_in_db(session, category=category, name="Round A")
-    create_round_in_db(session, category=category, name="Round B")
-    create_round_in_db(session, category=category, name="Round C")
+    tournament = create_tournament_in_db(session, event=event)
+    create_round_in_db(session, tournament=tournament, name="Round A")
+    create_round_in_db(session, tournament=tournament, name="Round B")
+    create_round_in_db(session, tournament=tournament, name="Round C")
 
-    response = client.get(f"/categories/{category.id}/rounds")
+    response = client.get(f"/tournaments/{tournament.id}/rounds")
 
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json()) == 3
@@ -1791,19 +1807,19 @@ def test_list_rounds_in_category(session: Session, client: TestClient):
     assert response.json()[2]["name"] == "Round C"
 
 
-def test_list_rounds_in_category_correct_order(session: Session, client: TestClient):
+def test_list_rounds_in_tournament_correct_order(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round_a = create_round_in_db(session, category=category, name="Round A")
-    round_b = create_round_in_db(session, category=category, name="Round B")
-    round_c = create_round_in_db(session, category=category, name="Round C")
+    tournament = create_tournament_in_db(session, event=event)
+    round_a = create_round_in_db(session, tournament=tournament, name="Round A")
+    round_b = create_round_in_db(session, tournament=tournament, name="Round B")
+    round_c = create_round_in_db(session, tournament=tournament, name="Round C")
 
     round_a.order_index = 1
     round_b.order_index = 2
     round_c.order_index = 0
     session.commit()
 
-    response = client.get(f"/categories/{category.id}/rounds")
+    response = client.get(f"/tournaments/{tournament.id}/rounds")
 
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json()) == 3
@@ -1813,7 +1829,7 @@ def test_list_rounds_in_category_correct_order(session: Session, client: TestCli
 
 
 # ---------------------------------------------------------------------------
-# PUT /categories/{category_id}/rounds/order
+# PUT /tournaments/{tournament_id}/rounds/order
 # ---------------------------------------------------------------------------
 
 
@@ -1822,14 +1838,14 @@ def test_change_round_order(session: Session, client: TestClient):
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round_a = create_round_in_db(session, category=category, name="Round A")
-    round_b = create_round_in_db(session, category=category, name="Round B")
-    round_c = create_round_in_db(session, category=category, name="Round C")
+    tournament = create_tournament_in_db(session, event=event)
+    round_a = create_round_in_db(session, tournament=tournament, name="Round A")
+    round_b = create_round_in_db(session, tournament=tournament, name="Round B")
+    round_c = create_round_in_db(session, tournament=tournament, name="Round C")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/categories/{category.id}/rounds/order",
+        f"/tournaments/{tournament.id}/rounds/order",
         json=[str(round_c.id), str(round_a.id), str(round_b.id)],
         headers=headers,
     )
@@ -1859,13 +1875,13 @@ def test_change_round_order_as_super_admin(session: Session, client: TestClient)
         is_super_admin=True,
     )
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round_a = create_round_in_db(session, category=category, name="Round A")
-    round_b = create_round_in_db(session, category=category, name="Round B")
+    tournament = create_tournament_in_db(session, event=event)
+    round_a = create_round_in_db(session, tournament=tournament, name="Round A")
+    round_b = create_round_in_db(session, tournament=tournament, name="Round B")
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.put(
-        f"/categories/{category.id}/rounds/order",
+        f"/tournaments/{tournament.id}/rounds/order",
         json=[str(round_b.id), str(round_a.id)],
         headers=headers,
     )
@@ -1878,12 +1894,12 @@ def test_change_round_order_as_super_admin(session: Session, client: TestClient)
     assert round_b.order_index == 0
 
 
-def test_change_round_order_category_not_found(session: Session, client: TestClient):
+def test_change_round_order_tournament_not_found(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.put(
-        "/categories/00000000-0000-0000-0000-000000000000/rounds/order",
+        "/tournaments/00000000-0000-0000-0000-000000000000/rounds/order",
         json=["00000000-0000-0000-0000-000000000000"],
         headers=headers,
     )
@@ -1894,12 +1910,12 @@ def test_change_round_order_category_not_found(session: Session, client: TestCli
 def test_change_round_order_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round_a = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round_a = create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.put(
-        f"/categories/{category.id}/rounds/order",
+        f"/tournaments/{tournament.id}/rounds/order",
         json=[str(round_a.id)],
         headers=headers,
     )
@@ -1909,11 +1925,11 @@ def test_change_round_order_unauthorized(session: Session, client: TestClient):
 
 def test_change_round_order_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round_a = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round_a = create_round_in_db(session, tournament=tournament)
 
     response = client.put(
-        f"/categories/{category.id}/rounds/order",
+        f"/tournaments/{tournament.id}/rounds/order",
         json=[str(round_a.id)],
     )
 
@@ -1925,13 +1941,13 @@ def test_change_round_order_round_count_mismatch(session: Session, client: TestC
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round_a = create_round_in_db(session, category=category)
-    create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round_a = create_round_in_db(session, tournament=tournament)
+    create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/categories/{category.id}/rounds/order",
+        f"/tournaments/{tournament.id}/rounds/order",
         json=[str(round_a.id)],
         headers=headers,
     )
@@ -1944,13 +1960,13 @@ def test_change_round_order_round_mismatch(session: Session, client: TestClient)
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round_a = create_round_in_db(session, category=category)
-    create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round_a = create_round_in_db(session, tournament=tournament)
+    create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/categories/{category.id}/rounds/order",
+        f"/tournaments/{tournament.id}/rounds/order",
         json=[str(round_a.id), "00000000-0000-0000-0000-000000000000"],
         headers=headers,
     )
@@ -1963,13 +1979,13 @@ def test_change_round_order_round_repeated_round(session: Session, client: TestC
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round_a = create_round_in_db(session, category=category)
-    create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round_a = create_round_in_db(session, tournament=tournament)
+    create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/categories/{category.id}/rounds/order",
+        f"/tournaments/{tournament.id}/rounds/order",
         json=[str(round_a.id), str(round_a.id)],
         headers=headers,
     )
@@ -1982,10 +1998,10 @@ def test_change_round_order_round_already_started(session: Session, client: Test
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
-    round_a = create_round_in_db(session, category=category)
-    round_b = create_round_in_db(session, category=category)
+    round_a = create_round_in_db(session, tournament=tournament)
+    round_b = create_round_in_db(session, tournament=tournament)
 
     round_a.state = RoundState.IN_PROGRESS
     session.commit()
@@ -1993,7 +2009,7 @@ def test_change_round_order_round_already_started(session: Session, client: Test
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/categories/{category.id}/rounds/order",
+        f"/tournaments/{tournament.id}/rounds/order",
         json=[str(round_b.id), str(round_a.id)],
         headers=headers,
     )
@@ -2008,11 +2024,11 @@ def test_change_round_order_round_already_started_but_not_changing_order(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
-    round_a = create_round_in_db(session, category=category)
-    round_b = create_round_in_db(session, category=category)
-    round_c = create_round_in_db(session, category=category)
+    round_a = create_round_in_db(session, tournament=tournament)
+    round_b = create_round_in_db(session, tournament=tournament)
+    round_c = create_round_in_db(session, tournament=tournament)
 
     round_a.state = RoundState.IN_PROGRESS
     session.commit()
@@ -2020,7 +2036,7 @@ def test_change_round_order_round_already_started_but_not_changing_order(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/categories/{category.id}/rounds/order",
+        f"/tournaments/{tournament.id}/rounds/order",
         json=[str(round_a.id), str(round_c.id), str(round_b.id)],
         headers=headers,
     )

@@ -8,7 +8,6 @@ from models.chart import Mode
 from models.score_column import ScoreTable
 from models.user import User
 from tests.helpers import (
-    create_category_in_db,
     create_chart_column_in_db,
     create_chart_in_db,
     create_event_in_db,
@@ -16,6 +15,7 @@ from tests.helpers import (
     create_round_in_db,
     create_score_column_in_db,
     create_score_table_in_db,
+    create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
 )
@@ -23,8 +23,8 @@ from tests.helpers import (
 
 def create_chart_context_in_db(session: Session, organizer: User) -> ScoreTable:
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
     score_column = create_score_column_in_db(session, score_table=score_table)
     return score_column

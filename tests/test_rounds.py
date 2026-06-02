@@ -6,7 +6,6 @@ from models.round import RoundState
 from models.score_table import ScoreTableFormat
 from tests.helpers import (
     add_player_to_score_table_in_db,
-    create_category_in_db,
     create_chart_in_db,
     create_event_in_db,
     create_player_in_db,
@@ -14,6 +13,7 @@ from tests.helpers import (
     create_score_column_in_db,
     create_score_in_db,
     create_score_table_in_db,
+    create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
 )
@@ -26,9 +26,9 @@ def create_editable_round(
         session, email=organizer_email, password=organizer_password
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
-    return organizer, event, category, round
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
+    return organizer, event, tournament, round
 
 
 def create_score_table_with_players(
@@ -82,9 +82,9 @@ def create_score_table_with_players(
 
 def test_list_rounds(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    create_round_in_db(session, category=category, name="Round A")
-    create_round_in_db(session, category=category, name="Round B")
+    tournament = create_tournament_in_db(session, event=event)
+    create_round_in_db(session, tournament=tournament, name="Round A")
+    create_round_in_db(session, tournament=tournament, name="Round B")
 
     response = client.get("/rounds/")
     data = response.json()
@@ -110,9 +110,9 @@ def test_list_rounds_empty(client: TestClient):
 
 def test_get_round(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     round = create_round_in_db(
-        session, category=category, name="My Round", state=RoundState.PAUSED
+        session, tournament=tournament, name="My Round", state=RoundState.PAUSED
     )
 
     response = client.get(f"/rounds/{round.id}")
@@ -122,7 +122,7 @@ def test_get_round(session: Session, client: TestClient):
     assert data["id"] == str(round.id)
     assert data["name"] == "My Round"
     assert data["state"] == "paused"
-    assert data["category_id"] == str(category.id)
+    assert data["tournament_id"] == str(tournament.id)
 
 
 def test_get_round_not_found(client: TestClient):
@@ -141,12 +141,12 @@ def test_create_round(session: Session, client: TestClient):
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
         "/rounds/",
-        json={"name": "New Round", "category_id": str(category.id)},
+        json={"name": "New Round", "tournament_id": str(tournament.id)},
         headers=headers,
     )
     data = response.json()
@@ -155,7 +155,7 @@ def test_create_round(session: Session, client: TestClient):
     assert data["id"] is not None
     assert data["name"] == "New Round"
     assert data["state"] == "not_started"
-    assert data["category_id"] == str(category.id)
+    assert data["tournament_id"] == str(tournament.id)
     assert data["order_index"] == 0
 
 
@@ -164,7 +164,7 @@ def test_create_round_with_state(session: Session, client: TestClient):
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
@@ -172,7 +172,7 @@ def test_create_round_with_state(session: Session, client: TestClient):
         json={
             "name": "In Progress Round",
             "state": "in_progress",
-            "category_id": str(category.id),
+            "tournament_id": str(tournament.id),
         },
         headers=headers,
     )
@@ -181,7 +181,7 @@ def test_create_round_with_state(session: Session, client: TestClient):
     assert response.json()["state"] == "in_progress"
 
 
-def test_create_round_category_not_found(session: Session, client: TestClient):
+def test_create_round_tournament_not_found(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
@@ -189,7 +189,7 @@ def test_create_round_category_not_found(session: Session, client: TestClient):
         "/rounds/",
         json={
             "name": "New Round",
-            "category_id": "00000000-0000-0000-0000-000000000000",
+            "tournament_id": "00000000-0000-0000-0000-000000000000",
         },
         headers=headers,
     )
@@ -200,12 +200,12 @@ def test_create_round_category_not_found(session: Session, client: TestClient):
 def test_create_round_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
         "/rounds/",
-        json={"name": "New Round", "category_id": str(category.id)},
+        json={"name": "New Round", "tournament_id": str(tournament.id)},
         headers=headers,
     )
 
@@ -220,12 +220,12 @@ def test_create_round_as_super_admin(session: Session, client: TestClient):
         is_super_admin=True,
     )
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.post(
         "/rounds/",
-        json={"name": "Admin Round", "category_id": str(category.id)},
+        json={"name": "Admin Round", "tournament_id": str(tournament.id)},
         headers=headers,
     )
 
@@ -235,17 +235,17 @@ def test_create_round_as_super_admin(session: Session, client: TestClient):
 
 def test_create_round_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
         "/rounds/",
-        json={"name": "New Round", "category_id": str(category.id)},
+        json={"name": "New Round", "tournament_id": str(tournament.id)},
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_create_round_missing_category_id(session: Session, client: TestClient):
+def test_create_round_missing_tournament_id(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
@@ -263,7 +263,7 @@ def test_create_round_invalid_state(session: Session, client: TestClient):
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
+    tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
@@ -271,7 +271,7 @@ def test_create_round_invalid_state(session: Session, client: TestClient):
         json={
             "name": "New Round",
             "state": "invalid",
-            "category_id": str(category.id),
+            "tournament_id": str(tournament.id),
         },
         headers=headers,
     )
@@ -285,7 +285,7 @@ def test_create_round_invalid_state(session: Session, client: TestClient):
 
 
 def test_update_round(session: Session, client: TestClient):
-    _, _, category, round = create_editable_round(
+    _, _, tournament, round = create_editable_round(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
@@ -302,7 +302,7 @@ def test_update_round(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_200_OK
     assert data["name"] == "Updated Round"
     assert data["state"] == "paused"
-    assert data["category_id"] == str(category.id)
+    assert data["tournament_id"] == str(tournament.id)
 
 
 def test_update_round_partial(session: Session, client: TestClient):
@@ -341,8 +341,8 @@ def test_update_round_not_found(session: Session, client: TestClient):
 def test_update_round_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.patch(
@@ -362,8 +362,8 @@ def test_update_round_as_super_admin(session: Session, client: TestClient):
         is_super_admin=True,
     )
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.patch(
@@ -378,8 +378,8 @@ def test_update_round_as_super_admin(session: Session, client: TestClient):
 
 def test_update_round_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
 
     response = client.patch(f"/rounds/{round.id}", json={"name": "Updated"})
 
@@ -431,10 +431,10 @@ def test_delete_round_decreases_order_index(session: Session, client: TestClient
         password="mypassword123",
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round_a = create_round_in_db(session, category=category)
-    round_b = create_round_in_db(session, category=category)
-    round_c = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round_a = create_round_in_db(session, tournament=tournament)
+    round_b = create_round_in_db(session, tournament=tournament)
+    round_c = create_round_in_db(session, tournament=tournament)
 
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
     response = client.delete(f"/rounds/{round_b.id}", headers=headers)
@@ -476,8 +476,8 @@ def test_delete_round_not_found(session: Session, client: TestClient):
 def test_delete_round_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.delete(f"/rounds/{round.id}", headers=headers)
@@ -493,8 +493,8 @@ def test_delete_round_as_super_admin(session: Session, client: TestClient):
         is_super_admin=True,
     )
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.delete(f"/rounds/{round.id}", headers=headers)
@@ -504,15 +504,15 @@ def test_delete_round_as_super_admin(session: Session, client: TestClient):
 
 def test_delete_round_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
 
     response = client.delete(f"/rounds/{round.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_delete_category_cascade(session: Session, client: TestClient):
+def test_delete_tournament_cascade(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session,
         email="organizer@example.com",
@@ -521,10 +521,10 @@ def test_delete_category_cascade(session: Session, client: TestClient):
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
 
-    response = client.delete(f"/categories/{category.id}", headers=headers)
+    response = client.delete(f"/tournaments/{tournament.id}", headers=headers)
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     response = client.get(f"/rounds/{round.id}")
@@ -540,8 +540,8 @@ def test_delete_event_cascade(session: Session, client: TestClient):
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
 
     response = client.delete(f"/events/{event.id}", headers=headers)
     assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -557,8 +557,8 @@ def test_delete_event_cascade(session: Session, client: TestClient):
 
 def test_list_score_tables_in_round(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table_a = create_score_table_in_db(session, round=round)
     score_table_b = create_score_table_in_db(session, round=round)
 
@@ -576,8 +576,8 @@ def test_list_score_tables_in_round(session: Session, client: TestClient):
 
 def test_list_score_tables_in_round_order_changed(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table_a = create_score_table_in_db(session, round=round)
     score_table_b = create_score_table_in_db(session, round=round)
 
@@ -596,8 +596,8 @@ def test_list_score_tables_in_round_order_changed(session: Session, client: Test
 
 def test_list_score_tables_in_round_empty(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
 
     response = client.get(f"/rounds/{round.id}/score_tables")
 
@@ -621,8 +621,8 @@ def test_change_score_table_order_in_round(session: Session, client: TestClient)
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table_a = create_score_table_in_db(session, round=round)
     score_table_b = create_score_table_in_db(session, round=round)
 
@@ -657,8 +657,8 @@ def test_change_score_table_order_in_round_as_super_admin(
         is_super_admin=True,
     )
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table_a = create_score_table_in_db(session, round=round)
     score_table_b = create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
@@ -697,8 +697,8 @@ def test_change_score_table_order_in_round_unauthorized(
 ):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table_a = create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
@@ -715,8 +715,8 @@ def test_change_score_table_order_in_round_unauthenticated(
     session: Session, client: TestClient
 ):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table_a = create_score_table_in_db(session, round=round)
 
     response = client.put(
@@ -734,8 +734,8 @@ def test_change_score_table_order_in_round_count_mismatch(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table_a = create_score_table_in_db(session, round=round)
     create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
@@ -756,8 +756,8 @@ def test_change_score_table_order_in_round_repeated_score_table(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table_a = create_score_table_in_db(session, round=round)
     create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
@@ -778,8 +778,8 @@ def test_change_score_table_order_in_round_incorrect_score_table(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     score_table_a = create_score_table_in_db(session, round=round)
     create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
@@ -865,8 +865,8 @@ def test_delete_all_scores_in_round_not_found(session: Session, client: TestClie
 def test_delete_all_scores_in_round_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.delete(f"/rounds/{round.id}/scores", headers=headers)
@@ -884,8 +884,8 @@ def test_delete_all_scores_in_round_as_super_admin(
         is_super_admin=True,
     )
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.delete(f"/rounds/{round.id}/scores", headers=headers)
@@ -897,8 +897,8 @@ def test_delete_all_scores_in_round_unauthenticated(
     session: Session, client: TestClient
 ):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
 
     response = client.delete(f"/rounds/{round.id}/scores")
 
@@ -939,8 +939,8 @@ def test_start_round_not_found(session: Session, client: TestClient):
 def test_start_round_unauthorized(session: Session, client: TestClient):
     create_user_in_db(session, email="attacker@example.com", password="mypassword123")
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(f"/rounds/{round.id}/start", headers=headers)
@@ -950,8 +950,8 @@ def test_start_round_unauthorized(session: Session, client: TestClient):
 
 def test_start_round_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
 
     response = client.post(f"/rounds/{round.id}/start")
 
@@ -1171,8 +1171,8 @@ def test_get_qualifying_players_in_round(session: Session, client: TestClient):
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
 
     score_table_a, _, _, score_table_a_players = create_score_table_with_players(
         session,
@@ -1219,8 +1219,8 @@ def test_get_qualifying_players_in_round_two_battles(
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
 
     score_table_a, _, _, score_table_a_players = create_score_table_with_players(
         session,
@@ -1277,8 +1277,8 @@ def test_get_qualifying_players_in_round_unauthenticated(
     session: Session, client: TestClient
 ):
     event = create_event_in_db(session)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
 
     response = client.get(f"/rounds/{round.id}/qualifying-players")
 

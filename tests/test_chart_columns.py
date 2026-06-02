@@ -7,12 +7,12 @@ from sqlmodel import Session
 from models.chart_column import ChartColumn
 from models.round import RoundState
 from tests.helpers import (
-    create_category_in_db,
     create_chart_column_in_db,
     create_event_in_db,
     create_round_in_db,
     create_score_column_in_db,
     create_score_table_in_db,
+    create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
 )
@@ -30,12 +30,12 @@ def create_editable_chart_column_context(
         password=organizer_password,
     )
     event = create_event_in_db(session, organizer=organizer)
-    category = create_category_in_db(session, event=event)
-    round = create_round_in_db(session, category=category, state=round_state)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament, state=round_state)
     score_table = create_score_table_in_db(session, round=round)
     score_column = create_score_column_in_db(session, score_table=score_table)
 
-    return organizer, event, category, round, score_table, score_column
+    return organizer, event, tournament, round, score_table, score_column
 
 
 # ---------------------------------------------------------------------------
