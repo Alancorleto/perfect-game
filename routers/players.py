@@ -11,9 +11,10 @@ from models.tournament import Tournament
 from routers.users import UserDep
 
 description = """
-A player can either be:\n
-- created as the public profile of a user\n
-- created as a temporary guest for a tournament\n
+A player is the profile of a competitor within a category.\n
+There are two types of players:
+- **Registered players**: These represent the public profile of a **user**.
+- **Unregistered players**: These are created as **temporary guests** for a **tournament** when a competitor is not registered as a user.\n
 Typically, a user creates a player profile when they register.\n
 """
 

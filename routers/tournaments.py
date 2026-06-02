@@ -17,8 +17,9 @@ from models.tournament import (
 from routers.users import UserDep
 
 description = """
-A tournament can have multiple categories.\n
-A tournament can also have multiple organizers.\n
+A tournament is a collection of competitions that happen at a specified time and location.\n
+A tournament is composed of one or more **categories**.\n
+A tournament has one or more **organizers**.\n
 Each organizer has permissions to manage all the resources related to the tournament:
 categories, rounds, score tables, charts, and guest players.
 """

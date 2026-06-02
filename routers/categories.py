@@ -24,8 +24,8 @@ from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
 
 description = """
-A **category** is always associated with a **tournament**.\n
-Categories can have multiple **rounds** with an **associated order**.\n
+A category is a competition that happens within a **tournament**.\n
+A category has one or more **rounds**. Each round has a specific order.\n
 An organizer can add **guest players** to a category.\n
 An organizer can **invite** a player with a registered account to a category, and the player can **accept** or **decline** the invitation.\n
 A player can **request to join** a category, and an organizer can **accept** or **decline** the request.\n

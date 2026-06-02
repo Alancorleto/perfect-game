@@ -17,8 +17,7 @@ from models.score_table import (
 from routers.users import UserDep
 
 description = """
-Score table is the entity in which players compare their scores against each other.\n
-A score table is always associated with a **round** and has an **order_index**.\n
+A score table is an entity in which players compare their scores against each other within a **round**.\n
 A score table is composed of the **players** that are competing inside it
 and the **score columns** that contain the actual scores.\n
 A score table can be in any of the following formats:\n
