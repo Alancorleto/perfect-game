@@ -7,10 +7,10 @@ from sqlmodel import Field, Relationship, SQLModel
 from models.user import User
 
 if TYPE_CHECKING:
-    from models.category import CategoryInvitation, CategoryJoinRequest
-    from models.category_player import CategoryPlayerLink
     from models.event import Event
     from models.score import Score
+    from models.tournament import CategoryInvitation, CategoryJoinRequest
+    from models.tournament_player import CategoryPlayerLink
 
 NICKNAME_MAX_LENGTH = 30
 NAME_MAX_LENGTH = 50

@@ -3,22 +3,22 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from models.category_player import CategoryPlayerLink
 from models.event import Event
 from models.player import Player
+from models.tournament_player import CategoryPlayerLink
 from models.user import User
 
 if TYPE_CHECKING:
-    from models.category_invitation import CategoryInvitation, CategoryJoinRequest
     from models.round import Round
+    from models.tournament_invitation import CategoryInvitation, CategoryJoinRequest
 
 
-class CategoryBase(SQLModel):
+class TournamentBase(SQLModel):
     name: str = Field(max_length=50)
     auto_accept_join_requests: bool = Field(default=True)
 
 
-class Category(CategoryBase, table=True):
+class Tournament(TournamentBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     event_id: uuid.UUID = Field(foreign_key="event.id", ondelete="CASCADE")
 
@@ -66,14 +66,14 @@ class Category(CategoryBase, table=True):
             self.player_links.remove(player_link)
 
 
-class CategoryCreate(CategoryBase):
+class TournamentCreate(TournamentBase):
     event_id: uuid.UUID
 
 
-class CategoryPublic(CategoryBase):
+class TournamentPublic(TournamentBase):
     id: uuid.UUID
     event_id: uuid.UUID
 
 
-class CategoryUpdate(SQLModel):
+class TournamentUpdate(SQLModel):
     name: str | None = None

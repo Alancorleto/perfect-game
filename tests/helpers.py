@@ -1,7 +1,6 @@
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from models.category import Category
 from models.chart import Chart, Mode
 from models.chart_column import ChartColumn
 from models.event import Event
@@ -12,6 +11,7 @@ from models.round import Round, RoundState
 from models.score import Grade, Score
 from models.score_column import ScoreColumn
 from models.score_table import ScoreTable, ScoreTableFormat
+from models.tournament import Tournament
 from models.user import User
 from routers.users import get_password_hash
 
@@ -91,9 +91,9 @@ def create_category_in_db(
     event: Event,
     name: str = "Test Category",
     auto_accept_join_requests: bool = False,
-) -> Category:
+) -> Tournament:
     """Creates a category directly in the test database."""
-    category = Category(
+    category = Tournament(
         name=name,
         event_id=event.id,
         auto_accept_join_requests=auto_accept_join_requests,
@@ -106,7 +106,7 @@ def create_category_in_db(
 
 def create_round_in_db(
     session: Session,
-    category: Category,
+    category: Tournament,
     name: str | None = "Test Round",
     state: RoundState = RoundState.NOT_STARTED,
 ) -> Round:

@@ -5,20 +5,25 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
-from models.category import Category, CategoryCreate, CategoryPublic, CategoryUpdate
-from models.category_invitation import (
+from models.event import Event
+from models.tournament import (
+    Tournament,
+    TournamentCreate,
+    TournamentPublic,
+    TournamentUpdate,
+)
+from models.tournament_invitation import (
     CategoryInvitation,
     CategoryInvitationPublic,
     CategoryJoinRequest,
     CategoryJoinRequestPublic,
     RequestStatus,
 )
-from models.category_player import (
+from models.tournament_player import (
     CategoryPlayerLink,
     CategoryPlayerLinkUpdate,
     PlayerInCategory,
 )
-from models.event import Event
 from routers.players import Player, PlayerPublic
 from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
@@ -40,17 +45,17 @@ tag_metadata = {
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 
-@router.get("/", response_model=list[CategoryPublic])
+@router.get("/", response_model=list[TournamentPublic])
 async def list_categories(session: SessionDep):
     """List all categories"""
-    categories = session.exec(select(Category)).all()
+    categories = session.exec(select(Tournament)).all()
     return categories
 
 
-@router.get("/{category_id}", response_model=CategoryPublic)
+@router.get("/{category_id}", response_model=TournamentPublic)
 async def get_category(category_id: uuid.UUID, session: SessionDep):
     """Get a specific category"""
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -58,8 +63,10 @@ async def get_category(category_id: uuid.UUID, session: SessionDep):
     return db_category
 
 
-@router.post("/", response_model=CategoryPublic)
-async def create_category(category: CategoryCreate, session: SessionDep, user: UserDep):
+@router.post("/", response_model=TournamentPublic)
+async def create_category(
+    category: TournamentCreate, session: SessionDep, user: UserDep
+):
     """Create a new category"""
 
     event = session.get(Event, category.event_id)
@@ -74,7 +81,7 @@ async def create_category(category: CategoryCreate, session: SessionDep, user: U
             detail="You are not an organizer for this event",
         )
 
-    db_category = Category.model_validate(category)
+    db_category = Tournament.model_validate(category)
 
     session.add(db_category)
     session.commit()
@@ -83,12 +90,15 @@ async def create_category(category: CategoryCreate, session: SessionDep, user: U
     return db_category
 
 
-@router.patch("/{category_id}", response_model=CategoryPublic)
+@router.patch("/{category_id}", response_model=TournamentPublic)
 async def update_category(
-    category_id: uuid.UUID, category: CategoryUpdate, session: SessionDep, user: UserDep
+    category_id: uuid.UUID,
+    category: TournamentUpdate,
+    session: SessionDep,
+    user: UserDep,
 ):
     """Update a category"""
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -113,7 +123,7 @@ async def update_category(
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(category_id: uuid.UUID, session: SessionDep, user: UserDep):
     """Delete a category"""
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -137,7 +147,7 @@ async def add_guest_player_to_category(
     user: UserDep,
 ):
     """Add a guest player to a category"""
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -176,7 +186,7 @@ async def bulk_add_guest_players_to_category(
     user: UserDep,
 ):
     """Bulk add guest players to a category"""
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -216,7 +226,7 @@ async def list_category_invitations(
     category_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     """List all invitations for a category"""
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -251,7 +261,7 @@ async def invite_player_to_category(
     category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     """Invite a player to a category"""
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -312,7 +322,7 @@ async def accept_category_invitation(
             detail="User has no player associated",
         )
 
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -347,7 +357,7 @@ async def decline_category_invitation(
             detail="User has no player associated",
         )
 
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -383,7 +393,7 @@ async def list_category_join_requests(
     category_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     """List all join requests for a category"""
-    category = session.get(Category, category_id)
+    category = session.get(Tournament, category_id)
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -424,7 +434,7 @@ async def request_join_category(
             detail="User has no player associated",
         )
 
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -457,7 +467,7 @@ async def request_join_category(
 async def accept_category_join_request(
     category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -511,7 +521,7 @@ async def accept_category_join_request(
 async def decline_category_join_request(
     category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -562,7 +572,7 @@ async def decline_category_join_request(
 @router.get("/{category_id}/players", response_model=list[PlayerInCategory])
 async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
     """List all players in a category"""
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -611,7 +621,7 @@ async def remove_player_from_category(
     category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     """Remove a player from a category"""
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -647,7 +657,7 @@ async def list_rounds_in_category(
     category_id: uuid.UUID,
     session: SessionDep,
 ):
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
@@ -664,7 +674,7 @@ async def change_round_order_in_category(
     user: UserDep,
 ):
     """Change the order of rounds within a category."""
-    db_category = session.get(Category, category_id)
+    db_category = session.get(Tournament, category_id)
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"

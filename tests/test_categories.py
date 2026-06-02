@@ -2,7 +2,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from models.category_invitation import (
+from models.tournament_invitation import (
     CategoryInvitation,
     CategoryJoinRequest,
     RequestStatus,
