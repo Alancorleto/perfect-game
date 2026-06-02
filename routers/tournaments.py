@@ -29,7 +29,7 @@ from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
 
 description = """
-A tournament is a competition that happens within a **event**.\n
+A tournament is a competition that happens within an **event**.\n
 A tournament has one or more **rounds**. Each round has a specific order.\n
 An organizer can add **guest players** to a tournament.\n
 An organizer can **invite** a player with a registered account to a tournament, and the player can **accept** or **decline** the invitation.\n
