@@ -111,7 +111,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], session: SessionDep
-):
+) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -164,6 +164,13 @@ async def create_user(user: UserCreate, session: SessionDep):
     session.refresh(db_user)
 
     return db_user
+
+
+@router.get("/users/me", response_model=UserPublic)
+async def get_currently_logged_user(
+    current_user: UserDep,
+):
+    return current_user
 
 
 @router.get("/users/{user_id}", response_model=UserPublic)
@@ -236,13 +243,6 @@ async def delete_user(
 
     session.delete(db_user)
     session.commit()
-
-
-@router.get("/users/me", response_model=UserPublic)
-async def get_currently_logged_user(
-    current_user: UserDep,
-):
-    return current_user
 
 
 @router.post("/token", response_model=Token)
