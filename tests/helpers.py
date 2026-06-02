@@ -4,13 +4,13 @@ from sqlmodel import Session
 from models.category import Category
 from models.chart import Chart, Mode
 from models.chart_column import ChartColumn
+from models.event import Event
 from models.player import Player
 from models.player_row import PlayerRow
 from models.round import Round, RoundState
 from models.score import Grade, Score
 from models.score_column import ScoreColumn
 from models.score_table import ScoreTable, ScoreTableFormat
-from models.tournament import Tournament
 from models.tournament_organizer import TournamentOrganizer
 from models.user import User
 from routers.users import get_password_hash
@@ -46,7 +46,7 @@ def create_player_in_db(
     user: User | None = None,
     nickname: str = "TestPlayer",
     country_code: str = "AR",
-    guest_tournament: Tournament | None = None,
+    guest_tournament: Event | None = None,
 ) -> Player:
     """Creates a player directly in the test database."""
     player = Player(
@@ -88,7 +88,7 @@ def create_chart_in_db(
 
 def create_category_in_db(
     session: Session,
-    tournament: Tournament,
+    tournament: Event,
     name: str = "Test Category",
     auto_accept_join_requests: bool = False,
 ) -> Category:
@@ -265,9 +265,9 @@ def create_tournament_in_db(
     organizer: User | None = None,
     name: str = "Test Tournament",
     country_code: str = "AR",
-) -> Tournament:
+) -> Event:
     """Creates a tournament in the test database, optionally with an organizer."""
-    tournament = Tournament(name=name, country_code=country_code)
+    tournament = Event(name=name, country_code=country_code)
     session.add(tournament)
     session.commit()
     session.refresh(tournament)
@@ -282,7 +282,7 @@ def create_tournament_in_db(
 
 def add_organizer_to_tournament(
     session: Session,
-    tournament: Tournament,
+    tournament: Event,
     user: User,
 ) -> None:
     """Adds a user as an organizer to an existing tournament."""

@@ -16,7 +16,7 @@ NAME_MIN_LENGTH = 3
 NAME_MAX_LENGTH = 100
 
 
-class TournamentBase(SQLModel):
+class EventBase(SQLModel):
     name: str = Field(min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
     country_code: str = Field(min_length=2, max_length=2)
     description: str | None = None
@@ -26,7 +26,7 @@ class TournamentBase(SQLModel):
     logo_url: str | None = None
 
 
-class Tournament(TournamentBase, table=True):
+class Event(EventBase, table=True):
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
@@ -54,15 +54,15 @@ class Tournament(TournamentBase, table=True):
         return sorted(self.categories, key=lambda c: c.name)
 
 
-class TournamentCreate(TournamentBase):
+class EventCreate(EventBase):
     pass
 
 
-class TournamentPublic(TournamentBase):
+class EventPublic(EventBase):
     id: uuid.UUID
 
 
-class TournamentUpdate(SQLModel):
+class EventUpdate(SQLModel):
     name: str | None = Field(
         default=None, min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH
     )

@@ -9,8 +9,8 @@ from models.user import User
 if TYPE_CHECKING:
     from models.category import CategoryInvitation, CategoryJoinRequest
     from models.category_player import CategoryPlayerLink
+    from models.event import Event
     from models.score import Score
-    from models.tournament import Tournament
 
 NICKNAME_MAX_LENGTH = 30
 NAME_MAX_LENGTH = 50
@@ -41,9 +41,7 @@ class Player(PlayerBase, table=True):
     )
 
     user: User | None = Relationship(back_populates="player")
-    guest_tournament: Optional["Tournament"] = Relationship(
-        back_populates="guest_players"
-    )
+    guest_tournament: Optional["Event"] = Relationship(back_populates="guest_players")
 
     # This is not used but needed by SQLModel to work properly with cascade delete
     scores: list["Score"] = Relationship(back_populates="player", cascade_delete=True)

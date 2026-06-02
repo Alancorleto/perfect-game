@@ -6,8 +6,8 @@ from sqlmodel import select
 
 from database import SessionDep
 from image_storage import upload_image
+from models.event import Event
 from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
-from models.tournament import Tournament
 from routers.users import UserDep
 
 description = """
@@ -77,7 +77,7 @@ async def create_guest_player(
     tournament_id: uuid.UUID, player: PlayerCreate, session: SessionDep, user: UserDep
 ):
     """Create a guest player for a tournament"""
-    tournament = session.get(Tournament, tournament_id)
+    tournament = session.get(Event, tournament_id)
     if not tournament:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"

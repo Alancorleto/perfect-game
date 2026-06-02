@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.category_player import CategoryPlayerLink
+from models.event import Event
 from models.player import Player
-from models.tournament import Tournament
 from models.user import User
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ class Category(CategoryBase, table=True):
     player_links: list[CategoryPlayerLink] = Relationship(
         back_populates="category", cascade_delete=True
     )
-    tournament: Tournament = Relationship(back_populates="categories")
+    tournament: Event = Relationship(back_populates="categories")
     rounds: list["Round"] = Relationship(back_populates="category", cascade_delete=True)
 
     invitations: list["CategoryInvitation"] = Relationship(

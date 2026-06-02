@@ -7,13 +7,13 @@ from sqlmodel import select
 from database import SessionDep
 from image_storage import upload_image
 from models.category import CategoryPublic
-from models.player import Player, PlayerPublic
-from models.tournament import (
-    Tournament,
-    TournamentCreate,
-    TournamentPublic,
-    TournamentUpdate,
+from models.event import (
+    Event,
+    EventCreate,
+    EventPublic,
+    EventUpdate,
 )
+from models.player import Player, PlayerPublic
 from routers.users import UserDep
 
 description = """
@@ -32,25 +32,25 @@ tag_metadata = {
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 
-@router.get("/", response_model=list[TournamentPublic])
+@router.get("/", response_model=list[EventPublic])
 async def list_tournaments(
     session: SessionDep,
     country_code: str | None = Query(default=None, min_length=2, max_length=2),
 ):
     """List tournaments, optionally filtered by country code."""
-    query = select(Tournament)
+    query = select(Event)
 
     if country_code is not None:
-        query = query.where(Tournament.country_code == country_code.upper())
+        query = query.where(Event.country_code == country_code.upper())
 
     tournaments = session.exec(query).all()
     return tournaments
 
 
-@router.get("/{tournament_id}", response_model=TournamentPublic)
+@router.get("/{tournament_id}", response_model=EventPublic)
 async def get_tournament(tournament_id: uuid.UUID, session: SessionDep):
     """Get a specific tournament"""
-    db_tournament = session.get(Tournament, tournament_id)
+    db_tournament = session.get(Event, tournament_id)
     if not db_tournament:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
@@ -58,12 +58,12 @@ async def get_tournament(tournament_id: uuid.UUID, session: SessionDep):
     return db_tournament
 
 
-@router.post("/", response_model=TournamentPublic)
+@router.post("/", response_model=EventPublic)
 async def create_tournament(
-    tournament: TournamentCreate, session: SessionDep, user: UserDep
+    tournament: EventCreate, session: SessionDep, user: UserDep
 ):
     """Create a new tournament"""
-    db_tournament = Tournament.model_validate(tournament)
+    db_tournament = Event.model_validate(tournament)
     session.add(db_tournament)
     session.commit()
     session.refresh(db_tournament)
@@ -76,15 +76,15 @@ async def create_tournament(
     return db_tournament
 
 
-@router.patch("/{tournament_id}", response_model=TournamentPublic)
+@router.patch("/{tournament_id}", response_model=EventPublic)
 async def update_tournament(
     tournament_id: uuid.UUID,
-    tournament: TournamentUpdate,
+    tournament: EventUpdate,
     session: SessionDep,
     user: UserDep,
 ):
     """Update a tournament"""
-    db_tournament = session.get(Tournament, tournament_id)
+    db_tournament = session.get(Event, tournament_id)
     if not db_tournament:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
@@ -109,7 +109,7 @@ async def delete_tournament(
     tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ) -> None:
     """Delete a tournament"""
-    db_tournament = session.get(Tournament, tournament_id)
+    db_tournament = session.get(Event, tournament_id)
     if not db_tournament:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
@@ -128,7 +128,7 @@ async def delete_tournament(
 @router.get("/{tournament_id}/categories", response_model=list[CategoryPublic])
 async def list_tournament_categories(tournament_id: uuid.UUID, session: SessionDep):
     """List all categories for a tournament"""
-    db_tournament = session.get(Tournament, tournament_id)
+    db_tournament = session.get(Event, tournament_id)
     if not db_tournament:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
@@ -139,7 +139,7 @@ async def list_tournament_categories(tournament_id: uuid.UUID, session: SessionD
 @router.get("/{tournament_id}/organizers", response_model=list[PlayerPublic])
 async def list_tournament_organizers(tournament_id: uuid.UUID, session: SessionDep):
     """Get all organizers for a tournament"""
-    db_tournament = session.get(Tournament, tournament_id)
+    db_tournament = session.get(Event, tournament_id)
 
     if not db_tournament:
         raise HTTPException(
@@ -156,7 +156,7 @@ async def add_organizer_to_tournament(
     tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     """Add a player as an organizer to a tournament"""
-    db_tournament = session.get(Tournament, tournament_id)
+    db_tournament = session.get(Event, tournament_id)
     if not db_tournament:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
@@ -200,7 +200,7 @@ async def remove_organizer_from_tournament(
     tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
     """Remove a player as an organizer from a tournament"""
-    db_tournament = session.get(Tournament, tournament_id)
+    db_tournament = session.get(Event, tournament_id)
     if not db_tournament:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
@@ -242,7 +242,7 @@ async def remove_organizer_from_tournament(
     return [user.player for user in db_tournament.organizers if user.player is not None]
 
 
-@router.post("/{tournament_id}/logo", response_model=TournamentPublic)
+@router.post("/{tournament_id}/logo", response_model=EventPublic)
 async def upload_tournament_logo(
     tournament_id: uuid.UUID,
     logo: Annotated[bytes, File()],
@@ -250,7 +250,7 @@ async def upload_tournament_logo(
     user: UserDep,
 ):
     """Upload a tournament logo"""
-    db_tournament = session.get(Tournament, tournament_id)
+    db_tournament = session.get(Event, tournament_id)
     if not db_tournament:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"

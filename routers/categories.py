@@ -18,7 +18,7 @@ from models.category_player import (
     CategoryPlayerLinkUpdate,
     PlayerInCategory,
 )
-from models.tournament import Tournament
+from models.event import Event
 from routers.players import Player, PlayerPublic
 from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
@@ -62,7 +62,7 @@ async def get_category(category_id: uuid.UUID, session: SessionDep):
 async def create_category(category: CategoryCreate, session: SessionDep, user: UserDep):
     """Create a new category"""
 
-    tournament = session.get(Tournament, category.tournament_id)
+    tournament = session.get(Event, category.tournament_id)
     if not tournament:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"

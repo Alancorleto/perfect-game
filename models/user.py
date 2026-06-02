@@ -7,8 +7,8 @@ from sqlmodel import Field, Relationship, SQLModel
 from models.tournament_organizer import TournamentOrganizer
 
 if TYPE_CHECKING:
+    from models.event import Event
     from models.player import Player
-    from models.tournament import Tournament
 
 
 class Token(SQLModel):
@@ -30,7 +30,7 @@ class User(UserBase, table=True):
     hashed_password: str
     is_super_admin: bool = False
 
-    tournaments: list["Tournament"] = Relationship(
+    tournaments: list["Event"] = Relationship(
         back_populates="organizers", link_model=TournamentOrganizer
     )
     player: Optional["Player"] = Relationship(back_populates="user")
