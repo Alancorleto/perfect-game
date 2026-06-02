@@ -5,12 +5,12 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from models.event import Event
 from models.player import Player
-from models.tournament_player import CategoryPlayerLink
+from models.tournament_player import TournamentPlayerLink
 from models.user import User
 
 if TYPE_CHECKING:
     from models.round import Round
-    from models.tournament_invitation import CategoryInvitation, CategoryJoinRequest
+    from models.tournament_invitation import TournamentInvitation, TournamentJoinRequest
 
 
 class TournamentBase(SQLModel):
@@ -22,16 +22,16 @@ class Tournament(TournamentBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     event_id: uuid.UUID = Field(foreign_key="event.id", ondelete="CASCADE")
 
-    player_links: list[CategoryPlayerLink] = Relationship(
+    player_links: list[TournamentPlayerLink] = Relationship(
         back_populates="category", cascade_delete=True
     )
     event: Event = Relationship(back_populates="categories")
     rounds: list["Round"] = Relationship(back_populates="category", cascade_delete=True)
 
-    invitations: list["CategoryInvitation"] = Relationship(
+    invitations: list["TournamentInvitation"] = Relationship(
         back_populates="category", cascade_delete=True
     )
-    join_requests: list["CategoryJoinRequest"] = Relationship(
+    join_requests: list["TournamentJoinRequest"] = Relationship(
         back_populates="category", cascade_delete=True
     )
 
@@ -52,7 +52,7 @@ class Tournament(TournamentBase, table=True):
 
     def add_player(self, player: Player, has_paid_entry: bool = False) -> None:
         if all(link.player_id != player.id for link in self.player_links):
-            player_link = CategoryPlayerLink(
+            player_link = TournamentPlayerLink(
                 player=player, category=self, has_paid_entry=has_paid_entry
             )
             self.player_links.append(player_link)

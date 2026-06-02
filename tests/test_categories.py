@@ -3,8 +3,8 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from models.tournament_invitation import (
-    CategoryInvitation,
-    CategoryJoinRequest,
+    TournamentInvitation,
+    TournamentJoinRequest,
     RequestStatus,
 )
 from models.round import RoundState
@@ -587,7 +587,7 @@ def test_invite_player_to_category_invitation_declined(
     player = create_player_in_db(session, user=player_user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    invitation = CategoryInvitation(
+    invitation = TournamentInvitation(
         player_id=player.id,
         category_id=category.id,
         status=RequestStatus.DECLINED,
@@ -619,7 +619,7 @@ def test_accept_category_invitation(session: Session, client: TestClient):
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
     category = create_category_in_db(session, event=event)
-    invitation = CategoryInvitation(category_id=category.id, player_id=player.id)
+    invitation = TournamentInvitation(category_id=category.id, player_id=player.id)
     session.add(invitation)
     session.commit()
 
@@ -695,7 +695,7 @@ def test_accept_category_invitation_already_accepted(
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
     category = create_category_in_db(session, event=event)
-    invitation = CategoryInvitation(
+    invitation = TournamentInvitation(
         category_id=category.id, player_id=player.id, status=RequestStatus.ACCEPTED
     )
     session.add(invitation)
@@ -722,7 +722,7 @@ def test_decline_category_invitation(session: Session, client: TestClient):
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
     category = create_category_in_db(session, event=event)
-    invitation = CategoryInvitation(category_id=category.id, player_id=player.id)
+    invitation = TournamentInvitation(category_id=category.id, player_id=player.id)
     session.add(invitation)
     session.commit()
 
@@ -799,7 +799,7 @@ def test_decline_category_invitation_already_declined(
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
     category = create_category_in_db(session, event=event)
-    invitation = CategoryInvitation(
+    invitation = TournamentInvitation(
         category_id=category.id, player_id=player.id, status=RequestStatus.DECLINED
     )
     session.add(invitation)
@@ -823,7 +823,7 @@ def test_decline_category_invitation_already_accepted(
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=user)
     category = create_category_in_db(session, event=event)
-    invitation = CategoryInvitation(
+    invitation = TournamentInvitation(
         category_id=category.id, player_id=player.id, status=RequestStatus.ACCEPTED
     )
     session.add(invitation)
@@ -853,7 +853,7 @@ def test_list_category_invitations(session: Session, client: TestClient):
     invited_player = create_player_in_db(session, user=invited_user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    invitation = CategoryInvitation(
+    invitation = TournamentInvitation(
         category_id=category.id,
         player_id=invited_player.id,
         status=RequestStatus.PENDING,
@@ -951,7 +951,7 @@ def test_list_category_join_requests(session: Session, client: TestClient):
     joining_player = create_player_in_db(session, user=joining_user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    join_request = CategoryJoinRequest(
+    join_request = TournamentJoinRequest(
         category_id=category.id,
         player_id=joining_player.id,
         status=RequestStatus.PENDING,
@@ -1142,7 +1142,7 @@ def test_request_join_category_existing_request_reopens(
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    join_request = CategoryJoinRequest(
+    join_request = TournamentJoinRequest(
         category_id=category.id,
         player_id=player.id,
         status=RequestStatus.DECLINED,
@@ -1177,7 +1177,7 @@ def test_accept_category_join_request(session: Session, client: TestClient):
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    join_request = CategoryJoinRequest(
+    join_request = TournamentJoinRequest(
         category_id=category.id, player_id=player.id, status=RequestStatus.PENDING
     )
     session.add(join_request)
@@ -1212,7 +1212,7 @@ def test_accept_category_join_request_unauthorized(
     player = create_player_in_db(session, user=player_user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    join_request = CategoryJoinRequest(category_id=category.id, player_id=player.id)
+    join_request = TournamentJoinRequest(category_id=category.id, player_id=player.id)
     session.add(join_request)
     session.commit()
 
@@ -1281,7 +1281,7 @@ def test_accept_category_join_request_player_already_in_category(
     category.add_player(player)
     session.add(category)
     session.commit()
-    join_request = CategoryJoinRequest(category_id=category.id, player_id=player.id)
+    join_request = TournamentJoinRequest(category_id=category.id, player_id=player.id)
     session.add(join_request)
     session.commit()
 
@@ -1326,7 +1326,7 @@ def test_accept_category_join_request_not_pending_accepted(
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    join_request = CategoryJoinRequest(
+    join_request = TournamentJoinRequest(
         category_id=category.id, player_id=player.id, status=RequestStatus.ACCEPTED
     )
     session.add(join_request)
@@ -1353,7 +1353,7 @@ def test_accept_category_join_request_not_pending_declined(
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    join_request = CategoryJoinRequest(
+    join_request = TournamentJoinRequest(
         category_id=category.id, player_id=player.id, status=RequestStatus.DECLINED
     )
     session.add(join_request)
@@ -1383,7 +1383,7 @@ def test_decline_category_join_request(session: Session, client: TestClient):
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    join_request = CategoryJoinRequest(
+    join_request = TournamentJoinRequest(
         category_id=category.id, player_id=player.id, status=RequestStatus.PENDING
     )
     session.add(join_request)
@@ -1418,7 +1418,7 @@ def test_decline_category_join_request_unauthorized(
     player = create_player_in_db(session, user=player_user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    join_request = CategoryJoinRequest(category_id=category.id, player_id=player.id)
+    join_request = TournamentJoinRequest(category_id=category.id, player_id=player.id)
     session.add(join_request)
     session.commit()
 
@@ -1487,7 +1487,7 @@ def test_decline_category_join_request_player_already_in_category(
     category.add_player(player)
     session.add(category)
     session.commit()
-    join_request = CategoryJoinRequest(category_id=category.id, player_id=player.id)
+    join_request = TournamentJoinRequest(category_id=category.id, player_id=player.id)
     session.add(join_request)
     session.commit()
 
@@ -1532,7 +1532,7 @@ def test_decline_category_join_request_not_pending_accepted(
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    join_request = CategoryJoinRequest(
+    join_request = TournamentJoinRequest(
         category_id=category.id, player_id=player.id, status=RequestStatus.ACCEPTED
     )
     session.add(join_request)
@@ -1559,7 +1559,7 @@ def test_decline_category_join_request_not_pending_declined(
     player = create_player_in_db(session, user=user)
     event = create_event_in_db(session, organizer=organizer)
     category = create_category_in_db(session, event=event)
-    join_request = CategoryJoinRequest(
+    join_request = TournamentJoinRequest(
         category_id=category.id, player_id=player.id, status=RequestStatus.DECLINED
     )
     session.add(join_request)

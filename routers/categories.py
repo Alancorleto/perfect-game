@@ -13,16 +13,16 @@ from models.tournament import (
     TournamentUpdate,
 )
 from models.tournament_invitation import (
-    CategoryInvitation,
-    CategoryInvitationPublic,
-    CategoryJoinRequest,
-    CategoryJoinRequestPublic,
     RequestStatus,
+    TournamentInvitation,
+    TournamentInvitationPublic,
+    TournamentJoinRequest,
+    TournamentJoinRequestPublic,
 )
 from models.tournament_player import (
-    CategoryPlayerLink,
-    CategoryPlayerLinkUpdate,
-    PlayerInCategory,
+    PlayerInTournament,
+    TournamentPlayerLink,
+    TournamentPlayerLinkUpdate,
 )
 from routers.players import Player, PlayerPublic
 from routers.rounds import RoundPublic, RoundState
@@ -221,7 +221,9 @@ async def bulk_add_guest_players_to_category(
     return db_category.get_players_by_nickname()
 
 
-@router.get("/{category_id}/invitations", response_model=list[CategoryInvitationPublic])
+@router.get(
+    "/{category_id}/invitations", response_model=list[TournamentInvitationPublic]
+)
 async def list_category_invitations(
     category_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
@@ -238,13 +240,13 @@ async def list_category_invitations(
             detail="You are not authorized to view this category's invitations",
         )
 
-    invitations: list[CategoryInvitationPublic] = []
+    invitations: list[TournamentInvitationPublic] = []
     for invitation in db_category.invitations:
         if invitation.issued_at < datetime.datetime.now() - datetime.timedelta(days=1):
             continue
 
         invitations.append(
-            CategoryInvitationPublic(
+            TournamentInvitationPublic(
                 category_id=invitation.category_id,
                 player=invitation.player,
                 status=invitation.status,
@@ -302,7 +304,7 @@ async def invite_player_to_category(
             for invitation in db_category.invitations
             if invitation.player_id == player_id
         ),
-        CategoryInvitation(category_id=category_id, player_id=player_id),
+        TournamentInvitation(category_id=category_id, player_id=player_id),
     )
 
     db_invitation.status = RequestStatus.PENDING
@@ -328,7 +330,7 @@ async def accept_category_invitation(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
         )
 
-    db_invitation = session.get(CategoryInvitation, (category_id, player.id))
+    db_invitation = session.get(TournamentInvitation, (category_id, player.id))
     if not db_invitation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found"
@@ -363,7 +365,7 @@ async def decline_category_invitation(
             status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
         )
 
-    db_invitation = session.get(CategoryInvitation, (category_id, player.id))
+    db_invitation = session.get(TournamentInvitation, (category_id, player.id))
     if not db_invitation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found"
@@ -387,7 +389,7 @@ async def decline_category_invitation(
 
 
 @router.get(
-    "/{category_id}/join_requests", response_model=list[CategoryJoinRequestPublic]
+    "/{category_id}/join_requests", response_model=list[TournamentJoinRequestPublic]
 )
 async def list_category_join_requests(
     category_id: uuid.UUID, session: SessionDep, user: UserDep
@@ -405,13 +407,13 @@ async def list_category_join_requests(
             detail="Not authorized to edit category",
         )
 
-    join_requests: list[CategoryJoinRequestPublic] = []
+    join_requests: list[TournamentJoinRequestPublic] = []
     for request in category.join_requests:
         if request.issued_at < datetime.datetime.now() - datetime.timedelta(days=1):
             continue
 
         join_requests.append(
-            CategoryJoinRequestPublic(
+            TournamentJoinRequestPublic(
                 player_id=request.player_id,
                 category=request.category,
                 status=request.status,
@@ -453,7 +455,7 @@ async def request_join_category(
 
     join_request = next(
         (request for request in db_category.join_requests if request.player == player),
-        CategoryJoinRequest(category_id=category_id, player_id=player.id),
+        TournamentJoinRequest(category_id=category_id, player_id=player.id),
     )
 
     join_request.status = RequestStatus.PENDING
@@ -569,7 +571,7 @@ async def decline_category_join_request(
     session.commit()
 
 
-@router.get("/{category_id}/players", response_model=list[PlayerInCategory])
+@router.get("/{category_id}/players", response_model=list[PlayerInTournament])
 async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
     """List all players in a category"""
     db_category = session.get(Tournament, category_id)
@@ -582,16 +584,18 @@ async def list_players_in_category(category_id: uuid.UUID, session: SessionDep):
 
 @router.put(
     "/{category_id}/players/{player_id}",
-    response_model=PlayerInCategory,
+    response_model=PlayerInTournament,
 )
 async def update_player_in_category(
     category_id: uuid.UUID,
     player_id: uuid.UUID,
-    category_player_link: CategoryPlayerLinkUpdate,
+    category_player_link: TournamentPlayerLinkUpdate,
     session: SessionDep,
     user: UserDep,
 ):
-    db_category_player_link = session.get(CategoryPlayerLink, (category_id, player_id))
+    db_category_player_link = session.get(
+        TournamentPlayerLink, (category_id, player_id)
+    )
     if not db_category_player_link:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -615,7 +619,7 @@ async def update_player_in_category(
 
 
 @router.delete(
-    "/{category_id}/players/{player_id}", response_model=list[PlayerInCategory]
+    "/{category_id}/players/{player_id}", response_model=list[PlayerInTournament]
 )
 async def remove_player_from_category(
     category_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
@@ -639,7 +643,9 @@ async def remove_player_from_category(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
         )
 
-    db_category_player_link = session.get(CategoryPlayerLink, (category_id, player_id))
+    db_category_player_link = session.get(
+        TournamentPlayerLink, (category_id, player_id)
+    )
     if not db_category_player_link:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Player not found in category"

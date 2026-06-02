@@ -10,11 +10,11 @@ if TYPE_CHECKING:
     from models.category import Category
 
 
-class CategoryPlayerLinkBase(SQLModel):
+class TournamentPlayerLinkBase(SQLModel):
     has_paid_entry: bool = Field(default=False)
 
 
-class CategoryPlayerLink(CategoryPlayerLinkBase, SQLModel, table=True):
+class TournamentPlayerLink(TournamentPlayerLinkBase, SQLModel, table=True):
     category_id: uuid.UUID = Field(
         foreign_key="category.id", primary_key=True, ondelete="CASCADE"
     )
@@ -26,13 +26,13 @@ class CategoryPlayerLink(CategoryPlayerLinkBase, SQLModel, table=True):
     player: Player = Relationship(back_populates="category_links")
 
 
-class CategoryPlayerLinkCreate(CategoryPlayerLinkBase):
+class TournamentPlayerLinkCreate(TournamentPlayerLinkBase):
     pass
 
 
-class CategoryPlayerLinkUpdate(SQLModel):
+class TournamentPlayerLinkUpdate(SQLModel):
     has_paid_entry: bool | None = Field(default=None)
 
 
-class PlayerInCategory(CategoryPlayerLinkBase):
+class PlayerInTournament(TournamentPlayerLinkBase):
     player: Player

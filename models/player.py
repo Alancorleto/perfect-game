@@ -9,8 +9,8 @@ from models.user import User
 if TYPE_CHECKING:
     from models.event import Event
     from models.score import Score
-    from models.tournament import CategoryInvitation, CategoryJoinRequest
-    from models.tournament_player import CategoryPlayerLink
+    from models.tournament import TournamentInvitation, TournamentJoinRequest
+    from models.tournament_player import TournamentPlayerLink
 
 NICKNAME_MAX_LENGTH = 30
 NAME_MAX_LENGTH = 50
@@ -45,13 +45,13 @@ class Player(PlayerBase, table=True):
 
     # This is not used but needed by SQLModel to work properly with cascade delete
     scores: list["Score"] = Relationship(back_populates="player", cascade_delete=True)
-    category_invitations: list["CategoryInvitation"] = Relationship(
+    category_invitations: list["TournamentInvitation"] = Relationship(
         back_populates="player", cascade_delete=True
     )
-    category_join_requests: list["CategoryJoinRequest"] = Relationship(
+    category_join_requests: list["TournamentJoinRequest"] = Relationship(
         back_populates="player", cascade_delete=True
     )
-    category_links: list["CategoryPlayerLink"] = Relationship(
+    category_links: list["TournamentPlayerLink"] = Relationship(
         back_populates="player", cascade_delete=True
     )
 
