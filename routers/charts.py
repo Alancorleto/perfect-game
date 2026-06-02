@@ -15,9 +15,17 @@ from models.player import Player
 from models.score_column import ScoreColumn
 from routers.users import UserDep
 
+description = """
+A chart is a level in rhythm games terms.\n
+A chart must be associated with any of the following:\n
+- A **score column**, which represents the chart that must be played in that column\n
+- A combination of **chart column** and **player**, which represents the chart that was played in that column by that player\n
+A chart has a song name, a player count, a mode, a level difficulty, and a title image which can be uploaded by an organizer.
+"""
+
 tag_metadata = {
     "name": "charts",
-    "description": "Operations related to charts",
+    "description": description,
 }
 
 router = APIRouter(prefix="/charts", tags=["charts"])
