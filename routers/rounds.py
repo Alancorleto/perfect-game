@@ -10,9 +10,21 @@ from models.round import Round, RoundCreate, RoundPublic, RoundState, RoundUpdat
 from models.score_table import ScoreTablePublic
 from routers.users import UserDep
 
+description = """
+A round is always associated with a **category** and has an **order_index**.\n
+A round can have one or more **score tables** associated with it
+(multiple score tables are needed for battle formats).\n
+A round is always in one of the following **states**:\n
+- not_started\n
+- in_progress\n
+- paused\n
+- finished
+"""
+
+
 tag_metadata = {
     "name": "rounds",
-    "description": "Operations related to rounds",
+    "description": description,
 }
 
 router = APIRouter(prefix="/rounds", tags=["rounds"])
