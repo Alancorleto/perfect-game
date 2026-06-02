@@ -48,7 +48,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 description = """
 A user is a registered person using the application.\n
-A user can manage **tournaments** and their **player profile**.\n
+A user can manage **events** and their **player profile**.\n
 To create a user account, use the `POST /users` endpoint.\n
 To authenticate in these docs, press the **Authorize** button
 in the top right corner.\n

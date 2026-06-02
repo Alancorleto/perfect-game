@@ -48,7 +48,7 @@ async def create_chart_column(
     if not db_score_column.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     if db_score_column.chart_column is not None:
@@ -97,7 +97,7 @@ async def update_chart_column(
     if not db_chart_column.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     chart_column_data = chart_column_update.model_dump(exclude_unset=True)

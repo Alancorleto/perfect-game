@@ -14,7 +14,7 @@ description = """
 A player is the profile of a competitor within a category.\n
 There are two types of players:
 - **Registered players**: These represent the public profile of a **user**.
-- **Unregistered players**: These are created as **temporary guests** for a **tournament** when a competitor is not registered as a user.\n
+- **Unregistered players**: These are created as **temporary guests** for a **event** when a competitor is not registered as a user.\n
 Typically, a user creates a player profile when they register.\n
 """
 
@@ -72,25 +72,25 @@ async def create_player(player: PlayerCreate, session: SessionDep, user: UserDep
     return db_player
 
 
-@router.post("/guest/{tournament_id}", response_model=PlayerPublic)
+@router.post("/guest/{event_id}", response_model=PlayerPublic)
 async def create_guest_player(
-    tournament_id: uuid.UUID, player: PlayerCreate, session: SessionDep, user: UserDep
+    event_id: uuid.UUID, player: PlayerCreate, session: SessionDep, user: UserDep
 ):
-    """Create a guest player for a tournament"""
-    tournament = session.get(Event, tournament_id)
-    if not tournament:
+    """Create a guest player for an event"""
+    event = session.get(Event, event_id)
+    if not event:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
         )
 
-    if not tournament.can_be_edited_by(user):
+    if not event.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     db_player = Player.model_validate(player)
-    db_player.guest_event_id = tournament_id
+    db_player.guest_event_id = event_id
 
     session.add(db_player)
     session.commit()

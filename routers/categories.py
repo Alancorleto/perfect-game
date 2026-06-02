@@ -24,7 +24,7 @@ from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
 
 description = """
-A category is a competition that happens within a **tournament**.\n
+A category is a competition that happens within a **event**.\n
 A category has one or more **rounds**. Each round has a specific order.\n
 An organizer can add **guest players** to a category.\n
 An organizer can **invite** a player with a registered account to a category, and the player can **accept** or **decline** the invitation.\n
@@ -62,16 +62,16 @@ async def get_category(category_id: uuid.UUID, session: SessionDep):
 async def create_category(category: CategoryCreate, session: SessionDep, user: UserDep):
     """Create a new category"""
 
-    tournament = session.get(Event, category.event_id)
-    if not tournament:
+    event = session.get(Event, category.event_id)
+    if not event:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
         )
 
-    if not tournament.can_be_edited_by(user):
+    if not event.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     db_category = Category.model_validate(category)
@@ -97,7 +97,7 @@ async def update_category(
     if not db_category.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     category_data = category.model_dump(exclude_unset=True)
@@ -185,7 +185,7 @@ async def bulk_add_guest_players_to_category(
     if not db_category.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     for player_id in player_ids:
@@ -673,7 +673,7 @@ async def change_round_order_in_category(
     if not db_category.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     existing_rounds = {round.id: round for round in db_category.rounds}

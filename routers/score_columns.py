@@ -53,7 +53,7 @@ async def create_score_column(
     if not db_score_table.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     db_score_column = ScoreColumn.model_validate(score_column)
@@ -98,7 +98,7 @@ async def update_score_column(
     if not db_score_column.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     score_column_data = score_column_update.model_dump(exclude_unset=True)

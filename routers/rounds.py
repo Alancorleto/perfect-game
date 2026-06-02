@@ -60,7 +60,7 @@ async def create_round(round: RoundCreate, session: SessionDep, user: UserDep):
     if not category.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     db_round = Round.model_validate(round)
@@ -87,7 +87,7 @@ async def update_round(
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     round_data = round.model_dump(exclude_unset=True)
@@ -198,7 +198,7 @@ async def delete_all_scores_in_round(
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     for db_score_table in db_round.score_tables:
@@ -222,7 +222,7 @@ async def start_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     if db_round.state != RoundState.NOT_STARTED:
@@ -268,7 +268,7 @@ async def cancel_round_start(round_id: uuid.UUID, session: SessionDep, user: Use
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     if db_round.state != RoundState.IN_PROGRESS:
@@ -304,7 +304,7 @@ async def pause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     if db_round.state != RoundState.IN_PROGRESS:
@@ -332,7 +332,7 @@ async def unpause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep)
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     if db_round.state != RoundState.PAUSED:
@@ -360,7 +360,7 @@ async def finish_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     if db_round.state != RoundState.IN_PROGRESS:
@@ -388,7 +388,7 @@ async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep, user: Us
     if not db_round.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     if db_round.state != RoundState.FINISHED:

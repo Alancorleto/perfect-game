@@ -57,7 +57,7 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
     if not db_score_column.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     if not any(

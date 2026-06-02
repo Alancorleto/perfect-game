@@ -47,7 +47,7 @@ async def create_score_table(
     if not round.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     db_score_table = ScoreTable.model_validate(score_table)
@@ -95,7 +95,7 @@ async def update_score_table(
     if not db_score_table.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     score_table_data = score_table.model_dump(exclude_unset=True)
@@ -167,7 +167,7 @@ async def update_score_column_order_in_score_table(
     if not db_score_table.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     if len(set(new_order)) != len(new_order):
@@ -214,7 +214,7 @@ async def bulk_add_players_to_score_table(
     if not db_score_table.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     # Filter out player IDs that are already in the score table
@@ -270,7 +270,7 @@ async def update_player_order_in_score_table(
     if not db_score_table.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     if len(player_ids) != len(db_score_table.player_rows):
@@ -325,7 +325,7 @@ async def remove_player_from_score_table(
     if not db_score_table.can_be_edited_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this tournament",
+            detail="You are not an organizer for this event",
         )
 
     player_row = next(
