@@ -14,6 +14,7 @@ from models.score_column import ScoreColumn
 from routers.users import UserDep
 
 description = """
+# Chart Columns
 A chart column is used when a **score column** has no **chart** associated with it,
 for example, when each player played a chart of their own choice.\n
 A chart column represents **which chart** each player played for the associated score column.
@@ -38,7 +39,7 @@ async def list_chart_columns(session: SessionDep):
 async def create_chart_column(
     chart_column: ChartColumnCreate, session: SessionDep, user: UserDep
 ):
-    """Create a chart column."""
+    """Create a chart column for a score column."""
     db_score_column = session.get(ScoreColumn, chart_column.score_column_id)
     if not db_score_column:
         raise HTTPException(
