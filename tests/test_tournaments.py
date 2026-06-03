@@ -1757,7 +1757,7 @@ def test_update_player_in_tournament(session: Session, client: TestClient):
     session.commit()
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    response = client.put(
+    response = client.patch(
         f"/tournaments/{tournament.id}/players/{player.id}",
         json={"has_paid_entry": True},
         headers=headers,
@@ -1777,7 +1777,7 @@ def test_update_player_in_tournament_not_found(session: Session, client: TestCli
     tournament = create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    response = client.put(
+    response = client.patch(
         f"/tournaments/{tournament.id}/players/00000000-0000-0000-0000-000000000000",
         json={"has_paid_entry": True},
         headers=headers,

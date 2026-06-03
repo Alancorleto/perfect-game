@@ -29,6 +29,7 @@ from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
 
 description = """
+# Tournaments
 A tournament is a competition that happens within an **event**. When an event has more than one tournament, they are sometimes called "categories".\n
 A tournament has one or more **rounds**. Each round has a specific order.\n
 An organizer can add **guest players** to a tournament.\n
@@ -47,14 +48,14 @@ router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 @router.get("/", response_model=list[TournamentPublic])
 async def list_tournaments(session: SessionDep):
-    """List all tournaments"""
+    """List all tournaments."""
     tournaments = session.exec(select(Tournament)).all()
     return tournaments
 
 
 @router.get("/{tournament_id}", response_model=TournamentPublic)
 async def get_tournament(tournament_id: uuid.UUID, session: SessionDep):
-    """Get a specific tournament"""
+    """Get a specific tournament."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -67,7 +68,7 @@ async def get_tournament(tournament_id: uuid.UUID, session: SessionDep):
 async def create_tournament(
     tournament: TournamentCreate, session: SessionDep, user: UserDep
 ):
-    """Create a new tournament"""
+    """Create a new tournament."""
 
     event = session.get(Event, tournament.event_id)
     if not event:
@@ -97,7 +98,7 @@ async def update_tournament(
     session: SessionDep,
     user: UserDep,
 ):
-    """Update a tournament"""
+    """Update a tournament."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -124,14 +125,16 @@ async def update_tournament(
 async def delete_tournament(
     tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Delete a tournament"""
+    """Delete a tournament.
+
+    A tournament can only be deleted if no rounds have started inside it."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
         )
 
-    if not db_tournament.can_be_edited_by(user):
+    if not db_tournament.can_be_deleted_by(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied",
@@ -148,7 +151,9 @@ async def add_guest_player_to_tournament(
     session: SessionDep,
     user: UserDep,
 ):
-    """Add a guest player to a tournament"""
+    """Add a guest player to a tournament.
+
+    The player must be a guest player previously created for the event."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -173,6 +178,18 @@ async def add_guest_player_to_tournament(
             detail="Player is already registered",
         )
 
+    if db_player in db_tournament.get_players_by_nickname():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Player is already in the tournament",
+        )
+
+    if db_player not in db_tournament.event.guest_players:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Player is not a guest player",
+        )
+
     db_tournament.add_player(db_player)
     session.commit()
     session.refresh(db_tournament)
@@ -187,7 +204,11 @@ async def bulk_add_guest_players_to_tournament(
     session: SessionDep,
     user: UserDep,
 ):
-    """Bulk add guest players to a tournament"""
+    """Bulk add guest players to a tournament.
+
+    It filters players already in the tournament.
+
+    The players must be guest players previously created for the event."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -199,6 +220,13 @@ async def bulk_add_guest_players_to_tournament(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not an organizer for this event",
         )
+
+    player_ids_already_in_tournament = [
+        p.id for p in db_tournament.get_players_by_nickname()
+    ]
+    player_ids = filter(
+        lambda id: id not in player_ids_already_in_tournament, player_ids
+    )
 
     for player_id in player_ids:
         db_player = session.get(Player, player_id)
@@ -212,6 +240,12 @@ async def bulk_add_guest_players_to_tournament(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Player with ID {player_id} is already registered",
+            )
+
+        if db_player not in db_tournament.event.guest_players:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Player with ID {player_id} is not a guest player for this tournament",
             )
 
         db_tournament.add_player(db_player)
@@ -229,7 +263,7 @@ async def bulk_add_guest_players_to_tournament(
 async def list_tournament_invitations(
     tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """List all invitations for a tournament"""
+    """List all invitations for a tournament."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -264,7 +298,7 @@ async def list_tournament_invitations(
 async def invite_player_to_tournament(
     tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Invite a player to a tournament"""
+    """As an organizer, invite a player to a tournament."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -319,6 +353,8 @@ async def invite_player_to_tournament(
 async def accept_tournament_invitation(
     tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
+    """As a player, accept a tournament invitation."""
+
     player = user.player
     if not player:
         raise HTTPException(
@@ -354,6 +390,7 @@ async def accept_tournament_invitation(
 async def decline_tournament_invitation(
     tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
+    """As a player, decline a tournament invitation."""
     player = user.player
     if not player:
         raise HTTPException(
@@ -396,7 +433,7 @@ async def decline_tournament_invitation(
 async def list_tournament_join_requests(
     tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """List all join requests for a tournament"""
+    """List all join requests for a tournament."""
     tournament = session.get(Tournament, tournament_id)
     if not tournament:
         raise HTTPException(
@@ -429,7 +466,7 @@ async def list_tournament_join_requests(
 async def request_join_tournament(
     tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Request to join a tournament"""
+    """As a player, request to join a tournament."""
     player = user.player
 
     if not player:
@@ -475,6 +512,7 @@ async def request_join_tournament(
 async def accept_tournament_join_request(
     tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
+    """As an organizer, accept a tournament join request."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -529,6 +567,7 @@ async def accept_tournament_join_request(
 async def decline_tournament_join_request(
     tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
+    """As an organizer, decline a tournament join request."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -579,7 +618,7 @@ async def decline_tournament_join_request(
 
 @router.get("/{tournament_id}/players", response_model=list[PlayerInTournament])
 async def list_players_in_tournament(tournament_id: uuid.UUID, session: SessionDep):
-    """List all players in a tournament"""
+    """List all players in a tournament."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -588,7 +627,7 @@ async def list_players_in_tournament(tournament_id: uuid.UUID, session: SessionD
     return db_tournament.player_links
 
 
-@router.put(
+@router.patch(
     "/{tournament_id}/players/{player_id}",
     response_model=PlayerInTournament,
 )
@@ -599,6 +638,7 @@ async def update_player_in_tournament(
     session: SessionDep,
     user: UserDep,
 ):
+    """Update player information related to a tournament. For example, if a player paid for their entry."""
     db_tournament_player_link = session.get(
         TournamentPlayerLink, (tournament_id, player_id)
     )
@@ -630,7 +670,9 @@ async def update_player_in_tournament(
 async def remove_player_from_tournament(
     tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Remove a player from a tournament"""
+    """Remove a player from a tournament.
+
+    A player can only be removed from a tournament if no rounds have started inside it."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -658,6 +700,12 @@ async def remove_player_from_tournament(
             detail="Player not found in tournament",
         )
 
+    if any(round.state != RoundState.NOT_STARTED for round in db_tournament.rounds):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tournament has already started",
+        )
+
     session.delete(db_tournament_player_link)
     session.commit()
     session.refresh(db_tournament)
@@ -670,6 +718,7 @@ async def list_rounds_in_tournament(
     tournament_id: uuid.UUID,
     session: SessionDep,
 ):
+    """List all rounds in a tournament by order."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -682,11 +731,13 @@ async def list_rounds_in_tournament(
 @router.put("/{tournament_id}/rounds/order", response_model=list[RoundPublic])
 async def change_round_order_in_tournament(
     tournament_id: uuid.UUID,
-    round_order: list[uuid.UUID],
+    new_round_order: list[uuid.UUID],
     session: SessionDep,
     user: UserDep,
 ):
-    """Change the order of rounds within a tournament."""
+    """Change the order of rounds within a tournament.
+
+    The provided list must be the IDs of the rounds in the tournament in their new order."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -701,13 +752,13 @@ async def change_round_order_in_tournament(
 
     existing_rounds = {round.id: round for round in db_tournament.rounds}
 
-    if len(round_order) != len(existing_rounds):
+    if len(new_round_order) != len(existing_rounds):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Round order must match the number of rounds in the tournament",
         )
 
-    if set(round_order) != set(existing_rounds.keys()):
+    if set(new_round_order) != set(existing_rounds.keys()):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Round order must have the same rounds as the tournament",
@@ -715,7 +766,7 @@ async def change_round_order_in_tournament(
 
     if any(
         round.state != RoundState.NOT_STARTED
-        and round_order[round.order_index] != round_id
+        and new_round_order[round.order_index] != round_id
         for round_id, round in existing_rounds.items()
     ):
         raise HTTPException(
@@ -723,7 +774,7 @@ async def change_round_order_in_tournament(
             detail="Cannot change round order for a round that has already started",
         )
 
-    for new_index, round_id in enumerate(round_order):
+    for new_index, round_id in enumerate(new_round_order):
         round = existing_rounds[round_id]
         if not round:
             raise HTTPException(
