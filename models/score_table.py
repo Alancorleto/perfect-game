@@ -24,10 +24,8 @@ class ScoreTableFormat(Enum):
 class Result(BaseModel):
     player_id: uuid.UUID
     player_order_index: int
-    score_table_id: uuid.UUID
-    chart_order_index: int
     score_id: uuid.UUID | None = None
-    score: int = 0
+    score_value: int = 0
     place: int = -1
     is_tie: bool = False
 
@@ -149,9 +147,7 @@ def _populate_column_results(score_column: "ScoreColumn") -> ChartResults:
         result = Result(
             player_id=score.player_id,
             player_order_index=player_order_index,
-            score_table_id=score_column.score_table_id,
-            chart_order_index=score_column.order_index,
-            score=score.value,
+            score_value=score.value,
             score_id=score.id,
         )
 
@@ -163,7 +159,7 @@ def _populate_column_results(score_column: "ScoreColumn") -> ChartResults:
 
 
 def _sort_chart_results(chart_results: ChartResults):
-    chart_results.results.sort(key=lambda r: (-r.score, r.player_order_index))
+    chart_results.results.sort(key=lambda r: (-r.score_value, r.player_order_index))
 
     if len(chart_results.results) > 0:
         chart_results.results[0].place = 1
@@ -173,7 +169,7 @@ def _sort_chart_results(chart_results: ChartResults):
         result = chart_results.results[i]
         previous_result = chart_results.results[i - 1]
 
-        if result.score == previous_result.score:
+        if result.score_value == previous_result.score_value:
             result.is_tie = True
             previous_result.is_tie = True
             result.place = previous_result.place
@@ -200,8 +196,6 @@ def _populate_player_results(
             result = Result(
                 player_id=player.id,
                 player_order_index=player_row.order_index,
-                score_table_id=score_table.id,
-                chart_order_index=chart_order_index,
                 place=len(chart_results.results) + 1,
             )
 
@@ -224,7 +218,7 @@ def _calculate_player_total_score(
 ):
     if score_table_format == ScoreTableFormat.SCORE_SUM:
         for result in player_results.results:
-            player_results.total_score += result.score
+            player_results.total_score += result.score_value
 
     elif score_table_format == ScoreTableFormat.BATTLE:
         for result in player_results.results:
