@@ -38,4 +38,5 @@ def create_db_and_tables():
 
 @app.get("/health")
 def health():
+    """Return the health status of the application."""
     return {"status": "ok"}
