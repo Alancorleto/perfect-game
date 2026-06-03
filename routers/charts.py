@@ -16,6 +16,7 @@ from models.score_column import ScoreColumn
 from routers.users import UserDep
 
 description = """
+# Charts
 A chart is a level in rhythm games terms.\n
 A chart must be associated with any of the following:\n
 - A **score column**, which represents the chart that must be played in that column\n
@@ -33,7 +34,7 @@ router = APIRouter(prefix="/charts", tags=["charts"])
 
 @router.get("/", response_model=list[ChartPublic])
 async def list_charts(session: SessionDep):
-    """List all charts"""
+    """List all charts."""
     charts = session.exec(select(Chart)).all()
     return charts
 
@@ -42,7 +43,9 @@ async def list_charts(session: SessionDep):
 async def fuzzy_search_titles(
     session: SessionDep, search: str = Query(min_length=1)
 ) -> list[str]:
-    """Return chart title URLs that approximately match a song name."""
+    """Receives a song name as input and returns a list of title URLs that are used by charts with a similar name.
+
+    This endpoint helps organizers reuse title URLs for songs that have already been uploaded."""
     SIMILARITY_SCORE_THRESHOLD = 0.55
 
     song_name = search
@@ -65,7 +68,7 @@ async def fuzzy_search_titles(
 
 @router.get("/{chart_id}", response_model=ChartPublic)
 async def get_chart(chart_id: uuid.UUID, session: SessionDep):
-    """Get a specific chart"""
+    """Get a specific chart."""
     chart = session.get(Chart, chart_id)
     if not chart:
         raise HTTPException(
@@ -83,7 +86,14 @@ async def create_chart(
     chart_column_id: uuid.UUID | None = None,
     chart_column_player_id: uuid.UUID | None = None,
 ):
-    """Create a new chart"""
+    """Create a new chart.
+
+    To correctly use this endpoint, one of the following conditions must be met:
+    - If the chart is for a score column, `score_column_id` must be provided
+    - If the chart is for a chart column, `chart_column_id` and `chart_column_player_id` must both be provided
+
+    Any other combination will result in a `400 Bad Request` response.
+    """
     db_chart = Chart.model_validate(chart)
 
     if score_column_id is not None:
@@ -139,7 +149,7 @@ async def create_chart(
 async def update_chart(
     chart_id: uuid.UUID, chart: ChartUpdate, session: SessionDep, user: UserDep
 ):
-    """Update a chart"""
+    """Update a chart."""
     db_chart = session.get(Chart, chart_id)
     if not db_chart:
         raise HTTPException(
@@ -164,7 +174,7 @@ async def update_chart(
 
 @router.delete("/{chart_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_chart(chart_id: uuid.UUID, session: SessionDep, user: UserDep):
-    """Delete a chart"""
+    """Delete a chart."""
     db_chart = session.get(Chart, chart_id)
     if not db_chart:
         raise HTTPException(
@@ -185,7 +195,7 @@ async def delete_chart(chart_id: uuid.UUID, session: SessionDep, user: UserDep):
 async def upload_chart_title(
     chart_id: uuid.UUID, title_file: Annotated[bytes, File()], session: SessionDep
 ):
-    """Upload a chart title"""
+    """Upload a chart title."""
     db_chart = session.get(Chart, chart_id)
     if not db_chart:
         raise HTTPException(
