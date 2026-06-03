@@ -10,6 +10,7 @@ from models.score_column import ScoreColumn
 from routers.users import UserDep
 
 description = """
+# Scores
 Score is the entity that represents a **player**'s performance for a **score column**.
 """
 
@@ -23,14 +24,14 @@ router = APIRouter(prefix="/scores", tags=["scores"])
 
 @router.get("/", response_model=list[ScorePublic])
 async def list_scores(session: SessionDep):
-    """List all scores"""
+    """List all scores."""
     scores = session.exec(select(Score)).all()
     return scores
 
 
 @router.get("/{score_id}", response_model=ScorePublic)
 async def get_score(score_id: uuid.UUID, session: SessionDep):
-    """Get a specific score"""
+    """Get a specific score."""
     score = session.get(Score, score_id)
     if not score:
         raise HTTPException(
@@ -41,7 +42,7 @@ async def get_score(score_id: uuid.UUID, session: SessionDep):
 
 @router.post("/", response_model=ScorePublic)
 async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
-    """Create a new score"""
+    """Create a new score for a player and score column."""
     db_player = session.get(Player, score.player_id)
     if not db_player:
         raise HTTPException(
@@ -89,7 +90,7 @@ async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
 async def update_score(
     score_id: uuid.UUID, score: ScoreUpdate, session: SessionDep, user: UserDep
 ):
-    """Update a score"""
+    """Update a score."""
     db_score = session.get(Score, score_id)
     if not db_score:
         raise HTTPException(
@@ -114,7 +115,10 @@ async def update_score(
 
 @router.delete("/{score_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_score(score_id: uuid.UUID, session: SessionDep, user: UserDep):
-    """Delete a score"""
+    """Delete a score.
+
+    A score cannot be deleted from a finished round.
+    """
     db_score = session.get(Score, score_id)
     if not db_score:
         raise HTTPException(
@@ -125,6 +129,12 @@ async def delete_score(score_id: uuid.UUID, session: SessionDep, user: UserDep):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied",
+        )
+
+    if db_score.score_column.score_table.round.state == RoundState.FINISHED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete a score from a finished round",
         )
 
     session.delete(db_score)
