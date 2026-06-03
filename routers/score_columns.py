@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
-from models.chart import Chart
+from models.round import RoundState
 from models.score_column import (
     ScoreColumn,
     ScoreColumnCreate,
@@ -15,6 +15,7 @@ from models.score_table import ScoreTable
 from routers.users import UserDep
 
 description = """
+# Score Columns
 Score column is the entity that contains a list of scores that are meant
 to be compared against each other.\n
 A score column is always associated with a **score table** and has an **order_index**.\n
@@ -43,7 +44,7 @@ async def list_score_columns(session: SessionDep):
 async def create_score_column(
     score_column: ScoreColumnCreate, session: SessionDep, user: UserDep
 ):
-    """Create a score column."""
+    """Create a score column for a score table."""
     db_score_table = session.get(ScoreTable, score_column.score_table_id)
     if not db_score_table:
         raise HTTPException(
@@ -115,7 +116,9 @@ async def update_score_column(
 async def delete_score_column(
     score_column_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Delete a score column."""
+    """Delete a score column.
+
+    A score column cannot be deleted if the round is finished."""
     db_score_column = session.get(ScoreColumn, score_column_id)
     if not db_score_column:
         raise HTTPException(
@@ -132,6 +135,12 @@ async def delete_score_column(
     if not db_score_table:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Score table not found"
+        )
+
+    if db_score_table.round.state == RoundState.FINISHED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot delete score column after round is finished",
         )
 
     deleted_column_order_index = db_score_column.order_index
