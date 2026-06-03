@@ -365,8 +365,8 @@ def test_bulk_add_players_to_tournament(session: Session, client: TestClient):
     )
     event = create_event_in_db(session, organizer=organizer)
     tournament = create_tournament_in_db(session, event=event)
-    player_a = create_player_in_db(session, nickname="PlayerA")
-    player_b = create_player_in_db(session, nickname="PlayerB")
+    player_a = create_player_in_db(session, nickname="PlayerA", guest_event=event)
+    player_b = create_player_in_db(session, nickname="PlayerB", guest_event=event)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(

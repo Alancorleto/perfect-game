@@ -46,8 +46,8 @@ class Event(EventBase, table=True):
         return user in self.organizers or user.is_super_admin
 
     def can_be_deleted(self, user: User) -> bool:
-        return self.can_be_edited_by(user) and all(
-            tournament.can_be_deleted(user) for tournament in self.tournaments
+        return self.can_be_edited_by(user) and not any(
+            tournament.has_started() for tournament in self.tournaments
         )
 
     def get_tournaments_by_name(self) -> list["Tournament"]:

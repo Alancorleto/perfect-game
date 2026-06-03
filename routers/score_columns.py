@@ -137,12 +137,6 @@ async def delete_score_column(
             status_code=status.HTTP_404_NOT_FOUND, detail="Score table not found"
         )
 
-    if db_score_table.round.state == RoundState.FINISHED:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot delete score column after round is finished",
-        )
-
     deleted_column_order_index = db_score_column.order_index
 
     session.delete(db_score_column)

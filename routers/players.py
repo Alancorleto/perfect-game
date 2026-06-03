@@ -37,11 +37,10 @@ async def list_players(
 
     if country_code is not None:
         query = query.where(
-            Player.country_code == country_code.upper()
-            and Player.guest_tournament_id is None
+            Player.country_code == country_code.upper() and Player.user is not None
         )
     else:
-        query = query.where(Player.guest_tournament_id is None)
+        query = query.where(Player.user is not None)
 
     players = session.exec(query).all()
     return players

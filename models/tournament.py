@@ -41,9 +41,13 @@ class Tournament(TournamentBase, table=True):
         return self.event.can_be_edited_by(user)
 
     def can_be_deleted(self, user: User) -> bool:
-        return user.is_super_admin or all(
-            round.can_be_deleted(user) for round in self.rounds
+        return user.is_super_admin or (
+            self.event.can_be_deleted(user)
+            and all(round.can_be_deleted(user) for round in self.rounds)
         )
+
+    def has_started(self) -> bool:
+        return any(round.has_started() for round in self.rounds)
 
     def get_players_by_nickname(self) -> list[Player]:
         players = [link.player for link in self.player_links]

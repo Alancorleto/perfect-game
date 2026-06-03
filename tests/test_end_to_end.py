@@ -154,7 +154,7 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
     assert results[0]["total_score"] == 987654
     assert len(results[0]["results"]) == 1
     assert results[0]["results"][0]["score_id"] == score_id
-    assert results[0]["results"][0]["score"] == 987654
+    assert results[0]["results"][0]["score_value"] == 987654
     assert results[0]["results"][0]["place"] == 1
 
 

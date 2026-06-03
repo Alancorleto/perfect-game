@@ -42,6 +42,9 @@ class Round(RoundBase, table=True):
     def can_be_deleted(self, user: User) -> bool:
         return self.can_be_edited_by(user) and self.state == RoundState.NOT_STARTED
 
+    def has_started(self) -> bool:
+        return self.state != RoundState.NOT_STARTED
+
     def get_qualifying_players(self) -> list[Player]:
         qualifying_players = []
 
