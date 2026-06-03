@@ -11,6 +11,7 @@ from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
 from routers.users import UserDep
 
 description = """
+# Players
 A player is the profile of a competitor within a tournament.\n
 There are two types of players:
 - **Registered players**: These represent the public profile of a **user**.
@@ -31,11 +32,16 @@ async def list_players(
     session: SessionDep,
     country_code: str | None = Query(default=None, min_length=2, max_length=2),
 ):
-    """List players, optionally filtered by country code."""
+    """List registered players, optionally filtered by country code."""
     query = select(Player)
 
     if country_code is not None:
-        query = query.where(Player.country_code == country_code.upper())
+        query = query.where(
+            Player.country_code == country_code.upper()
+            and Player.guest_tournament_id is None
+        )
+    else:
+        query = query.where(Player.guest_tournament_id is None)
 
     players = session.exec(query).all()
     return players
@@ -43,7 +49,7 @@ async def list_players(
 
 @router.get("/{player_id}", response_model=PlayerPublic)
 async def get_player(player_id: uuid.UUID, session: SessionDep):
-    """Get a specific player"""
+    """Get a specific player."""
     db_player = session.get(Player, player_id)
     if not db_player:
         raise HTTPException(
@@ -54,7 +60,9 @@ async def get_player(player_id: uuid.UUID, session: SessionDep):
 
 @router.post("/", response_model=PlayerPublic)
 async def create_player(player: PlayerCreate, session: SessionDep, user: UserDep):
-    """Create a new player"""
+    """Create a new player profile for the currently logged-in user.
+
+    user_id is not provided, as it is automatically set to the logged-in user's ID."""
     all_players = session.exec(select(Player)).all()
     if any(p.user_id == user.id for p in all_players):
         raise HTTPException(
@@ -76,7 +84,7 @@ async def create_player(player: PlayerCreate, session: SessionDep, user: UserDep
 async def create_guest_player(
     event_id: uuid.UUID, player: PlayerCreate, session: SessionDep, user: UserDep
 ):
-    """Create a guest player for an event"""
+    """Create a guest player for an event."""
     event = session.get(Event, event_id)
     if not event:
         raise HTTPException(
@@ -102,7 +110,7 @@ async def create_guest_player(
 async def update_player(
     player_id: uuid.UUID, player: PlayerUpdate, session: SessionDep, user: UserDep
 ):
-    """Update a player"""
+    """Update a player."""
     db_player = session.get(Player, player_id)
     if not db_player:
         raise HTTPException(
@@ -126,7 +134,7 @@ async def update_player(
 async def delete_player(
     player_id: uuid.UUID, session: SessionDep, user: UserDep
 ) -> None:
-    """Delete a player"""
+    """Delete a player. Can only be called by a super admin."""
     db_player = session.get(Player, player_id)
     if not db_player:
         raise HTTPException(
@@ -150,7 +158,7 @@ async def upload_profile_picture(
     session: SessionDep,
     user: UserDep,
 ):
-    """Upload a player's profile picture"""
+    """Upload a player's profile picture."""
     db_player = session.get(Player, player_id)
     if not db_player:
         raise HTTPException(
