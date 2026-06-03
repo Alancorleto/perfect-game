@@ -40,7 +40,7 @@ class PlayerResults(BaseModel):
     is_tie: bool = False
 
 
-class ChartResults(BaseModel):
+class ColumnResults(BaseModel):
     score_column_id: uuid.UUID
     results: list[Result] = []
 
@@ -93,7 +93,7 @@ class ScoreTable(ScoreTableBase, table=True):
     def get_results(self) -> list[PlayerResults]:
         score_columns = self.get_score_columns_by_order()
 
-        chart_results_list: list[ChartResults] = []
+        chart_results_list: list[ColumnResults] = []
         for score_column in score_columns:
             chart_results = _populate_column_results(score_column)
             chart_results_list.append(chart_results)
@@ -135,8 +135,8 @@ class ScoreTablePublic(ScoreTableBase):
     round_id: uuid.UUID
 
 
-def _populate_column_results(score_column: "ScoreColumn") -> ChartResults:
-    chart_results = ChartResults(score_column_id=score_column.id, results=[])
+def _populate_column_results(score_column: "ScoreColumn") -> ColumnResults:
+    chart_results = ColumnResults(score_column_id=score_column.id, results=[])
 
     for score in score_column.scores:
         player_order_index = next(
@@ -158,7 +158,7 @@ def _populate_column_results(score_column: "ScoreColumn") -> ChartResults:
     return chart_results
 
 
-def _sort_chart_results(chart_results: ChartResults):
+def _sort_chart_results(chart_results: ColumnResults):
     chart_results.results.sort(key=lambda r: (-r.score_value, r.player_order_index))
 
     if len(chart_results.results) > 0:
@@ -178,7 +178,7 @@ def _sort_chart_results(chart_results: ChartResults):
 
 
 def _populate_player_results(
-    player_row: PlayerRow, chart_results_list: list[ChartResults]
+    player_row: PlayerRow, chart_results_list: list[ColumnResults]
 ) -> list[PlayerResults]:
     player = player_row.player
     score_table = player_row.score_table
