@@ -17,6 +17,7 @@ from models.tournament import TournamentPublic
 from routers.users import UserDep
 
 description = """
+# Events
 An event is a collection of competitions that happen at a specified time and location.\n
 An event is composed of one or more **tournaments**.\n
 An event has one or more **organizers**.\n
@@ -49,7 +50,7 @@ async def list_events(
 
 @router.get("/{event_id}", response_model=EventPublic)
 async def get_event(event_id: uuid.UUID, session: SessionDep):
-    """Get a specific event"""
+    """Get a specific event."""
     db_event = session.get(Event, event_id)
     if not db_event:
         raise HTTPException(
@@ -60,7 +61,7 @@ async def get_event(event_id: uuid.UUID, session: SessionDep):
 
 @router.post("/", response_model=EventPublic)
 async def create_event(event: EventCreate, session: SessionDep, user: UserDep):
-    """Create a new event"""
+    """Create a new event. The organizer will be the currently logged-in user."""
     db_event = Event.model_validate(event)
     session.add(db_event)
     session.commit()
@@ -81,7 +82,7 @@ async def update_event(
     session: SessionDep,
     user: UserDep,
 ):
-    """Update an event"""
+    """Update an event."""
     db_event = session.get(Event, event_id)
     if not db_event:
         raise HTTPException(
@@ -104,7 +105,7 @@ async def update_event(
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_event(event_id: uuid.UUID, session: SessionDep, user: UserDep) -> None:
-    """Delete an event"""
+    """Delete an event. An event can only be deleted if no rounds have been started for any of its tournaments."""
     db_event = session.get(Event, event_id)
     if not db_event:
         raise HTTPException(
@@ -123,7 +124,7 @@ async def delete_event(event_id: uuid.UUID, session: SessionDep, user: UserDep) 
 
 @router.get("/{event_id}/tournaments", response_model=list[TournamentPublic])
 async def list_event_tournaments(event_id: uuid.UUID, session: SessionDep):
-    """List all tournaments for an event"""
+    """List all tournaments for an event."""
     db_event = session.get(Event, event_id)
     if not db_event:
         raise HTTPException(
@@ -134,7 +135,7 @@ async def list_event_tournaments(event_id: uuid.UUID, session: SessionDep):
 
 @router.get("/{event_id}/organizers", response_model=list[PlayerPublic])
 async def list_event_organizers(event_id: uuid.UUID, session: SessionDep):
-    """Get all organizers for an event"""
+    """List all organizers for an event."""
     db_event = session.get(Event, event_id)
 
     if not db_event:
@@ -149,7 +150,9 @@ async def list_event_organizers(event_id: uuid.UUID, session: SessionDep):
 async def add_organizer_to_event(
     event_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Add a player as an organizer to an event"""
+    """Add a player as an organizer to an event.
+
+    The organizer's player_id must be provided."""
     db_event = session.get(Event, event_id)
     if not db_event:
         raise HTTPException(
@@ -191,7 +194,11 @@ async def add_organizer_to_event(
 async def remove_organizer_from_event(
     event_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Remove a player as an organizer from an event"""
+    """Remove an organizer from an event.
+
+    The organizer's player_id must be provided.
+
+    An event must always have at least one organizer."""
     db_event = session.get(Event, event_id)
     if not db_event:
         raise HTTPException(
@@ -241,7 +248,7 @@ async def upload_event_logo(
     session: SessionDep,
     user: UserDep,
 ):
-    """Upload an event logo"""
+    """Upload an event logo."""
     db_event = session.get(Event, event_id)
     if not db_event:
         raise HTTPException(
