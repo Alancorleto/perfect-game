@@ -951,7 +951,7 @@ def test_get_score_table_results_score_sum(session: Session, client: TestClient)
     assert [r["player_id"] for r in data] == [str(player_a.id), str(player_b.id)]
     assert data[0]["total_score"] == 1700000
     assert data[1]["total_score"] == 850000
-    assert data[1]["results"][1]["score"] == 0
+    assert data[1]["results"][1]["score_value"] == 0
     assert data[1]["results"][1]["place"] == 2
     assert data[0]["place"] == 1
     assert data[1]["place"] == 2
@@ -1039,13 +1039,13 @@ def test_get_score_table_results_not_found(client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# GET /score_tables/{score_table_id}/possible-players
+# GET /score_tables/{score_table_id}/candidate-players
 # ---------------------------------------------------------------------------
 
 
 def test_list_possible_players_for_score_table_not_found(client: TestClient):
     response = client.get(
-        "/score_tables/00000000-0000-0000-0000-000000000000/possible-players"
+        "/score_tables/00000000-0000-0000-0000-000000000000/candidate-players"
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -1075,7 +1075,7 @@ def test_list_possible_players_for_score_table_first_round_excludes_current_play
         session, score_table, player=player_b, order_index=0
     )
 
-    response = client.get(f"/score_tables/{score_table.id}/possible-players")
+    response = client.get(f"/score_tables/{score_table.id}/candidate-players")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -1107,7 +1107,7 @@ def test_list_possible_players_for_score_table_first_round_empty_when_all_are_in
         session, score_table, player=player_b, order_index=1
     )
 
-    response = client.get(f"/score_tables/{score_table.id}/possible-players")
+    response = client.get(f"/score_tables/{score_table.id}/candidate-players")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
@@ -1153,7 +1153,7 @@ def test_list_possible_players_for_score_table_second_round_uses_previous_qualif
         session, player=player_b, score_column=score_column, value=800000
     )
 
-    response = client.get(f"/score_tables/{second_score_table.id}/possible-players")
+    response = client.get(f"/score_tables/{second_score_table.id}/candidate-players")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -1201,7 +1201,7 @@ def test_list_possible_players_for_score_table_second_round_excludes_players_alr
         session, player=player_b, score_column=score_column, value=800000
     )
 
-    response = client.get(f"/score_tables/{second_score_table.id}/possible-players")
+    response = client.get(f"/score_tables/{second_score_table.id}/candidate-players")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []

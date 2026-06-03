@@ -5,7 +5,7 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.player import Player, PlayerPublic
-from models.round import Round
+from models.round import Round, RoundState
 from models.score_column import ScoreColumnPublic
 from models.score_table import (
     PlayerResults,
@@ -17,6 +17,7 @@ from models.score_table import (
 from routers.users import UserDep
 
 description = """
+# Score Tables
 A score table is an entity in which players compare their scores against each other within a **round**.\n
 A score table is composed of the **players** that are competing inside it
 and the **score columns** that contain the actual scores.\n
@@ -31,6 +32,87 @@ tag_metadata = {
 }
 
 router = APIRouter(prefix="/score_tables", tags=["score_tables"])
+
+GET_SCORE_TABLE_RESULTS_EXAMPLE = [
+    {
+        "player_id": "2f4f3f92-55b2-4c7a-9c3a-8d2d2f6b8c11",
+        "player": {
+            "id": "2f4f3f92-55b2-4c7a-9c3a-8d2d2f6b8c11",
+            "nickname": "Player 1",
+            "country_code": "AR",
+            "name": "",
+            "team_name": "",
+            "birth_date": None,
+            "city": "",
+            "profile_picture_url": "",
+            "user_id": None,
+            "guest_event_id": "d8d40987-6fcb-40b2-b514-3653feffe278",
+        },
+        "order_index": 0,
+        "results": [
+            {
+                "player_id": "2f4f3f92-55b2-4c7a-9c3a-8d2d2f6b8c11",
+                "player_order_index": 0,
+                "score_column_id": "7a8e1c0d-9f6e-4f51-a6aa-7e4a1a0b9c22",
+                "score_id": "7a8e1c0d-9f6e-4f51-a6aa-7e4a1a0b9c22",
+                "score_value": 998000,
+                "place": 1,
+                "is_tie": False,
+            },
+            {
+                "player_id": "2f4f3f92-55b2-4c7a-9c3a-8d2d2f6b8c11",
+                "player_order_index": 0,
+                "score_column_id": "b2b1d4f7-3e8d-4f0f-86dd-1f0d7d6e4c33",
+                "score_id": "b2b1d4f7-3e8d-4f0f-86dd-1f0d7d6e4c33",
+                "score_value": 997000,
+                "place": 2,
+                "is_tie": False,
+            },
+        ],
+        "total_score": 1995000,
+        "place": 1,
+        "is_tie": False,
+    },
+    {
+        "player_id": "8d2f1a0b-6f44-4dbe-9a3c-2d8d9b7c1f02",
+        "player": {
+            "id": "8d2f1a0b-6f44-4dbe-9a3c-2d8d9b7c1f02",
+            "nickname": "Player 2",
+            "country_code": "AR",
+            "name": "",
+            "team_name": "",
+            "birth_date": None,
+            "city": "",
+            "profile_picture_url": "",
+            "user_id": None,
+            "guest_event_id": "d8d40987-6fcb-40b2-b514-3653feffe278",
+        },
+        "order_index": 1,
+        "results": [
+            {
+                "player_id": "8d2f1a0b-6f44-4dbe-9a3c-2d8d9b7c1f02",
+                "player_order_index": 1,
+                "score_column_id": "7a8e1c0d-9f6e-4f51-a6aa-7e4a1a0b9c22",
+                "score_id": "7a8e1c0d-9f6e-4f51-a6aa-7e4a1a0b9c22",
+                "score_value": 995000,
+                "place": 2,
+                "is_tie": False,
+            },
+            {
+                "player_id": "8d2f1a0b-6f44-4dbe-9a3c-2d8d9b7c1f02",
+                "player_order_index": 1,
+                "score_column_id": "b2b1d4f7-3e8d-4f0f-86dd-1f0d7d6e4c33",
+                "score_id": "b2b1d4f7-3e8d-4f0f-86dd-1f0d7d6e4c33",
+                "score_value": 999000,
+                "place": 1,
+                "is_tie": False,
+            },
+        ],
+        "total_score": 1994000,
+        "place": 2,
+        "is_tie": False,
+    },
+]
 
 
 @router.post("/", response_model=ScoreTablePublic)
@@ -85,7 +167,7 @@ async def update_score_table(
     session: SessionDep,
     user: UserDep,
 ):
-    """Update a score table"""
+    """Update a score table."""
     db_score_table = session.get(ScoreTable, score_table_id)
     if not db_score_table:
         raise HTTPException(
@@ -110,7 +192,9 @@ async def update_score_table(
 async def delete_score_table(
     score_table_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Delete a score table"""
+    """Delete a score table.
+
+    A score table can only be deleted if its associated round has not finished."""
     db_score_table = session.get(ScoreTable, score_table_id)
     if not db_score_table:
         raise HTTPException(
@@ -139,7 +223,7 @@ async def delete_score_table(
 async def list_score_columns_for_score_table(
     score_table_id: uuid.UUID, session: SessionDep
 ):
-    """Get all charts for a score table"""
+    """List all score columns for a score table."""
     db_score_table = session.get(ScoreTable, score_table_id)
     if not db_score_table:
         raise HTTPException(
@@ -158,6 +242,9 @@ async def update_score_column_order_in_score_table(
     session: SessionDep,
     user: UserDep,
 ):
+    """Update the order of score columns in a score table.
+
+    The list provided must be the IDs of the score columns in the desired order."""
     db_score_table = session.get(ScoreTable, score_table_id)
     if not db_score_table:
         raise HTTPException(
@@ -204,7 +291,7 @@ async def bulk_add_players_to_score_table(
     session: SessionDep,
     user: UserDep,
 ):
-    """Bulk add players to a score table"""
+    """Bulk add players to a score table."""
     db_score_table = session.get(ScoreTable, score_table_id)
     if not db_score_table:
         raise HTTPException(
@@ -244,7 +331,7 @@ async def bulk_add_players_to_score_table(
 
 @router.get("/{score_table_id}/players", response_model=list[PlayerPublic])
 async def list_players_in_score_table(score_table_id: uuid.UUID, session: SessionDep):
-    """Get the players for a specific score table."""
+    """List all the players for a specific score table."""
     score_table = session.get(ScoreTable, score_table_id)
     if not score_table:
         raise HTTPException(
@@ -260,7 +347,9 @@ async def update_player_order_in_score_table(
     session: SessionDep,
     user: UserDep,
 ):
-    """Update the order of players in a score table"""
+    """Update the order of players in a score table.
+
+    The list provided must be the IDs of the players in the desired order."""
     db_score_table = session.get(ScoreTable, score_table_id)
     if not db_score_table:
         raise HTTPException(
@@ -315,7 +404,9 @@ async def update_player_order_in_score_table(
 async def remove_player_from_score_table(
     score_table_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Remove a player from a score table."""
+    """Remove a player from a score table.
+
+    A player can only be removed from a score table if the round is not finished."""
     db_score_table = session.get(ScoreTable, score_table_id)
     if not db_score_table:
         raise HTTPException(
@@ -335,6 +426,12 @@ async def remove_player_from_score_table(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Player with ID {player_id} is not in the score table",
+        )
+
+    if db_score_table.round.state == RoundState.FINISHED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot remove players from a finished round",
         )
 
     player_order_index = player_row.order_index
@@ -357,9 +454,26 @@ async def remove_player_from_score_table(
     return db_score_table.get_players_by_order()
 
 
-@router.get("/{score_table_id}/results", response_model=list[PlayerResults])
+@router.get(
+    "/{score_table_id}/results",
+    response_model=list[PlayerResults],
+    responses={
+        200: {
+            "content": {
+                "application/json": {"example": GET_SCORE_TABLE_RESULTS_EXAMPLE}
+            }
+        }
+    },
+)
 async def get_score_table_results(score_table_id: uuid.UUID, session: SessionDep):
-    """Get the results for a specific score table."""
+    """Get the results for a specific score table.
+
+    It returns a list of results for each player in the score table, ordered by their calculated placing.
+
+    Players with the same final score will have the same placing.
+
+    Each element in the results list inside a player's results, represents a score column and that player's performance in that column.
+    """
 
     score_table = session.get(ScoreTable, score_table_id)
     if not score_table:
@@ -370,11 +484,15 @@ async def get_score_table_results(score_table_id: uuid.UUID, session: SessionDep
     return score_table.get_results()
 
 
-@router.get("/{score_table_id}/possible-players", response_model=list[Player])
-async def list_possible_players_for_score_table(
+@router.get("/{score_table_id}/candidate-players", response_model=list[Player])
+async def list_candidate_players_for_score_table(
     score_table_id: uuid.UUID, session: SessionDep
 ) -> list[Player]:
-    """List all possible players in a score table, including those who passed the previous round."""
+    """List all candidate players for a score table.
+
+    If the score table is in the first round, all players are considered candidates.
+
+    Otherwise, only players who passed the previous round are considered candidates."""
     score_table = session.get(ScoreTable, score_table_id)
     if not score_table:
         raise HTTPException(

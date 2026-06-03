@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
-from models.chart import Chart
 from models.player import Player
 from models.player_row import PlayerRow
 from models.round import Round
@@ -24,6 +23,7 @@ class ScoreTableFormat(Enum):
 class Result(BaseModel):
     player_id: uuid.UUID
     player_order_index: int
+    score_column_id: uuid.UUID = None
     score_id: uuid.UUID | None = None
     score_value: int = 0
     place: int = -1
@@ -147,6 +147,7 @@ def _populate_column_results(score_column: "ScoreColumn") -> ColumnResults:
         result = Result(
             player_id=score.player_id,
             player_order_index=player_order_index,
+            score_column_id=score_column.id,
             score_value=score.value,
             score_id=score.id,
         )
@@ -178,7 +179,7 @@ def _sort_chart_results(chart_results: ColumnResults):
 
 
 def _populate_player_results(
-    player_row: PlayerRow, chart_results_list: list[ColumnResults]
+    player_row: PlayerRow, column_results_list: list[ColumnResults]
 ) -> list[PlayerResults]:
     player = player_row.player
     score_table = player_row.score_table
@@ -189,14 +190,15 @@ def _populate_player_results(
         order_index=player_row.order_index,
     )
 
-    for chart_order_index, chart_results in enumerate(chart_results_list):
-        result = _try_get_player_result(player.id, chart_results.results)
+    for column_results in column_results_list:
+        result = _try_get_player_result(player.id, column_results.results)
 
         if not result:
             result = Result(
                 player_id=player.id,
                 player_order_index=player_row.order_index,
-                place=len(chart_results.results) + 1,
+                score_column_id=column_results.score_column_id,
+                place=len(column_results.results) + 1,
             )
 
         player_results.results.append(result)
