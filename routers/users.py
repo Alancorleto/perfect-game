@@ -47,6 +47,7 @@ ALGORITHM = os.getenv("JWT_ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 description = """
+# Users
 A user is a registered person using the application.\n
 A user can manage **events** and their **player profile**.\n
 To create a user account, use the `POST /users` endpoint.\n
@@ -139,12 +140,14 @@ UserDep = Annotated[User, Depends(get_current_user)]
 
 @router.get("/users", response_model=list[UserPublic])
 async def list_users(session: SessionDep):
+    """List all users."""
     users = session.exec(select(User)).all()
     return users
 
 
 @router.post("/users", response_model=UserPublic)
 async def create_user(user: UserCreate, session: SessionDep):
+    """Register a new user account. The email provided must not be already registered."""
     existing_email = session.exec(select(User).where(User.email == user.email)).first()
     if existing_email:
         raise HTTPException(
@@ -170,11 +173,13 @@ async def create_user(user: UserCreate, session: SessionDep):
 async def get_currently_logged_user(
     current_user: UserDep,
 ):
+    """Get the currently logged-in user."""
     return current_user
 
 
 @router.get("/users/{user_id}", response_model=UserPublic)
 async def get_user(user_id: uuid.UUID, session: SessionDep):
+    """Get a user by their ID."""
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(
@@ -190,6 +195,7 @@ async def update_user(
     logged_user: UserDep,
     user_update: UserUpdate,
 ):
+    """Update a user's information."""
     db_user = session.get(User, user_id)
     if not db_user:
         raise HTTPException(
@@ -229,6 +235,7 @@ async def update_user(
 async def delete_user(
     user_id: uuid.UUID, session: SessionDep, logged_user: UserDep
 ) -> None:
+    """Delete a user by their ID. Can only be called by a super admin."""
     db_user = session.get(User, user_id)
     if not db_user:
         raise HTTPException(
@@ -250,6 +257,7 @@ async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: SessionDep,
 ) -> Token:
+    """Authenticate a user and return an access token and refresh token."""
     user = authenticate_user(form_data.username, form_data.password, session)
 
     if not user:
@@ -277,6 +285,7 @@ async def login(
 
 @router.post("/token/refresh", response_model=Token)
 async def refresh_access_token(refresh_token: str, session: SessionDep) -> Token:
+    """Refresh an access token using a valid refresh token."""
     now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     db_token = session.get(RefreshToken, refresh_token)
@@ -301,6 +310,7 @@ async def refresh_access_token(refresh_token: str, session: SessionDep) -> Token
 
 @router.post("/token/revoke", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_refresh_token(refresh_token: str, session: SessionDep) -> None:
+    """Revoke a refresh token."""
     db_token = session.get(RefreshToken, refresh_token)
     if db_token:
         db_token.revoked_at = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -311,7 +321,7 @@ async def revoke_refresh_token(refresh_token: str, session: SessionDep) -> None:
 async def request_password_reset(
     body: PasswordResetRequest, session: SessionDep
 ) -> dict:
-    """Requests a password reset for the given email address.
+    """Request a password reset for the given email address.
 
     Always returns the same message to prevent email enumeration.
     """
@@ -349,7 +359,7 @@ async def request_password_reset(
 async def verify_password_reset_code(
     body: PasswordResetVerify, session: SessionDep
 ) -> dict:
-    """Verifies that the 6-digit code received by email is valid."""
+    """Verify that the 6-digit code received by email is valid."""
     now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     user = get_user_by_email(body.email, session)
@@ -378,7 +388,7 @@ async def verify_password_reset_code(
 async def confirm_password_reset(
     body: PasswordResetConfirm, session: SessionDep
 ) -> dict:
-    """Resets the password using the 6-digit code received by email."""
+    """Reset the password using the 6-digit code received by email."""
     now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     user = get_user_by_email(body.email, session)
