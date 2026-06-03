@@ -11,6 +11,7 @@ from models.tournament import Tournament
 from routers.users import UserDep
 
 description = """
+# Rounds
 A round is a stage of competition within a **tournament**.\n
 A round has one or more **score tables** associated with it
 (multiple score tables are needed for battle formats).\n
@@ -32,14 +33,14 @@ router = APIRouter(prefix="/rounds", tags=["rounds"])
 
 @router.get("/", response_model=list[RoundPublic])
 async def list_rounds(session: SessionDep):
-    """List all rounds"""
+    """List all rounds."""
     rounds = session.exec(select(Round)).all()
     return rounds
 
 
 @router.get("/{round_id}", response_model=RoundPublic)
 async def get_round(round_id: uuid.UUID, session: SessionDep):
-    """Get a specific round"""
+    """Get a specific round."""
     round = session.get(Round, round_id)
     if not round:
         raise HTTPException(
@@ -50,7 +51,7 @@ async def get_round(round_id: uuid.UUID, session: SessionDep):
 
 @router.post("/", response_model=RoundPublic)
 async def create_round(round: RoundCreate, session: SessionDep, user: UserDep):
-    """Create a new round"""
+    """Create a new round for a tournament."""
     tournament = session.get(Tournament, round.tournament_id)
     if not tournament:
         raise HTTPException(
@@ -77,7 +78,7 @@ async def create_round(round: RoundCreate, session: SessionDep, user: UserDep):
 async def update_round(
     round_id: uuid.UUID, round: RoundUpdate, session: SessionDep, user: UserDep
 ):
-    """Update a round"""
+    """Update a round."""
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(
@@ -100,7 +101,7 @@ async def update_round(
 
 @router.delete("/{round_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
-    """Delete a round"""
+    """Delete a round. A round can only be deleted if it has not started yet."""
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(
@@ -127,7 +128,7 @@ async def delete_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
 
 @router.get("/{round_id}/score_tables", response_model=list[ScoreTablePublic])
 async def list_score_tables_in_round(round_id: uuid.UUID, session: SessionDep):
-    """Get the score tables associated with a round"""
+    """Get the score tables associated with a round by order."""
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(
@@ -137,7 +138,7 @@ async def list_score_tables_in_round(round_id: uuid.UUID, session: SessionDep):
 
 
 @router.put(
-    "/{round_id}/score_tables/{score_table_id}/order",
+    "/{round_id}/score_tables/order",
     response_model=list[ScoreTablePublic],
 )
 async def change_score_table_order_in_round(
@@ -146,6 +147,9 @@ async def change_score_table_order_in_round(
     session: SessionDep,
     user: UserDep,
 ):
+    """Change the order of score tables in a round.
+
+    The list provided must be the IDs of the score tables in the desired order."""
     db_round = session.get(Round, round_id)
 
     if not db_round:
@@ -212,7 +216,11 @@ async def delete_all_scores_in_round(
 
 @router.post("/{round_id}/start", response_model=RoundPublic)
 async def start_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
-    """Start a round"""
+    """Start a round.
+
+    The round must be in the `not_started` state.
+
+    The new state becomes `in_progress`."""
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(
@@ -258,7 +266,11 @@ async def start_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
 
 @router.post("/{round_id}/cancel-start", response_model=RoundPublic)
 async def cancel_round_start(round_id: uuid.UUID, session: SessionDep, user: UserDep):
-    """Cancel the start of a round"""
+    """Cancel the start of a round.
+
+    The round must be in the `in_progress` state and have no scores.
+
+    The new state becomes `not_started`."""
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(
@@ -294,7 +306,11 @@ async def cancel_round_start(round_id: uuid.UUID, session: SessionDep, user: Use
 
 @router.post("/{round_id}/pause", response_model=RoundPublic)
 async def pause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
-    """Pause a round"""
+    """Pause a round.
+
+    The round must be in the `in_progress` state.
+
+    The new state becomes `paused`."""
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(
@@ -322,7 +338,11 @@ async def pause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
 
 @router.post("/{round_id}/unpause", response_model=RoundPublic)
 async def unpause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
-    """Resume a paused round"""
+    """Resume a paused round.
+
+    The round must be in the `paused` state.
+
+    The new state becomes `in_progress`."""
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(
@@ -350,7 +370,11 @@ async def unpause_round(round_id: uuid.UUID, session: SessionDep, user: UserDep)
 
 @router.post("/{round_id}/finish", response_model=RoundPublic)
 async def finish_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
-    """Finish a round"""
+    """Finish a round.
+
+    The round must be in the `in_progress` state.
+
+    The new state becomes `finished`."""
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(
@@ -378,7 +402,11 @@ async def finish_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
 
 @router.post("/{round_id}/cancel-finish", response_model=RoundPublic)
 async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep, user: UserDep):
-    """Cancel the finish of a round"""
+    """Cancel the finish of a round.
+
+    The round must be in the `finished` state.
+
+    The new state becomes `in_progress`."""
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(
@@ -418,6 +446,8 @@ async def cancel_round_finish(round_id: uuid.UUID, session: SessionDep, user: Us
 async def get_qualifying_players_in_round(
     round_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
+    """List the qualifying players in a round."""
+
     db_round = session.get(Round, round_id)
     if not db_round:
         raise HTTPException(
