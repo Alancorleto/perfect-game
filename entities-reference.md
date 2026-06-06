@@ -5,7 +5,7 @@ A user can manage **events** and their **player profile**.
 
 To create a user account, use the `POST /users` endpoint.
 
-To authenticate in these docs, press the **Authorize** button in the top right corner.
+To authenticate in the Swagger UI docs, press the **Authorize** button in the top right corner.
 
 Otherwise, use the `/token` endpoint to authenticate.
 
@@ -76,6 +76,12 @@ If a chart is not specified, the score column can have an associated **chart col
 
 # Scores
 A score represents a **player**'s performance for a **score column**.
+
+The actual value of the score is stored in `value`.
+
+The other values (`perfect`, `great`, `good`, `bad`, `miss`, `max_combo`) represent the details of the score.
+
+A score can have a grade, which is one of the following: F, D, C, B, A, A+, AA, AA+, AAA, AAA+, S, S+, SS, SS+, SSS, SSS+.
 
 # Chart Columns
 A chart column is used when a **score column** has no **chart** associated with it, for example, when each player played a chart of their own choice.
