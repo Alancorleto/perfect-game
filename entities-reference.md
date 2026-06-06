@@ -57,7 +57,7 @@ A round is always in one of the following **states**:
 - `finished`
 
 # Score Tables
-A score table is where players compare their scores against each other within a **round**. It contains a list of players and a list of **score columns**.
+A score table is where players compare their scores against each other within a **round**.
 
 A score table is composed of the **players** that are competing inside it and the **score columns** that contain the actual scores.
 
