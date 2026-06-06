@@ -46,7 +46,9 @@ It's a sandbox environment, so feel free to experiment with the API 😄
 
 ## 📖 Usage
 
-All the endpoints are documented in detail in the FastAPI Swagger UI. Here is a quick overview of the typical flow for a tournament with one category and one round.
+All the endpoints are documented in detail in the FastAPI Swagger UI, and you can learn more about the app entities [here](https://github.com/Alancorleto/perfect-game/blob/main/entities-reference.md).
+
+Here is a quick overview of the typical flow for a tournament with one category and one round.
 
 1. Create a user.
 2. Log in.
