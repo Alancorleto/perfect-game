@@ -13,6 +13,10 @@ from routers.users import UserDep
 tag_metadata = {
     "name": "scores",
     "description": "A score represents a **player**'s performance for a **score column**.",
+    "externalDocs": {
+        "description": "Learn more about scores here",
+        "url": "https://github.com/Alancorleto/perfect-game/blob/main/entities-reference.md#scores",
+    },
 }
 
 router = APIRouter(prefix="/scores", tags=["scores"])

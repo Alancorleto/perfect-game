@@ -13,6 +13,10 @@ from routers.users import UserDep
 tag_metadata = {
     "name": "rounds",
     "description": "A round is a stage of competition within a **tournament**. It contains a collection of **score tables**.",
+    "externalDocs": {
+        "description": "Learn more about rounds here",
+        "url": "https://github.com/Alancorleto/perfect-game/blob/main/entities-reference.md#rounds",
+    },
 }
 
 router = APIRouter(prefix="/rounds", tags=["rounds"])

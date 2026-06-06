@@ -16,6 +16,10 @@ from routers.users import UserDep
 tag_metadata = {
     "name": "chart_columns",
     "description": "A chart column is used when a **score column** has no **chart** associated with it, for example, when each player played a chart of their own choice.",
+    "externalDocs": {
+        "description": "Learn more about chart columns here",
+        "url": "https://github.com/Alancorleto/perfect-game/blob/main/entities-reference.md#chart-columns",
+    },
 }
 
 router = APIRouter(prefix="/chart_columns", tags=["chart_columns"])

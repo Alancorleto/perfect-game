@@ -16,6 +16,10 @@ from routers.users import UserDep
 tag_metadata = {
     "name": "score_columns",
     "description": "A score column contains a list of scores that are meant to be compared against each other.",
+    "externalDocs": {
+        "description": "Learn more about score columns here",
+        "url": "https://github.com/Alancorleto/perfect-game/blob/main/entities-reference.md#score-columns",
+    },
 }
 
 router = APIRouter(prefix="/score_columns", tags=["score_columns"])

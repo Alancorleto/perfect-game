@@ -19,6 +19,10 @@ from routers.users import UserDep
 tag_metadata = {
     "name": "score_tables",
     "description": "A score table is where players compare their scores against each other within a **round**. It contains a list of players and a list of **score columns**.",
+    "externalDocs": {
+        "description": "Learn more about score tables here",
+        "url": "https://github.com/Alancorleto/perfect-game/blob/main/entities-reference.md#score-tables",
+    },
 }
 
 router = APIRouter(prefix="/score_tables", tags=["score_tables"])

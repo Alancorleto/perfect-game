@@ -18,6 +18,10 @@ from routers.users import UserDep
 tag_metadata = {
     "name": "charts",
     "description": "A chart is what competitors play to compare scores against each other.",
+    "externalDocs": {
+        "description": "Learn more about charts here",
+        "url": "https://github.com/Alancorleto/perfect-game/blob/main/entities-reference.md#charts",
+    },
 }
 
 router = APIRouter(prefix="/charts", tags=["charts"])

@@ -31,6 +31,10 @@ from routers.users import UserDep
 tag_metadata = {
     "name": "tournaments",
     "description": "A tournament is a competition that happens within an **event**. It contains an ordered list of **rounds**.",
+    "externalDocs": {
+        "description": "Learn more about tournaments here",
+        "url": "https://github.com/Alancorleto/perfect-game/blob/main/entities-reference.md#tournaments",
+    },
 }
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])

@@ -50,6 +50,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 tag_metadata = {
     "name": "users",
     "description": "A user is a registered person using the application.",
+    "externalDocs": {
+        "description": "Learn more about users here",
+        "url": "https://github.com/Alancorleto/perfect-game/blob/main/entities-reference.md#users",
+    },
 }
 
 router = APIRouter(tags=["users"])
