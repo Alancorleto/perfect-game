@@ -13,16 +13,9 @@ from models.chart_column import (
 from models.score_column import ScoreColumn
 from routers.users import UserDep
 
-description = """
-# Chart Columns
-A chart column is used when a **score column** has no **chart** associated with it,
-for example, when each player played a chart of their own choice.\n
-A chart column represents **which chart** each player played for the associated score column.
-"""
-
 tag_metadata = {
     "name": "chart_columns",
-    "description": description,
+    "description": "A chart column is used when a **score column** has no **chart** associated with it, for example, when each player played a chart of their own choice.",
 }
 
 router = APIRouter(prefix="/chart_columns", tags=["chart_columns"])

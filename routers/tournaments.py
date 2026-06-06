@@ -28,19 +28,9 @@ from routers.players import Player, PlayerPublic
 from routers.rounds import RoundPublic, RoundState
 from routers.users import UserDep
 
-description = """
-# Tournaments
-A tournament is a competition that happens within an **event**. When an event has more than one tournament, they are sometimes called "categories".\n
-A tournament has one or more **rounds**. Each round has a specific order.\n
-An organizer can add **guest players** to a tournament.\n
-An organizer can **invite** a player with a registered account to a tournament, and the player can **accept** or **decline** the invitation.\n
-A player can **request to join** a tournament, and an organizer can **accept** or **decline** the request.\n
-An organizer can **track** wether a player has paid their entry fee.\n
-"""
-
 tag_metadata = {
     "name": "tournaments",
-    "description": description,
+    "description": "A tournament is a competition that happens within an **event**. It contains an ordered list of **rounds**.",
 }
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])

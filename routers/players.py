@@ -10,18 +10,9 @@ from models.event import Event
 from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
 from routers.users import UserDep
 
-description = """
-# Players
-A player is the profile of a competitor within a tournament.\n
-There are two types of players:
-- **Registered players**: These represent the public profile of a **user**.
-- **Unregistered players**: These are created as **temporary guests** for an **event** when a competitor is not registered as a user.\n
-Typically, a user creates a player profile when they register.\n
-"""
-
 tag_metadata = {
     "name": "players",
-    "description": description,
+    "description": "A player is the profile of a competitor within a tournament.",
 }
 
 router = APIRouter(prefix="/players", tags=["players"])

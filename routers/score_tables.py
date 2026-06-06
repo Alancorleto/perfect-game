@@ -16,19 +16,9 @@ from models.score_table import (
 )
 from routers.users import UserDep
 
-description = """
-# Score Tables
-A score table is an entity in which players compare their scores against each other within a **round**.\n
-A score table is composed of the **players** that are competing inside it
-and the **score columns** that contain the actual scores.\n
-A score table can be in any of the following formats:\n
-- **score_sum**: the final score is the sum of the scores of the players for each score column\n
-- **battle**: the final score is the number of wins of the players for each score column\n
-"""
-
 tag_metadata = {
     "name": "score_tables",
-    "description": description,
+    "description": "A score table is where players compare their scores against each other within a **round**. It contains a list of players and a list of **score columns**.",
 }
 
 router = APIRouter(prefix="/score_tables", tags=["score_tables"])

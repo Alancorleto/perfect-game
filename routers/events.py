@@ -16,18 +16,9 @@ from models.player import Player, PlayerPublic
 from models.tournament import TournamentPublic
 from routers.users import UserDep
 
-description = """
-# Events
-An event is a collection of competitions that happen at a specified time and location.\n
-An event is composed of one or more **tournaments**.\n
-An event has one or more **organizers**.\n
-Each organizer has permissions to manage all the resources related to the event:
-tournaments, rounds, score tables, charts, and guest players.
-"""
-
 tag_metadata = {
     "name": "events",
-    "description": description,
+    "description": "An event is a collection of competitions that happen at a specified time and location.",
 }
 
 router = APIRouter(prefix="/events", tags=["events"])

@@ -10,22 +10,9 @@ from models.score_table import ScoreTablePublic
 from models.tournament import Tournament
 from routers.users import UserDep
 
-description = """
-# Rounds
-A round is a stage of competition within a **tournament**.\n
-A round has one or more **score tables** associated with it
-(multiple score tables are needed for battle formats).\n
-A round is always in one of the following **states**:\n
-- not_started\n
-- in_progress\n
-- paused\n
-- finished
-"""
-
-
 tag_metadata = {
     "name": "rounds",
-    "description": description,
+    "description": "A round is a stage of competition within a **tournament**. It contains a collection of **score tables**.",
 }
 
 router = APIRouter(prefix="/rounds", tags=["rounds"])

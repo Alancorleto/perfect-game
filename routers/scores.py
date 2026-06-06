@@ -10,14 +10,9 @@ from models.score import Score, ScoreCreate, ScorePublic, ScoreUpdate
 from models.score_column import ScoreColumn
 from routers.users import UserDep
 
-description = """
-# Scores
-Score is the entity that represents a **player**'s performance for a **score column**.
-"""
-
 tag_metadata = {
     "name": "scores",
-    "description": description,
+    "description": "A score represents a **player**'s performance for a **score column**.",
 }
 
 router = APIRouter(prefix="/scores", tags=["scores"])

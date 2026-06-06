@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
-from models.round import RoundState
 from models.score_column import (
     ScoreColumn,
     ScoreColumnCreate,
@@ -14,20 +13,9 @@ from models.score_column import (
 from models.score_table import ScoreTable
 from routers.users import UserDep
 
-description = """
-# Score Columns
-Score column is the entity that contains a list of scores that are meant
-to be compared against each other.\n
-A score column is always associated with a **score table** and has an **order_index**.\n
-A score column can have an optional associated **chart** which represents
-the chart that is meant to be played.\n
-If a chart is not specified, the score column can have an associated **chart column**
-which represents the chart that each individual player played.
-"""
-
 tag_metadata = {
     "name": "score_columns",
-    "description": description,
+    "description": "A score column contains a list of scores that are meant to be compared against each other.",
 }
 
 router = APIRouter(prefix="/score_columns", tags=["score_columns"])

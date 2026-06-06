@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from sqlalchemy.event import api
 
 from routers.chart_columns import router as chart_column_router
 from routers.chart_columns import tag_metadata as chart_column_tag_metadata
