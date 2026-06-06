@@ -35,7 +35,7 @@ Each organizer has permissions to manage all the resources related to the event:
 # Tournaments
 A tournament is a competition that happens within an **event**. It contains an ordered list of **rounds**.
 
-A tournament has one or more **rounds**. Each round has a specific order.
+When an event has more than one tournament, they are sometimes called "categories".
 
 An organizer can add **guest players** to a tournament.
 
@@ -46,15 +46,15 @@ A player can **request to join** a tournament, and an organizer can **accept** o
 An organizer can **track** wether a player has paid their entry fee.
 
 # Rounds
-A round is a stage of competition within a **tournament**. It contains a collection of **score tables**.
+A round is a stage of competition within a **tournament**. It contains one or more **score tables**.
 
-A round has one or more **score tables** associated with it (multiple score tables are needed for battle formats).
+A round can have multiple **score tables** associated with it (for example, in battle formats).
 
 A round is always in one of the following **states**:
-- not_started
-- in_progress
-- paused
-- finished
+- `not_started`
+- `in_progress`
+- `paused`
+- `finished`
 
 # Score Tables
 A score table is where players compare their scores against each other within a **round**. It contains a list of players and a list of **score columns**.
@@ -62,8 +62,8 @@ A score table is where players compare their scores against each other within a 
 A score table is composed of the **players** that are competing inside it and the **score columns** that contain the actual scores.
 
 A score table can be in any of the following formats:
-- **score_sum**: the final score is the sum of the scores of the players for each score column
-- **battle**: the final score is the number of wins of the players for each score column
+- `score_sum`: the final score is the sum of the scores of the players for each score column
+- `battle`: the final score is the number of wins of the players for each score column
 
 # Score Columns
 A score column contains a list of scores that are meant to be compared against each other.
@@ -81,7 +81,7 @@ The actual value of the score is stored in `value`.
 
 The other values (`perfect`, `great`, `good`, `bad`, `miss`, `max_combo`) represent the details of the score.
 
-A score can have a grade, which is one of the following: F, D, C, B, A, A+, AA, AA+, AAA, AAA+, S, S+, SS, SS+, SSS, SSS+.
+A score can have a grade, which is one of the following: `F`, `D`, `C`, `B`, `A`, `A+`, `AA`, `AA+`, `AAA`, `AAA+`, `S`, `S+`, `SS`, `SS+`, `SSS`, `SSS+`.
 
 # Chart Columns
 A chart column is used when a **score column** has no **chart** associated with it, for example, when each player played a chart of their own choice.
@@ -96,3 +96,5 @@ A chart must be associated with any of the following:
 - A combination of **chart column** and **player**, which represents the chart that was played in that column by that player
 
 A chart has a song name, a player count, a mode, a level difficulty, and a title image which can be uploaded by an organizer.
+
+Chart modes include: `single`, `double`, `single_performance`, `double_performance`, `half_double` and `coop`.
