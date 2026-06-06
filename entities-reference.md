@@ -1,5 +1,6 @@
 # Users
 A user is a registered person using the application.
+
 A user can manage **events** and their **player profile**.
 To create a user account, use the `POST /users` endpoint.
 To authenticate in these docs, press the **Authorize** button in the top right corner.
