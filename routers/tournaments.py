@@ -138,7 +138,7 @@ async def delete_tournament(
     session.commit()
 
 
-@router.post("/{tournament_id}/players/guest", response_model=list[PlayerPublic])
+@router.post("/{tournament_id}/players/{player_id}", response_model=list[PlayerPublic])
 async def add_guest_player_to_tournament(
     tournament_id: uuid.UUID,
     player_id: uuid.UUID,
