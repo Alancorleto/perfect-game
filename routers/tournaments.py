@@ -138,6 +138,68 @@ async def delete_tournament(
     session.commit()
 
 
+@router.post("/{tournament_id}/players/bulk", response_model=list[PlayerPublic])
+async def bulk_add_guest_players_to_tournament(
+    tournament_id: uuid.UUID,
+    player_ids: list[uuid.UUID],
+    session: SessionDep,
+    user: UserDep,
+):
+    """Bulk add guest players to a tournament.
+
+    It filters players already in the tournament.
+
+    The players must be guest players previously created for the event."""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
+        )
+
+    if not db_tournament.can_be_edited_by(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not an organizer for this event",
+        )
+
+    player_ids_already_in_tournament = [
+        p.id for p in db_tournament.get_players_by_nickname()
+    ]
+    player_ids = list(
+        filter(
+            lambda id: id not in player_ids_already_in_tournament, player_ids
+        )
+    )
+
+    for player_id in player_ids:
+        db_player = session.get(Player, player_id)
+        if not db_player:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Player with ID {player_id} not found",
+            )
+
+        if db_player.user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Player with ID {player_id} is already registered",
+            )
+
+        if db_player not in db_tournament.event.guest_players:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Player with ID {player_id} is not a guest player for this tournament",
+            )
+
+        db_tournament.add_player(db_player)
+
+    session.add(db_tournament)
+    session.commit()
+    session.refresh(db_tournament)
+
+    return db_tournament.get_players_by_nickname()
+
+
 @router.post("/{tournament_id}/players/{player_id}", response_model=list[PlayerPublic])
 async def add_guest_player_to_tournament(
     tournament_id: uuid.UUID,
@@ -185,66 +247,6 @@ async def add_guest_player_to_tournament(
         )
 
     db_tournament.add_player(db_player)
-    session.commit()
-    session.refresh(db_tournament)
-
-    return db_tournament.get_players_by_nickname()
-
-
-@router.post("/{tournament_id}/players/bulk", response_model=list[PlayerPublic])
-async def bulk_add_guest_players_to_tournament(
-    tournament_id: uuid.UUID,
-    player_ids: list[uuid.UUID],
-    session: SessionDep,
-    user: UserDep,
-):
-    """Bulk add guest players to a tournament.
-
-    It filters players already in the tournament.
-
-    The players must be guest players previously created for the event."""
-    db_tournament = session.get(Tournament, tournament_id)
-    if not db_tournament:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found"
-        )
-
-    if not db_tournament.can_be_edited_by(user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this event",
-        )
-
-    player_ids_already_in_tournament = [
-        p.id for p in db_tournament.get_players_by_nickname()
-    ]
-    player_ids = filter(
-        lambda id: id not in player_ids_already_in_tournament, player_ids
-    )
-
-    for player_id in player_ids:
-        db_player = session.get(Player, player_id)
-        if not db_player:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Player with ID {player_id} not found",
-            )
-
-        if db_player.user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Player with ID {player_id} is already registered",
-            )
-
-        if db_player not in db_tournament.event.guest_players:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Player with ID {player_id} is not a guest player for this tournament",
-            )
-
-        db_tournament.add_player(db_player)
-
-    session.add(db_tournament)
     session.commit()
     session.refresh(db_tournament)
 
