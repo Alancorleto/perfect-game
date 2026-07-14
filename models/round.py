@@ -19,9 +19,15 @@ class RoundState(Enum):
     FINISHED = "finished"
 
 
+class RoundFormat(Enum):
+    SCORE_SUM = "score_sum"
+    BATTLE = "battle"
+
+
 class RoundBase(SQLModel):
     name: str | None = Field(default=None, max_length=50)
     levels: str | None = Field(default=None, max_length=30)
+    format: RoundFormat = Field(default=RoundFormat.SCORE_SUM)
     state: RoundState = Field(default=RoundState.NOT_STARTED)
     order_index: int = Field(default=0)
 

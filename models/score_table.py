@@ -47,13 +47,15 @@ class ColumnResults(BaseModel):
 
 class ScoreTableBase(SQLModel):
     qualifiers_count: int | None = Field(ge=1, default=None)
-    format: ScoreTableFormat = Field(default=ScoreTableFormat.SCORE_SUM)
     order_index: int = Field(default=0)
 
 
 class ScoreTable(ScoreTableBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     round_id: uuid.UUID = Field(foreign_key="round.id", ondelete="CASCADE")
+
+    # This cannot be changed nor declared in creation, hence it's not in ScreTableBase.
+    format: ScoreTableFormat = Field(default=ScoreTableFormat.SCORE_SUM)
 
     round: Round = Relationship(back_populates="score_tables")
     score_columns: list["ScoreColumn"] = Relationship(

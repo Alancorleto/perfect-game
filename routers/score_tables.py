@@ -13,6 +13,7 @@ from models.score_table import (
     ScoreTableCreate,
     ScoreTablePublic,
     ScoreTableUpdate,
+    ScoreTableFormat,
 )
 from routers.users import UserDep
 
@@ -127,6 +128,9 @@ async def create_score_table(
         )
 
     db_score_table = ScoreTable.model_validate(score_table)
+
+    # Transform from RoundFormat to ScoreTableFormat
+    db_score_table.format = ScoreTableFormat(round.format.value)
 
     db_score_table.order_index = len(round.score_tables)
 
