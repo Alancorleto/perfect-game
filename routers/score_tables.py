@@ -490,7 +490,7 @@ async def list_candidate_players_for_score_table(
 
     If the score table is in the first round, all players are considered candidates.
 
-    Otherwise, only players who passed the previous round are considered candidates."""
+    Otherwise, only players who passed the previous round and are not already in the score table are considered candidates."""
     score_table = session.get(ScoreTable, score_table_id)
     if not score_table:
         raise HTTPException(

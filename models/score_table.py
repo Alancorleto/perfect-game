@@ -58,7 +58,7 @@ class ColumnResults(BaseModel):
 
     @classmethod
     def from_score_column(cls, score_column: "ScoreColumn", player_rows: list["PlayerRow"]) -> "ColumnResults":
-        self = cls(score_column_id=score_column.id)
+        column_results = cls(score_column_id=score_column.id)
 
         player_id_to_order_index = {
             player_row.player.id: player_row.order_index for player_row in player_rows
@@ -72,10 +72,17 @@ class ColumnResults(BaseModel):
                 place=-1,
             )
 
-            self.results.append(result)
+            column_results.results.append(result)
 
-        self._sort()
-        self._assign_places()
+        column_results._sort()
+        column_results._assign_places()
+
+        return column_results
+
+    def is_tie(self) -> bool:
+        if len(self.results) == 0:
+            return False
+        return all(result.score.value == self.results[0].score.value for result in self.results)
 
     def _sort(self):
         self.results.sort(key=lambda r: (-r.score.value, r.player_order_index))
@@ -112,6 +119,10 @@ class Results(BaseModel):
             )
 
         for column_results in self.columns_results:
+            # Skip tie columns in battle format
+            if format == ScoreTableFormat.BATTLE and column_results.is_tie():
+                continue
+
             for result in column_results.results:
                 total_result = self.total_results[result.player_order_index]
 
@@ -203,10 +214,9 @@ class ScoreTable(ScoreTableBase, table=True):
 
         score_columns = self.get_score_columns_by_order()
 
-        columns_results: list[ColumnResults] = []
         for score_column in score_columns:
-            column_results = ColumnResults(score_column, self.player_rows)
-            columns_results.append(column_results)
+            column_results = ColumnResults.from_score_column(score_column, self.player_rows)
+            results.columns_results.append(column_results)
 
         results.populate_total_results(self.format)
 
