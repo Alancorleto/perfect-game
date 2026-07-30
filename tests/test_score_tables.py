@@ -1061,6 +1061,8 @@ def test_get_score_table_results_player_without_scores_has_a_zero(session: Sessi
     assert [tr["player_order_index"] for tr in data["total_results"]] == [0, 1]
     assert data["columns_results"][0]["results"][0]["score"]["value"] == 1700000
     assert data["columns_results"][0]["results"][1]["score"]["value"] == 0
+    assert data["columns_results"][0]["results"][0]["place"] == 1
+    assert data["columns_results"][0]["results"][1]["place"] == 2
     assert data["total_results"][0]["score"] == 1700000
     assert data["total_results"][1]["score"] == 0
     assert data["total_results"][0]["place"] == 1
