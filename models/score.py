@@ -1,30 +1,11 @@
 import uuid
-from enum import Enum
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.player import Player, PlayerPublic
 from models.score_column import ScoreColumn, ScoreColumnPublic
 from models.user import User
-
-
-class Grade(Enum):
-    F = "F"
-    D = "D"
-    C = "C"
-    B = "B"
-    A = "A"
-    A_P = "A+"
-    AA = "AA"
-    AA_P = "AA+"
-    AAA = "AAA"
-    AAA_P = "AAA+"
-    S = "S"
-    S_P = "S+"
-    SS = "SS"
-    SS_P = "SS+"
-    SSS = "SSS"
-    SSS_P = "SSS+"
+from models.score_grade import ScoreGrade
 
 
 class ScoreBase(SQLModel):
@@ -36,7 +17,7 @@ class ScoreBase(SQLModel):
     miss: int = Field(ge=0)
     max_combo: int = Field(ge=0)
     kcal: float = Field(ge=0)
-    grade: Grade = Field(default=Grade.S)
+    grade: ScoreGrade = Field(default=ScoreGrade.S)
     stage_pass: bool = True
     video_url: str | None = None
 
@@ -83,6 +64,6 @@ class ScoreUpdate(SQLModel):
     miss: int | None = Field(ge=0, default=None)
     max_combo: int | None = Field(ge=0, default=None)
     kcal: float | None = Field(ge=0, default=None)
-    grade: Grade | None = None
+    grade: ScoreGrade | None = None
     stage_pass: bool | None = None
     video_url: str | None = None

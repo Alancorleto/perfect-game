@@ -8,7 +8,7 @@ from models.event_organizer import EventOrganizer
 from models.player import Player
 from models.player_row import PlayerRow
 from models.round import Round, RoundState
-from models.score import Grade, Score
+from models.score import ScoreGrade, Score
 from models.score_column import ScoreColumn
 from models.score_table import ScoreTable, ScoreTableFormat
 from models.tournament import Tournament
@@ -215,7 +215,7 @@ def create_score_in_db(
         miss=0,
         max_combo=100,
         kcal=10,
-        grade=Grade.S,
+        grade=ScoreGrade.S,
         stage_pass=True,
     )
     session.add(score)

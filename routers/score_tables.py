@@ -8,12 +8,12 @@ from models.player import Player, PlayerPublic
 from models.round import Round, RoundState
 from models.score_column import ScoreColumnPublic
 from models.score_table import (
-    PlayerResults,
     ScoreTable,
     ScoreTableCreate,
     ScoreTablePublic,
     ScoreTableUpdate,
     ScoreTableFormat,
+    Results,
 )
 from routers.users import UserDep
 
@@ -454,7 +454,7 @@ async def remove_player_from_score_table(
 
 @router.get(
     "/{score_table_id}/results",
-    response_model=list[PlayerResults],
+    response_model=Results,
     responses={
         200: {
             "content": {
