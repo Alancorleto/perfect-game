@@ -948,13 +948,12 @@ def test_get_score_table_results_score_sum(session: Session, client: TestClient)
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert [r["player_id"] for r in data] == [str(player_a.id), str(player_b.id)]
-    assert data[0]["total_score"] == 1700000
-    assert data[1]["total_score"] == 850000
-    assert data[1]["results"][1]["score_value"] == 0
-    assert data[1]["results"][1]["place"] == 2
-    assert data[0]["place"] == 1
-    assert data[1]["place"] == 2
+    assert [ps["id"] for ps in data["player_standings"]] == [str(player_a.id), str(player_b.id)]
+    assert [tr["player_order_index"] for tr in data["total_results"]] == [0, 1]
+    assert data["total_results"][0]["score"] == 1700000
+    assert data["total_results"][1]["score"] == 850000
+    assert data["total_results"][0]["place"] == 1
+    assert data["total_results"][1]["place"] == 2
 
 
 def test_get_score_table_results_battle(session: Session, client: TestClient):
@@ -986,11 +985,10 @@ def test_get_score_table_results_battle(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert data[0]["player_id"] == str(player_a.id)
-    assert data[0]["total_score"] == 1
-    assert data[1]["total_score"] == 0
-    assert data[0]["place"] == 1
-    assert data[1]["place"] == 2
+    assert [ps["id"] for ps in data["player_standings"]] == [str(player_a.id), str(player_b.id)]
+    assert [tr["score"] for tr in data["total_results"]] == [1, 0]
+    assert data["total_results"][0]["place"] == 1
+    assert data["total_results"][1]["place"] == 2
 
 
 def test_get_score_table_results_battle_tie_scores_no_points(
@@ -1024,12 +1022,10 @@ def test_get_score_table_results_battle_tie_scores_no_points(
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert data[0]["total_score"] == 0
-    assert data[1]["total_score"] == 0
-    assert data[0]["results"][0]["is_tie"] is True
-    assert data[1]["results"][0]["is_tie"] is True
-    assert data[0]["place"] == 1
-    assert data[1]["place"] == 1
+    assert [ps["id"] for ps in data["player_standings"]] == [str(player_a.id), str(player_b.id)]
+    assert [tr["score"] for tr in data["total_results"]] == [0, 0]
+    assert data["total_results"][0]["place"] == 1
+    assert data["total_results"][1]["place"] == 1
 
 
 def test_get_score_table_results_not_found(client: TestClient):

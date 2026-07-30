@@ -149,13 +149,14 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
     results = results_response.json()
 
     # Verify the score-sum result and placement for the only player in the score table.
-    assert len(results) == 1
-    assert results[0]["player_id"] == player_id
-    assert results[0]["total_score"] == 987654
-    assert len(results[0]["results"]) == 1
-    assert results[0]["results"][0]["score_id"] == score_id
-    assert results[0]["results"][0]["score_value"] == 987654
-    assert results[0]["results"][0]["place"] == 1
+    assert [ps["id"] for ps in results["player_standings"]] == [player_id]
+    assert len(results["columns_results"]) == 1
+    assert len(results["columns_results"][0]["results"]) == 1
+    assert results["columns_results"][0]["results"][0]["score"]["id"] == score_id
+    assert results["columns_results"][0]["results"][0]["score"]["value"] == 987654
+    assert results["columns_results"][0]["results"][0]["place"] == 1
+    assert [tr["score"] for tr in results["total_results"]] == [987654]
+    assert results["total_results"][0]["place"] == 1
 
 
 # This test verifies the score-sum format with a late player insertion in a round.
@@ -441,10 +442,13 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
         player_ids[2],
     ]
 
-    assert len(results) == 9
-    assert [result["player_id"] for result in results] == expected_result_order
-    assert [result["total_score"] for result in results] == [
+    assert [ps["id"] for ps in results["player_standings"]] == ordered_player_ids
+    assert [tr["player_order_index"] for tr in results["total_results"]] == [
+        ordered_player_ids.index(player_id) for player_id in expected_result_order
+    ]
+    assert [tr["score"] for tr in results["total_results"]] == [
         expected_totals[player_id] for player_id in expected_result_order
     ]
-    assert [result["player_id"] for result in results] != ordered_player_ids
-    assert all(len(result["results"]) == 2 for result in results)
+    assert [ps["id"] for ps in results["player_standings"]] != expected_result_order
+    assert len(results["columns_results"]) == 2
+    assert all(len(column_results["results"]) == 9 for column_results in results["columns_results"])
