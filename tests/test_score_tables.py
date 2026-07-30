@@ -1028,6 +1028,45 @@ def test_get_score_table_results_battle_tie_scores_no_points(
     assert data["total_results"][1]["place"] == 1
 
 
+def test_get_score_table_results_player_without_scores_has_a_zero(session: Session, client: TestClient):
+    organizer, _, _, round, _ = create_editable_score_table(
+        session=session,
+        organizer_email="organizer@example.com",
+        organizer_password="mypassword123",
+    )
+    score_table = create_score_table_in_db(
+        session, round=round, format=ScoreTableFormat.SCORE_SUM
+    )
+
+    column_a = create_score_column_in_db(session, score_table, order_index=0)
+    create_chart_in_db(session, score_column=column_a, song_name="Song A")
+
+    player_a = create_player_in_db(session, nickname="PlayerA")
+    player_b = create_player_in_db(session, nickname="PlayerB")
+
+    add_player_to_score_table_in_db(
+        session, score_table, player=player_a, order_index=0
+    )
+    add_player_to_score_table_in_db(
+        session, score_table, player=player_b, order_index=1
+    )
+
+    create_score_in_db(session, player=player_a, value=1700000, score_column=column_a)
+
+    response = client.get(f"/score_tables/{score_table.id}/results")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert [ps["id"] for ps in data["player_standings"]] == [str(player_a.id), str(player_b.id)]
+    assert [tr["player_order_index"] for tr in data["total_results"]] == [0, 1]
+    assert data["columns_results"][0]["results"][0]["score"]["value"] == 1700000
+    assert data["columns_results"][0]["results"][1]["score"]["value"] == 0
+    assert data["total_results"][0]["score"] == 1700000
+    assert data["total_results"][1]["score"] == 0
+    assert data["total_results"][0]["place"] == 1
+    assert data["total_results"][1]["place"] == 2
+
+
 def test_get_score_table_results_not_found(client: TestClient):
     response = client.get("/score_tables/00000000-0000-0000-0000-000000000000/results")
 

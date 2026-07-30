@@ -64,6 +64,8 @@ class ColumnResults(BaseModel):
             player_row.player.id: player_row.order_index for player_row in player_rows
         }
 
+        players_with_scores = []
+
         for score in score_column.scores:
             player_order_index = player_id_to_order_index[score.player_id]
             result = Result(
@@ -73,6 +75,16 @@ class ColumnResults(BaseModel):
             )
 
             column_results.results.append(result)
+            players_with_scores.append(score.player_id)
+
+        for player_row in player_rows:
+            if player_row.player_id not in players_with_scores:
+                result = Result(
+                    player_order_index=player_row.order_index,
+                    score=ResultScore(),
+                    place=-1,
+                )
+                column_results.results.append(result)
 
         column_results._sort()
         column_results._assign_places()
