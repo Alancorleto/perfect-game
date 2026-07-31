@@ -11,7 +11,6 @@ from image_storage import upload_image
 from models.chart import Chart, ChartCreate, ChartPublic, ChartUpdate
 from models.score import Score
 from models.score_column import ScoreColumn
-
 from routers.users import UserDep
 
 tag_metadata = {
@@ -47,7 +46,7 @@ async def fuzzy_search_titles(
     if not normalized_song_name:
         return []
 
-    charts = session.exec(select(Chart).where(Chart.title_url.is_not(None))).all()
+    charts = session.exec(select(Chart).where(Chart.title_url != None)).all()
 
     ranked_titles: list[tuple[float, str]] = []
     for chart in charts:
