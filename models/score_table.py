@@ -1,4 +1,3 @@
-from this import s
 import uuid
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -6,17 +5,16 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
+if TYPE_CHECKING:
+    from models.score import Score
+    from models.score_column import ScoreColumn
+
+from models.chart import Chart
 from models.player import Player
 from models.player_row import PlayerRow
 from models.round import Round
-from models.user import User
 from models.score_grade import ScoreGrade
-from models.chart import Chart
-
-
-if TYPE_CHECKING:
-    from models.score_column import ScoreColumn
-    from models.score import Score
+from models.user import User
 
 
 class ScoreTableFormat(Enum):

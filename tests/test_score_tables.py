@@ -5,21 +5,17 @@ from sqlmodel import Session
 from models.round import RoundState
 from models.score_table import ScoreTableFormat
 from tests.helpers import (
-    add_player_to_score_table_in_db as add_player_to_score_table_in_db,
-)
-from tests.helpers import (
+    add_player_to_score_table_in_db,
     create_chart_in_db,
     create_event_in_db,
     create_player_in_db,
     create_round_in_db,
     create_score_column_in_db,
     create_score_in_db,
+    create_score_table_in_db,
     create_tournament_in_db,
     create_user_in_db,
     get_auth_headers,
-)
-from tests.helpers import (
-    create_score_table_in_db as create_score_table_in_db,
 )
 
 
@@ -459,7 +455,7 @@ def test_delete_event_cascade(session: Session, client: TestClient):
 
 
 def test_list_score_columns_for_score_table(session: Session, client: TestClient):
-    organizer, _, _, _, score_table = create_editable_score_table(
+    _organizer, _, _, _, score_table = create_editable_score_table(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
@@ -506,7 +502,7 @@ def test_list_score_columns_for_score_table_not_found(client: TestClient):
 
 
 def test_update_score_column_order_in_score_table(session: Session, client: TestClient):
-    organizer, _, _, _, score_table = create_editable_score_table(
+    _organizer, _, _, _, score_table = create_editable_score_table(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
@@ -531,7 +527,7 @@ def test_update_score_column_order_in_score_table(session: Session, client: Test
 def test_update_score_column_order_in_score_table_with_three_columns(
     session: Session, client: TestClient
 ):
-    organizer, _, _, _, score_table = create_editable_score_table(
+    _organizer, _, _, _, score_table = create_editable_score_table(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
@@ -558,7 +554,7 @@ def test_update_score_column_order_in_score_table_with_three_columns(
 def test_update_score_column_order_in_score_table_wrong_count(
     session: Session, client: TestClient
 ):
-    organizer, _, _, _, score_table = create_editable_score_table(
+    _organizer, _, _, _, score_table = create_editable_score_table(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
@@ -579,7 +575,7 @@ def test_update_score_column_order_in_score_table_wrong_count(
 def test_update_score_column_order_in_score_table_fewer_score_columns(
     session: Session, client: TestClient
 ):
-    organizer, _, _, _, score_table = create_editable_score_table(
+    _organizer, _, _, _, score_table = create_editable_score_table(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
@@ -922,7 +918,7 @@ def test_remove_player_from_score_table_unauthorized(
 
 
 def test_get_score_table_results_score_sum(session: Session, client: TestClient):
-    organizer, _, _, round, _ = create_editable_score_table(
+    _organizer, _, _, round, _ = create_editable_score_table(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
@@ -963,7 +959,7 @@ def test_get_score_table_results_score_sum(session: Session, client: TestClient)
 
 
 def test_get_score_table_results_battle(session: Session, client: TestClient):
-    organizer, _, _, round, _ = create_editable_score_table(
+    _organizer, _, _, round, _ = create_editable_score_table(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
@@ -1000,7 +996,7 @@ def test_get_score_table_results_battle(session: Session, client: TestClient):
 def test_get_score_table_results_battle_tie_scores_no_points(
     session: Session, client: TestClient
 ):
-    organizer, _, _, round, _ = create_editable_score_table(
+    _organizer, _, _, round, _ = create_editable_score_table(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
@@ -1035,7 +1031,7 @@ def test_get_score_table_results_battle_tie_scores_no_points(
 
 
 def test_get_score_table_results_player_without_scores_has_a_zero(session: Session, client: TestClient):
-    organizer, _, _, round, _ = create_editable_score_table(
+    _organizer, _, _, round, _ = create_editable_score_table(
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",

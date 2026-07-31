@@ -5,17 +5,17 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.player import Player, PlayerPublic
+from models.player_row import PlayerRow
 from models.round import Round, RoundState
 from models.score_column import ScoreColumnPublic
 from models.score_table import (
+    Results,
     ScoreTable,
     ScoreTableCreate,
+    ScoreTableFormat,
     ScoreTablePublic,
     ScoreTableUpdate,
-    ScoreTableFormat,
-    Results,
 )
-from models.player_row import PlayerRow
 from routers.users import UserDep
 
 tag_metadata = {
@@ -323,11 +323,11 @@ async def bulk_add_players_to_score_table(
 
         player_order_index = len(db_score_table.player_rows)
         player_row = PlayerRow(
-            score_table=db_score_table,
-            player=db_player,
+            score_table_id=db_score_table.id,
+            player_id=db_player.id,
             order_index=player_order_index,
         )
-        session.add(player_row)
+        db_score_table.player_rows.append(player_row)
 
     session.add(db_score_table)
     session.commit()
