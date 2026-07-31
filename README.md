@@ -25,7 +25,6 @@ This repository contains the backend API for the Perfect Game app.
 
 ### ⚡ Extra features
 - Fuzzy search song titles by name
-- Create chart columns for "choose your own chart" style rounds
 - Reset your password with an email flow
 - Use refresh tokens for authentication
 

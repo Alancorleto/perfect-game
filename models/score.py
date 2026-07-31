@@ -6,6 +6,7 @@ from models.player import Player, PlayerPublic
 from models.score_column import ScoreColumn, ScoreColumnPublic
 from models.user import User
 from models.score_grade import ScoreGrade
+from models.chart import Chart
 
 
 class ScoreBase(SQLModel):
@@ -29,9 +30,12 @@ class Score(ScoreBase, table=True):
     )
     player_id: uuid.UUID = Field(foreign_key="player.id", ondelete="CASCADE")
     score_column_id: uuid.UUID = Field(foreign_key="scorecolumn.id", ondelete="CASCADE")
+    chart_id: uuid.UUID | None = Field(foreign_key="chart.id", default=None)
 
     player: Player = Relationship(back_populates="scores")
     score_column: ScoreColumn = Relationship(back_populates="scores")
+    chart: Chart | None = Relationship(back_populates="score")
+
 
     def can_be_edited_by(self, user: User) -> bool:
         return (

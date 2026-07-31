@@ -5,15 +5,15 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from models.chart import Mode
-from models.score_column import ScoreTable
+from models.score_column import ScoreColumn
 from models.user import User
 from tests.helpers import (
-    create_chart_column_in_db,
     create_chart_in_db,
     create_event_in_db,
     create_player_in_db,
     create_round_in_db,
     create_score_column_in_db,
+    create_score_in_db,
     create_score_table_in_db,
     create_tournament_in_db,
     create_user_in_db,
@@ -21,7 +21,7 @@ from tests.helpers import (
 )
 
 
-def create_chart_context_in_db(session: Session, organizer: User) -> ScoreTable:
+def create_chart_context_in_db(session: Session, organizer: User) -> ScoreColumn:
     event = create_event_in_db(session, organizer=organizer)
     tournament = create_tournament_in_db(session, event=event)
     round = create_round_in_db(session, tournament=tournament)
@@ -453,7 +453,7 @@ def test_create_chart_invalid_player_count(session: Session, client: TestClient)
 
 
 def test_create_chart_invalid_score_column_id(session: Session, client: TestClient):
-    user = create_user_in_db(
+    _ = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
@@ -468,30 +468,8 @@ def test_create_chart_invalid_score_column_id(session: Session, client: TestClie
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create_chart_for_chart_column(session: Session, client: TestClient):
-    user = create_user_in_db(
-        session, email="user@example.com", password="mypassword123"
-    )
-    player = create_player_in_db(session, user)
-    score_column = create_chart_context_in_db(session, user)
-    chart_column = create_chart_column_in_db(session, score_column=score_column)
-    headers = get_auth_headers(client, "user@example.com", "mypassword123")
-
-    response = client.post(
-        "/charts/",
-        json={"song_name": "Chart Column Song", "player_count": 1},
-        params={
-            "chart_column_id": str(chart_column.id),
-            "chart_column_player_id": str(player.id),
-        },
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_200_OK
-
-
 def test_create_chart_missing_ids(session: Session, client: TestClient):
-    user = create_user_in_db(
+    _ = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
@@ -505,38 +483,24 @@ def test_create_chart_missing_ids(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_create_chart_only_chart_column_player_id(session: Session, client: TestClient):
-    user = create_user_in_db(
-        session, email="user@example.com", password="mypassword123"
-    )
-    player = create_player_in_db(session, user)
-    headers = get_auth_headers(client, "user@example.com", "mypassword123")
-
-    response = client.post(
-        "/charts/",
-        json={"song_name": "Only Chart Column Player ID Song", "player_count": 1},
-        params={"chart_column_player_id": str(player.id)},
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
-def test_create_chart_only_chart_column_id(session: Session, client: TestClient):
+def test_create_chart_for_score(session: Session, client: TestClient):
     user = create_user_in_db(
         session, email="user@example.com", password="mypassword123"
     )
     score_column = create_chart_context_in_db(session, user)
+
+    player = create_player_in_db(session, user)
+    score = create_score_in_db(session, player=player, score_column=score_column)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
         "/charts/",
-        json={"song_name": "Only Chart Column ID Song", "player_count": 1},
-        params={"chart_column_id": str(score_column.id)},
+        json={"song_name": "Score Column Song", "player_count": 1},
+        params={"score_id": str(score.id)},
         headers=headers,
     )
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_200_OK
 
 
 # ---------------------------------------------------------------------------

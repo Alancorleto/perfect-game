@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from models.score_column_chart import ScoreColumnChartLink
 from models.user import User
 
 if TYPE_CHECKING:
+    from models.score import Score
     from models.score_column import ScoreColumn
 
 
@@ -34,13 +34,14 @@ class Chart(ChartBase, table=True):
         primary_key=True,
     )
 
-    score_column: Optional["ScoreColumn"] = Relationship(
-        link_model=ScoreColumnChartLink
-    )
+    score_column: Optional["ScoreColumn"] = Relationship(back_populates="chart")
+    score: Optional["Score"] = Relationship(back_populates="chart")
 
     def can_be_edited_by(self, user: User) -> bool:
-        return user.is_super_admin or (
-            self.score_column is not None and self.score_column.can_be_edited_by(user)
+        return (
+            user.is_super_admin
+            or (self.score_column is not None and self.score_column.can_be_edited_by(user))
+            or (self.score is not None and self.score.can_be_edited_by(user))
         )
 
     def can_be_deleted(self, user: User) -> bool:

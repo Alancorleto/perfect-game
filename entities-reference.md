@@ -72,7 +72,7 @@ A score column is always associated with a **score table** and has an **order_in
 
 A score column can have an optional associated **chart** which represents the chart that is meant to be played.
 
-If a chart is not specified, the score column can have an associated **chart column** which represents the chart that each individual player played.
+If a chart is not specified, each individual score can have an associated **chart** which represents the chart that was played for that particular score, enabling the possibility of rounds in which each player plays a different chart.
 
 # Scores
 A score represents a **player**'s performance for a **score column**.
@@ -83,17 +83,12 @@ The other values (`perfect`, `great`, `good`, `bad`, `miss`, `max_combo`) repres
 
 A score can have a grade, which is one of the following: `F`, `D`, `C`, `B`, `A`, `A+`, `AA`, `AA+`, `AAA`, `AAA+`, `S`, `S+`, `SS`, `SS+`, `SSS`, `SSS+`.
 
-# Chart Columns
-A chart column is used when a **score column** has no **chart** associated with it, for example, when each player played a chart of their own choice.
-
-A chart column represents **which chart** each player played for the associated score column.
-
 # Charts
 A chart is what competitors play to compare scores against each other.
 
 A chart must be associated with any of the following:
 - A **score column**, which represents the chart that must be played in that column
-- A combination of **chart column** and **player**, which represents the chart that was played in that column by that player
+- A **score**, which represents the chart that was played for that particular score, allowing for individual chart choices by players in a particular round
 
 A chart has a song name, a player count, a mode, a level difficulty, and a title image which can be uploaded by an organizer.
 

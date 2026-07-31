@@ -5,12 +5,10 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from models.chart import Chart, ChartPublic
 from models.round import RoundState
-from models.score_column_chart import ScoreColumnChartLink
 from models.score_table import ScoreTable
 from models.user import User
 
 if TYPE_CHECKING:
-    from models.chart_column import ChartColumn
     from models.score import Score
 
 
@@ -19,16 +17,11 @@ class ScoreColumn(SQLModel, table=True):
     score_table_id: uuid.UUID = Field(foreign_key="scoretable.id", ondelete="CASCADE")
     order_index: int = Field(ge=0, default=0)
     description: str | None = Field(default=None, max_length=20)
+    chart_id: uuid.UUID | None = Field(foreign_key="chart.id", default=None)
 
     score_table: ScoreTable = Relationship(back_populates="score_columns")
-    chart: Chart | None = Relationship(
-        link_model=ScoreColumnChartLink,
-        sa_relationship_kwargs={"viewonly": True},
-    )
+    chart: Chart | None = Relationship(back_populates="score_column")
     scores: list["Score"] = Relationship(
-        back_populates="score_column", cascade_delete=True
-    )
-    chart_column: Optional["ChartColumn"] = Relationship(
         back_populates="score_column", cascade_delete=True
     )
 

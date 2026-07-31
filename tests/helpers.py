@@ -2,7 +2,6 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from models.chart import Chart, Mode
-from models.chart_column import ChartColumn
 from models.event import Event
 from models.event_organizer import EventOrganizer
 from models.player import Player
@@ -133,7 +132,6 @@ def create_score_table_in_db(
     """Creates a score table directly in the test database."""
     score_table = ScoreTable(
         round_id=round.id,
-        levels=levels,
         qualifiers_count=qualifiers_count,
         format=format,
         order_index=len(round.score_tables),
@@ -152,7 +150,7 @@ def create_score_column_in_db(
 ) -> ScoreColumn:
     """Creates a score column directly in the test database."""
     score_column = ScoreColumn(
-        score_table=score_table,
+        score_table_id=score_table.id,
         order_index=order_index,
         description=description,
     )
@@ -160,22 +158,6 @@ def create_score_column_in_db(
     session.commit()
     session.refresh(score_column)
     return score_column
-
-
-def create_chart_column_in_db(
-    session: Session,
-    score_column: ScoreColumn,
-    description: str | None = None,
-) -> ChartColumn:
-    """Creates a chart column directly in the test database."""
-    chart_column = ChartColumn(
-        score_column=score_column,
-        description=description,
-    )
-    session.add(chart_column)
-    session.commit()
-    session.refresh(chart_column)
-    return chart_column
 
 
 def add_player_to_score_table_in_db(

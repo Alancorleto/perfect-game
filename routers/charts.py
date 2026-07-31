@@ -9,10 +9,9 @@ from sqlmodel import select
 from database import SessionDep
 from image_storage import upload_image
 from models.chart import Chart, ChartCreate, ChartPublic, ChartUpdate
-from models.chart_column import ChartColumn
-from models.chart_column_entry import ChartColumnEntry
-from models.player import Player
+from models.score import Score
 from models.score_column import ScoreColumn
+
 from routers.users import UserDep
 
 tag_metadata = {
@@ -78,18 +77,23 @@ async def create_chart(
     session: SessionDep,
     user: UserDep,
     score_column_id: uuid.UUID | None = None,
-    chart_column_id: uuid.UUID | None = None,
-    chart_column_player_id: uuid.UUID | None = None,
+    score_id: uuid.UUID | None = None,
 ):
     """Create a new chart.
 
     To correctly use this endpoint, one of the following conditions must be met:
     - If the chart is for a score column, `score_column_id` must be provided
-    - If the chart is for a chart column, `chart_column_id` and `chart_column_player_id` must both be provided
+    - If the chart is for a score, `score_id` must be provided
 
     Any other combination will result in a `400 Bad Request` response.
     """
     db_chart = Chart.model_validate(chart)
+
+    if score_column_id is not None and score_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="score_column_id and score_id cannot both be provided",
+        )
 
     if score_column_id is not None:
         db_score_column = session.get(ScoreColumn, score_column_id)
@@ -104,33 +108,24 @@ async def create_chart(
             )
 
         db_chart.score_column = db_score_column
-    elif chart_column_id is not None and chart_column_player_id is not None:
-        db_chart_column = session.get(ChartColumn, chart_column_id)
-        if db_chart_column is None:
+    elif score_id is not None:
+        db_score = session.get(Score, score_id)
+        if db_score is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Chart column not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Score not found"
             )
 
-        db_player = session.get(Player, chart_column_player_id)
-        if db_player is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Player not found"
-            )
-
-        if not db_chart_column.can_be_edited_by(user):
+        if not db_score.can_be_edited_by(user):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
             )
 
-        db_chart_column_entry = ChartColumnEntry(
-            chart_column=db_chart_column, player=db_player, chart=db_chart
-        )
+        db_chart.score = db_score
 
-        session.add(db_chart_column_entry)
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="score_column_id or (chart_column_id and chart_column_player_id) must be provided",
+            detail="score_column_id or score_id must be provided",
         )
 
     session.add(db_chart)

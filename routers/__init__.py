@@ -1,7 +1,5 @@
 from fastapi import APIRouter
 
-from routers.chart_columns import router as chart_column_router
-from routers.chart_columns import tag_metadata as chart_column_tag_metadata
 from routers.charts import router as chart_router
 from routers.charts import tag_metadata as chart_tag_metadata
 from routers.events import router as event_router
@@ -30,7 +28,6 @@ api_router.include_router(round_router)
 api_router.include_router(score_table_router)
 api_router.include_router(score_column_router)
 api_router.include_router(score_router)
-api_router.include_router(chart_column_router)
 api_router.include_router(chart_router)
 
 
@@ -43,6 +40,5 @@ tag_metadata = [
     score_table_tag_metadata,
     score_column_tag_metadata,
     score_tag_metadata,
-    chart_column_tag_metadata,
     chart_tag_metadata,
 ]
