@@ -1,3 +1,4 @@
+from this import s
 import uuid
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -192,11 +193,6 @@ class ScoreTable(ScoreTableBase, table=True):
                 score_column.can_be_deleted(user) for score_column in self.score_columns
             )
         )
-
-    def add_player(self, player: Player) -> None:
-        order_index = len(self.player_rows)
-        player_row = PlayerRow(score_table=self, player=player, order_index=order_index)
-        self.player_rows.append(player_row)
 
     def get_players_by_order(self) -> list[Player]:
         sorted_player_rows = sorted(

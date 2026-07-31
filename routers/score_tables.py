@@ -15,6 +15,7 @@ from models.score_table import (
     ScoreTableFormat,
     Results,
 )
+from models.player_row import PlayerRow
 from routers.users import UserDep
 
 tag_metadata = {
@@ -303,11 +304,13 @@ async def bulk_add_players_to_score_table(
         )
 
     # Filter out player IDs that are already in the score table
-    player_ids = filter(
-        lambda pid: (
+    player_ids = list(
+        filter(
+            lambda pid: (
             not any(link.player_id == pid for link in db_score_table.player_rows)
-        ),
-        player_ids,
+            ),
+            player_ids,
+        )
     )
 
     for player_id in player_ids:
@@ -318,7 +321,13 @@ async def bulk_add_players_to_score_table(
                 detail=f"Player with ID {player_id} not found",
             )
 
-        db_score_table.add_player(db_player)
+        player_order_index = len(db_score_table.player_rows)
+        player_row = PlayerRow(
+            score_table=db_score_table,
+            player=db_player,
+            order_index=player_order_index,
+        )
+        session.add(player_row)
 
     session.add(db_score_table)
     session.commit()

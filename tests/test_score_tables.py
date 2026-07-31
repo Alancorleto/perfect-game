@@ -625,6 +625,12 @@ def test_bulk_add_players_to_score_table(session: Session, client: TestClient):
     assert response.status_code == status.HTTP_200_OK
     assert [p["nickname"] for p in data] == ["PlayerA", "PlayerB"]
 
+    session.refresh(score_table)
+    player_rows_sorted = sorted(score_table.player_rows, key=lambda row: row.order_index)
+
+    assert len(player_rows_sorted) == 2
+    assert [row.order_index for row in player_rows_sorted] == [0, 1]
+    assert [row.player.nickname for row in player_rows_sorted] == ["PlayerA", "PlayerB"]
 
 def test_bulk_add_players_to_score_table_skips_existing(
     session: Session, client: TestClient
