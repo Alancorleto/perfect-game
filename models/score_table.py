@@ -11,12 +11,12 @@ from models.player_row import PlayerRow
 from models.round import Round
 from models.user import User
 from models.score_grade import ScoreGrade
+from models.chart import Chart
 
 
 if TYPE_CHECKING:
     from models.score_column import ScoreColumn
     from models.score import Score
-    from models.chart import Chart
 
 
 class ScoreTableFormat(Enum):
@@ -57,7 +57,7 @@ class Result(BaseModel):
 class ColumnResults(BaseModel):
     score_column_id: uuid.UUID
     description: str | None = ""
-    chart: "Chart | None" = None
+    chart: Chart | None = None
     results: list[Result] = []
 
     @classmethod
