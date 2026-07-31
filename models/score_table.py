@@ -16,6 +16,7 @@ from models.score_grade import ScoreGrade
 if TYPE_CHECKING:
     from models.score_column import ScoreColumn
     from models.score import Score
+    from models.chart import Chart
 
 
 class ScoreTableFormat(Enum):
@@ -55,11 +56,17 @@ class Result(BaseModel):
 
 class ColumnResults(BaseModel):
     score_column_id: uuid.UUID
+    description: str | None = ""
+    chart: "Chart | None" = None
     results: list[Result] = []
 
     @classmethod
     def from_score_column(cls, score_column: "ScoreColumn", player_rows: list["PlayerRow"]) -> "ColumnResults":
-        column_results = cls(score_column_id=score_column.id)
+        column_results = cls(
+            score_column_id=score_column.id,
+            description=score_column.description,
+            chart=score_column.chart,
+        )
 
         player_id_to_order_index = {
             player_row.player.id: player_row.order_index for player_row in player_rows
