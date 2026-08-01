@@ -17,7 +17,7 @@ class ScoreColumn(SQLModel, table=True):
     score_table_id: uuid.UUID = Field(foreign_key="scoretable.id", ondelete="CASCADE")
     order_index: int = Field(ge=0, default=0)
     description: str | None = Field(default=None, max_length=20)
-    chart_id: uuid.UUID | None = Field(foreign_key="chart.id", default=None)
+    chart_id: uuid.UUID | None = Field(foreign_key="chart.id", default=None, ondelete="SET NULL")
 
     score_table: ScoreTable = Relationship(back_populates="score_columns")
     chart: Chart | None = Relationship(back_populates="score_column")

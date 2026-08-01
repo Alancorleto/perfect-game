@@ -30,7 +30,7 @@ class Score(ScoreBase, table=True):
     )
     player_id: uuid.UUID = Field(foreign_key="player.id", ondelete="CASCADE")
     score_column_id: uuid.UUID = Field(foreign_key="scorecolumn.id", ondelete="CASCADE")
-    chart_id: uuid.UUID | None = Field(foreign_key="chart.id", default=None)
+    chart_id: uuid.UUID | None = Field(foreign_key="chart.id", default=None, ondelete="SET NULL")
 
     player: Player = Relationship(back_populates="scores")
     score_column: ScoreColumn = Relationship(back_populates="scores")
