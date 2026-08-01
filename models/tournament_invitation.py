@@ -16,7 +16,13 @@ class RequestStatus(Enum):
 
 class TournamentRequestBase(SQLModel):
     status: RequestStatus = Field(default=RequestStatus.PENDING)
-    issued_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
+    issued_at: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
+
+    def has_expired(self) -> bool:
+        now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        return self.issued_at < now - datetime.timedelta(days=1)
 
 
 class TournamentInvitation(TournamentRequestBase, table=True):

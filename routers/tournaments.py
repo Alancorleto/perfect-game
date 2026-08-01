@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from datetime import timezone
 
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
@@ -274,7 +275,7 @@ async def list_tournament_invitations(
 
     invitations: list[TournamentInvitationPublic] = []
     for invitation in db_tournament.invitations:
-        if invitation.issued_at < datetime.datetime.now() - datetime.timedelta(days=1):
+        if invitation.has_expired():
             continue
 
         invitations.append(
@@ -444,7 +445,7 @@ async def list_tournament_join_requests(
 
     join_requests: list[TournamentJoinRequestPublic] = []
     for request in tournament.join_requests:
-        if request.issued_at < datetime.datetime.now() - datetime.timedelta(days=1):
+        if request.has_expired():
             continue
 
         join_requests.append(
