@@ -10,8 +10,10 @@ from models.user import User
 
 if TYPE_CHECKING:
     from models.round import Round
-    from models.tournament_invitation import (TournamentInvitation,
-                                              TournamentJoinRequest)
+    from models.tournament_invitation import (
+        TournamentInvitation,
+        TournamentJoinRequest,
+    )
 
 
 class TournamentBase(SQLModel):
@@ -37,6 +39,10 @@ class Tournament(TournamentBase, table=True):
     join_requests: list["TournamentJoinRequest"] = Relationship(
         back_populates="tournament", cascade_delete=True
     )
+    guest_players: list["Player"] = Relationship(
+        back_populates="guest_tournament",
+        cascade_delete=True,
+    )
 
     def can_be_edited_by(self, user: User) -> bool:
         return self.event.can_be_edited_by(user)
@@ -60,7 +66,7 @@ class Tournament(TournamentBase, table=True):
     def add_player(self, player: Player, has_paid_entry: bool = False) -> None:
         if all(link.player_id != player.id for link in self.player_links):
             player_link = TournamentPlayerLink(
-                player=player, tournament=self, has_paid_entry=has_paid_entry
+                player_id=player.id, tournament_id=self.id, has_paid_entry=has_paid_entry
             )
             self.player_links.append(player_link)
 

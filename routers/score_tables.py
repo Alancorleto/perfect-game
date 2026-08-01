@@ -42,7 +42,7 @@ GET_SCORE_TABLE_RESULTS_EXAMPLE = [
             "city": "",
             "profile_picture_url": "",
             "user_id": None,
-            "guest_event_id": "d8d40987-6fcb-40b2-b514-3653feffe278",
+            "guest_tournament_id": "d8d40987-6fcb-40b2-b514-3653feffe278",
         },
         "order_index": 0,
         "results": [
@@ -81,7 +81,7 @@ GET_SCORE_TABLE_RESULTS_EXAMPLE = [
             "city": "",
             "profile_picture_url": "",
             "user_id": None,
-            "guest_event_id": "d8d40987-6fcb-40b2-b514-3653feffe278",
+            "guest_tournament_id": "d8d40987-6fcb-40b2-b514-3653feffe278",
         },
         "order_index": 1,
         "results": [

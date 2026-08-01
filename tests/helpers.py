@@ -45,14 +45,14 @@ def create_player_in_db(
     user: User | None = None,
     nickname: str = "TestPlayer",
     country_code: str = "AR",
-    guest_event: Event | None = None,
+    guest_tournament: Tournament | None = None,
 ) -> Player:
     """Creates a player directly in the test database."""
     player = Player(
         nickname=nickname,
         country_code=country_code,
         user_id=user.id if user else None,
-        guest_event_id=guest_event.id if guest_event else None,
+        guest_tournament_id=guest_tournament.id if guest_tournament else None,
     )
 
     session.add(player)

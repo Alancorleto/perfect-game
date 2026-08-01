@@ -5,10 +5,15 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from models.round import RoundState
-from tests.helpers import (add_organizer_to_event, create_event_in_db,
-                           create_player_in_db, create_round_in_db,
-                           create_tournament_in_db, create_user_in_db,
-                           get_auth_headers)
+from tests.helpers import (
+    add_organizer_to_event,
+    create_event_in_db,
+    create_player_in_db,
+    create_round_in_db,
+    create_tournament_in_db,
+    create_user_in_db,
+    get_auth_headers,
+)
 
 # ---------------------------------------------------------------------------
 # GET /events/
@@ -473,8 +478,9 @@ def test_add_organizer_player_has_no_user(session: Session, client: TestClient):
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
+    tournament = create_tournament_in_db(session, event=event)
     guest_player = create_player_in_db(
-        session, guest_event=event, nickname="GuestPlayer"
+        session, guest_tournament=tournament, nickname="GuestPlayer"
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
@@ -597,8 +603,9 @@ def test_remove_organizer_player_has_no_user(session: Session, client: TestClien
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
+    tournament = create_tournament_in_db(session, event=event)
     guest_player = create_player_in_db(
-        session, guest_event=event, nickname="GuestPlayer"
+        session, guest_tournament=tournament, nickname="GuestPlayer"
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 

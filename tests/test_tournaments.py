@@ -2,12 +2,21 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from models.player import Player
 from models.round import RoundState
-from models.tournament_invitation import (RequestStatus, TournamentInvitation,
-                                          TournamentJoinRequest)
-from tests.helpers import (create_event_in_db, create_player_in_db,
-                           create_round_in_db, create_tournament_in_db,
-                           create_user_in_db, get_auth_headers)
+from models.tournament_invitation import (
+    RequestStatus,
+    TournamentInvitation,
+    TournamentJoinRequest,
+)
+from tests.helpers import (
+    create_event_in_db,
+    create_player_in_db,
+    create_round_in_db,
+    create_tournament_in_db,
+    create_user_in_db,
+    get_auth_headers,
+)
 
 # ---------------------------------------------------------------------------
 # GET /tournaments/
@@ -347,89 +356,68 @@ def test_delete_event_cascade(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# POST /tournaments/{tournament_id}/players/bulk
+# POST /tournaments/{tournament_id}/guest_players
 # ---------------------------------------------------------------------------
 
 
-def test_bulk_add_players_to_tournament(session: Session, client: TestClient):
+def test_create_guest_player(session: Session, client: TestClient):
     organizer = create_user_in_db(
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
     tournament = create_tournament_in_db(session, event=event)
-    player_a = create_player_in_db(session, nickname="PlayerA", guest_event=event)
-    player_b = create_player_in_db(session, nickname="PlayerB", guest_event=event)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/players/bulk",
-        json=[str(player_a.id), str(player_b.id)],
+        f"/tournaments/{tournament.id}/guest_players",
+        json={"nickname": "GuestPlayer", "country_code": "AR"},
         headers=headers,
     )
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 2
-    nicknames = [p["nickname"] for p in data]
-    assert "PlayerA" in nicknames
-    assert "PlayerB" in nicknames
+    assert data["nickname"] == "GuestPlayer"
+    assert data["id"] is not None
+    assert data["country_code"] == "AR"
 
 
-def test_bulk_add_players_tournament_not_found(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
-    player = create_player_in_db(session, nickname="PlayerA")
+def test_create_guest_player_tournament_not_found(session: Session, client: TestClient):
+    organizer = create_user_in_db(session, email="user@example.com", password="mypassword123")
+    event = create_event_in_db(session, organizer=organizer)
+    create_tournament_in_db(session, event=event)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
-        "/tournaments/00000000-0000-0000-0000-000000000000/players/bulk",
-        json=[str(player.id)],
+        "/tournaments/00000000-0000-0000-0000-000000000000/guest_players",
+        json={"nickname": "GuestPlayer", "country_code": "AR"},
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_bulk_add_players_unauthorized(session: Session, client: TestClient):
-    create_user_in_db(session, email="attacker@example.com", password="mypassword123")
+def test_create_guest_player_not_organizer(session: Session, client: TestClient):
     event = create_event_in_db(session)
     tournament = create_tournament_in_db(session, event=event)
-    player = create_player_in_db(session, nickname="PlayerA")
-    headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/players/bulk",
-        json=[str(player.id)],
+        f"/tournaments/{tournament.id}/guest_players",
+        json={"nickname": "GuestPlayer", "country_code": "AR"},
         headers=headers,
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_bulk_add_players_player_not_found(session: Session, client: TestClient):
-    organizer = create_user_in_db(
-        session, email="organizer@example.com", password="mypassword123"
-    )
-    event = create_event_in_db(session, organizer=organizer)
-    tournament = create_tournament_in_db(session, event=event)
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(
-        f"/tournaments/{tournament.id}/players/bulk",
-        json=["00000000-0000-0000-0000-000000000000"],
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_bulk_add_players_unauthenticated(session: Session, client: TestClient):
+def test_create_guest_player_unauthenticated(session: Session, client: TestClient):
     event = create_event_in_db(session)
     tournament = create_tournament_in_db(session, event=event)
-    player = create_player_in_db(session, nickname="PlayerA")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/players/bulk",
-        json=[str(player.id)],
+        f"/tournaments/{tournament.id}/guest_players",
+        json={"nickname": "GuestPlayer", "country_code": "AR"},
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -1216,7 +1204,7 @@ def test_accept_tournament_join_request_unauthorized(
 
     response = client.post(
         f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
-        headers=get_auth_headers(client, attacker.email, "mypassword123"),
+        headers=get_auth_headers(client, str(attacker.email), "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -1426,7 +1414,7 @@ def test_decline_tournament_join_request_unauthorized(
 
     response = client.post(
         f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
-        headers=get_auth_headers(client, attacker.email, "mypassword123"),
+        headers=get_auth_headers(client, str(attacker.email), "mypassword123"),
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -1730,6 +1718,30 @@ def test_remove_player_from_tournament_unauthenticated(
     response = client.delete(f"/tournaments/{tournament.id}/players/{player.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_remove_player_from_tournament_guest(
+    session: Session, client: TestClient
+):
+    organizer = create_user_in_db(
+        session, email="organizer@example.com", password="mypassword123"
+    )
+    event = create_event_in_db(session, organizer=organizer)
+    tournament = create_tournament_in_db(session, event=event)
+    player = create_player_in_db(session, nickname="PlayerA", guest_tournament=tournament)
+    player_id = player.id
+    tournament.add_player(player)
+
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+
+    response = client.delete(f"/tournaments/{tournament.id}/players/{player.id}", headers=headers)
+
+    assert response.status_code == status.HTTP_200_OK
+
+    session.refresh(tournament)
+
+    assert tournament.guest_players == []
+    assert session.get(Player, player_id) is None
 
 
 # ---------------------------------------------------------------------------

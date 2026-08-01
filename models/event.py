@@ -8,9 +8,7 @@ from models.event_organizer import EventOrganizer
 from models.user import User
 
 if TYPE_CHECKING:
-    from models.player import Player
     from models.tournament import Tournament
-    from models.user import User
 
 NAME_MIN_LENGTH = 3
 NAME_MAX_LENGTH = 100
@@ -36,10 +34,6 @@ class Event(EventBase, table=True):
     )
     organizers: list["User"] = Relationship(
         back_populates="events", link_model=EventOrganizer
-    )
-    guest_players: list["Player"] = Relationship(
-        back_populates="guest_event",
-        cascade_delete=True,
     )
 
     def can_be_edited_by(self, user: "User") -> bool:

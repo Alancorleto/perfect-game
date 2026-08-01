@@ -280,19 +280,12 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     player_ids = []
     for index in range(1, 9):
         player_response = client.post(
-            f"/players/guest/{event_id}",
+            f"/tournaments/{tournament_id}/guest_players",
             json={"nickname": f"Player {index}", "country_code": "AR"},
             headers=headers,
         )
         assert player_response.status_code == status.HTTP_200_OK
         player_ids.append(player_response.json()["id"])
-
-    add_tournament_players_response = client.post(
-        f"/tournaments/{tournament_id}/players/bulk",
-        json=player_ids,
-        headers=headers,
-    )
-    assert add_tournament_players_response.status_code == status.HTTP_200_OK
 
     add_score_table_players_response = client.post(
         f"/score_tables/{score_table_id}/players/bulk",
@@ -337,19 +330,12 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
 
     # After player 4 has both scores, add a new player and move them to order index 4.
     late_player_response = client.post(
-        f"/players/guest/{event_id}",
+        f"/tournaments/{tournament_id}/guest_players",
         json={"nickname": "Late Player", "country_code": "AR"},
         headers=headers,
     )
     assert late_player_response.status_code == status.HTTP_200_OK
     late_player_id = late_player_response.json()["id"]
-
-    add_late_tournament_player_response = client.post(
-        f"/tournaments/{tournament_id}/players/bulk",
-        json=[late_player_id],
-        headers=headers,
-    )
-    assert add_late_tournament_player_response.status_code == status.HTTP_200_OK
 
     add_late_score_table_player_response = client.post(
         f"/score_tables/{score_table_id}/players/bulk",

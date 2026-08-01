@@ -4,8 +4,13 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from tests.helpers import (create_event_in_db, create_player_in_db,
-                           create_user_in_db, get_auth_headers)
+from tests.helpers import (
+    create_event_in_db,
+    create_player_in_db,
+    create_tournament_in_db,
+    create_user_in_db,
+    get_auth_headers,
+)
 
 # ---------------------------------------------------------------------------
 # GET /players/
@@ -133,69 +138,6 @@ def test_create_player_already_has_player(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# POST /players/guest/{event_id}
-# ---------------------------------------------------------------------------
-
-
-def test_create_guest_player(session: Session, client: TestClient):
-    organizer = create_user_in_db(
-        session, email="organizer@example.com", password="mypassword123"
-    )
-    event = create_event_in_db(session, organizer=organizer)
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(
-        f"/players/guest/{event.id}",
-        json={"nickname": "GuestPlayer", "country_code": "AR"},
-        headers=headers,
-    )
-    data = response.json()
-
-    assert response.status_code == status.HTTP_200_OK
-    assert data["nickname"] == "GuestPlayer"
-    assert data["id"] is not None
-    assert data["country_code"] == "AR"
-
-
-def test_create_guest_player_event_not_found(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
-    headers = get_auth_headers(client, "user@example.com", "mypassword123")
-
-    response = client.post(
-        "/players/guest/00000000-0000-0000-0000-000000000000",
-        json={"nickname": "GuestPlayer", "country_code": "AR"},
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_create_guest_player_not_organizer(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
-    event = create_event_in_db(session)
-    headers = get_auth_headers(client, "user@example.com", "mypassword123")
-
-    response = client.post(
-        f"/players/guest/{event.id}",
-        json={"nickname": "GuestPlayer", "country_code": "AR"},
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-def test_create_guest_player_unauthenticated(session: Session, client: TestClient):
-    event = create_event_in_db(session)
-
-    response = client.post(
-        f"/players/guest/{event.id}",
-        json={"nickname": "GuestPlayer", "country_code": "AR"},
-    )
-
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-
-# ---------------------------------------------------------------------------
 # PATCH /players/{player_id}
 # ---------------------------------------------------------------------------
 
@@ -273,7 +215,8 @@ def test_update_player_as_event_organizer(session: Session, client: TestClient):
         session, email="organizer@example.com", password="mypassword123"
     )
     event = create_event_in_db(session, organizer=organizer)
-    guest_player = create_player_in_db(session, guest_event=event, nickname="GuestNick")
+    tournament = create_tournament_in_db(session, event=event)
+    guest_player = create_player_in_db(session, guest_tournament=tournament, nickname="GuestNick")
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.patch(

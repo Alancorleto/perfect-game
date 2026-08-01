@@ -6,7 +6,6 @@ from sqlmodel import select
 
 from database import SessionDep
 from image_storage import upload_image
-from models.event import Event
 from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
 from routers.users import UserDep
 
@@ -71,32 +70,6 @@ async def create_player(player: PlayerCreate, session: SessionDep, user: UserDep
     session.commit()
     session.refresh(db_player)
 
-    return db_player
-
-
-@router.post("/guest/{event_id}", response_model=PlayerPublic)
-async def create_guest_player(
-    event_id: uuid.UUID, player: PlayerCreate, session: SessionDep, user: UserDep
-):
-    """Create a guest player for an event."""
-    event = session.get(Event, event_id)
-    if not event:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
-        )
-
-    if not event.can_be_edited_by(user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an organizer for this event",
-        )
-
-    db_player = Player.model_validate(player)
-    db_player.guest_event_id = event_id
-
-    session.add(db_player)
-    session.commit()
-    session.refresh(db_player)
     return db_player
 
 

@@ -7,9 +7,12 @@ from sqlmodel import Field, Relationship, SQLModel
 from models.user import User
 
 if TYPE_CHECKING:
-    from models.event import Event
     from models.score import Score
-    from models.tournament import TournamentInvitation, TournamentJoinRequest
+    from models.tournament import (
+        Tournament,
+        TournamentInvitation,
+        TournamentJoinRequest,
+    )
     from models.tournament_player import TournamentPlayerLink
 
 NICKNAME_MAX_LENGTH = 30
@@ -36,12 +39,12 @@ class Player(PlayerBase, table=True):
     user_id: uuid.UUID | None = Field(
         foreign_key="user.id", default=None, ondelete="SET NULL"
     )
-    guest_event_id: uuid.UUID | None = Field(
-        foreign_key="event.id", default=None, ondelete="CASCADE"
+    guest_tournament_id: uuid.UUID | None = Field(
+        foreign_key="tournament.id", default=None, ondelete="CASCADE"
     )
 
     user: User | None = Relationship(back_populates="player")
-    guest_event: Optional["Event"] = Relationship(back_populates="guest_players")
+    guest_tournament: Optional["Tournament"] = Relationship(back_populates="guest_players")
 
     # This is not used but needed by SQLModel to work properly with cascade delete
     scores: list["Score"] = Relationship(back_populates="player", cascade_delete=True)
@@ -60,7 +63,7 @@ class Player(PlayerBase, table=True):
         return (
             self.user_id == user.id
             or (
-                self.guest_event is not None and self.guest_event.can_be_edited_by(user)
+                self.guest_tournament is not None and self.guest_tournament.can_be_edited_by(user)
             )
             or user.is_super_admin
         )
@@ -76,7 +79,7 @@ class PlayerCreate(PlayerBase):
 class PlayerPublic(PlayerBase):
     id: uuid.UUID
     user_id: uuid.UUID | None
-    guest_event_id: uuid.UUID | None
+    guest_tournament_id: uuid.UUID | None
 
 
 class PlayerUpdate(SQLModel):
