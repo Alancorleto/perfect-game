@@ -6,12 +6,7 @@ from sqlmodel import select
 
 from database import SessionDep
 from image_storage import upload_image
-from models.event import (
-    Event,
-    EventCreate,
-    EventPublic,
-    EventUpdate,
-)
+from models.event import Event, EventCreate, EventPublic, EventUpdate
 from models.player import Player, PlayerPublic
 from models.tournament import TournamentPublic
 from routers.users import UserDep

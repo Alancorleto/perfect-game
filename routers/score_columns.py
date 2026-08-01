@@ -4,12 +4,8 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from database import SessionDep
-from models.score_column import (
-    ScoreColumn,
-    ScoreColumnCreate,
-    ScoreColumnPublic,
-    ScoreColumnUpdate,
-)
+from models.score_column import (ScoreColumn, ScoreColumnCreate,
+                                 ScoreColumnPublic, ScoreColumnUpdate)
 from models.score_table import ScoreTable
 from routers.users import UserDep
 

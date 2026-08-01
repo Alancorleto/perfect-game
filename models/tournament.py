@@ -10,7 +10,8 @@ from models.user import User
 
 if TYPE_CHECKING:
     from models.round import Round
-    from models.tournament_invitation import TournamentInvitation, TournamentJoinRequest
+    from models.tournament_invitation import (TournamentInvitation,
+                                              TournamentJoinRequest)
 
 
 class TournamentBase(SQLModel):

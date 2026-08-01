@@ -7,18 +7,11 @@ from sqlmodel import Session
 from models.chart import Mode
 from models.score_column import ScoreColumn
 from models.user import User
-from tests.helpers import (
-    create_chart_in_db,
-    create_event_in_db,
-    create_player_in_db,
-    create_round_in_db,
-    create_score_column_in_db,
-    create_score_in_db,
-    create_score_table_in_db,
-    create_tournament_in_db,
-    create_user_in_db,
-    get_auth_headers,
-)
+from tests.helpers import (create_chart_in_db, create_event_in_db,
+                           create_player_in_db, create_round_in_db,
+                           create_score_column_in_db, create_score_in_db,
+                           create_score_table_in_db, create_tournament_in_db,
+                           create_user_in_db, get_auth_headers)
 
 
 def create_chart_context_in_db(session: Session, organizer: User) -> ScoreColumn:

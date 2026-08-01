@@ -9,6 +9,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
+from pydantic import NameEmail, SecretStr
 from sqlmodel import Session, select
 
 from database import SessionDep
@@ -30,7 +31,7 @@ PASSWORD_RESET_TOKEN_EXPIRE_MINUTES = 60
 
 mail_config = ConnectionConfig(
     MAIL_USERNAME=os.getenv("MAIL_USERNAME", ""),
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", ""),
+    MAIL_PASSWORD=SecretStr(os.getenv("MAIL_PASSWORD", "")),
     MAIL_FROM=os.getenv("MAIL_FROM", "noreply@example.com"),
     MAIL_PORT=int(os.getenv("MAIL_PORT", "587")),
     MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.example.com"),
@@ -42,8 +43,8 @@ mail_config = ConnectionConfig(
 
 fast_mail = FastMail(mail_config)
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-ALGORITHM = os.getenv("JWT_ALGORITHM")
+SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "")
+ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
@@ -119,7 +120,11 @@ async def get_current_user(
     except InvalidTokenError:
         raise credentials_exception
 
-    user = get_user_by_email(email=token_data.username, session=session)
+    username = token_data.username
+    if username is None:
+        raise credentials_exception
+
+    user = get_user_by_email(email=username, session=session)
     if user is None:
         raise credentials_exception
 
@@ -328,7 +333,7 @@ async def request_password_reset(
 
         message = MessageSchema(
             subject="Password reset request",
-            recipients=[body.email],
+            recipients=[NameEmail(name="", email=str(body.email))],
             body=(
                 f"Hi,\n\n"
                 f"We received a request to reset the password for your account.\n\n"
@@ -359,7 +364,7 @@ async def verify_password_reset_code(
             select(PasswordResetToken)
             .where(PasswordResetToken.user_id == user.id)
             .where(PasswordResetToken.code == body.code)
-            .where(PasswordResetToken.used_at == None)  # noqa: E711
+            .where(PasswordResetToken.used_at == None)
             .where(PasswordResetToken.expires_at > now)
         ).first()
         if user
@@ -388,7 +393,7 @@ async def confirm_password_reset(
             select(PasswordResetToken)
             .where(PasswordResetToken.user_id == user.id)
             .where(PasswordResetToken.code == body.code)
-            .where(PasswordResetToken.used_at == None)  # noqa: E711
+            .where(PasswordResetToken.used_at == None)
             .where(PasswordResetToken.expires_at > now)
         ).first()
         if user

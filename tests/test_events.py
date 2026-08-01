@@ -5,15 +5,10 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from models.round import RoundState
-from tests.helpers import (
-    add_organizer_to_event,
-    create_event_in_db,
-    create_player_in_db,
-    create_round_in_db,
-    create_tournament_in_db,
-    create_user_in_db,
-    get_auth_headers,
-)
+from tests.helpers import (add_organizer_to_event, create_event_in_db,
+                           create_player_in_db, create_round_in_db,
+                           create_tournament_in_db, create_user_in_db,
+                           get_auth_headers)
 
 # ---------------------------------------------------------------------------
 # GET /events/

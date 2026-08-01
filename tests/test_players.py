@@ -4,12 +4,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from tests.helpers import (
-    create_event_in_db,
-    create_player_in_db,
-    create_user_in_db,
-    get_auth_headers,
-)
+from tests.helpers import (create_event_in_db, create_player_in_db,
+                           create_user_in_db, get_auth_headers)
 
 # ---------------------------------------------------------------------------
 # GET /players/

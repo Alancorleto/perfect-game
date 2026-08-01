@@ -2,11 +2,11 @@ import uuid
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from models.chart import Chart
 from models.player import Player, PlayerPublic
 from models.score_column import ScoreColumn, ScoreColumnPublic
-from models.user import User
 from models.score_grade import ScoreGrade
-from models.chart import Chart
+from models.user import User
 
 
 class ScoreBase(SQLModel):
