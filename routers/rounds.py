@@ -5,8 +5,13 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.player import PlayerPublic
-from models.round import (Round, RoundCreate, RoundPublic, RoundState,
-                          RoundUpdate)
+from models.round import (
+    Round,
+    RoundCreate,
+    RoundPublic,
+    RoundState,
+    RoundUpdate,
+)
 from models.score_table import ScoreTablePublic
 from models.tournament import Tournament
 from routers.users import UserDep
