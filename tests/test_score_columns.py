@@ -31,7 +31,7 @@ def create_editable_score_column_context(
 
 
 # ---------------------------------------------------------------------------
-# GET /score_columns/
+# GET /score-columns/
 # ---------------------------------------------------------------------------
 
 
@@ -49,7 +49,7 @@ def test_list_score_columns(session: Session, client: TestClient):
     create_chart_in_db(session, song_name="Chart B", level=12, score_column=column_b)
 
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
-    response = client.get("/score_columns/", headers=headers)
+    response = client.get("/score-columns/", headers=headers)
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -64,14 +64,14 @@ def test_list_score_columns_empty(session: Session, client: TestClient):
     create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
-    response = client.get("/score_columns/", headers=headers)
+    response = client.get("/score-columns/", headers=headers)
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
 # ---------------------------------------------------------------------------
-# POST /score_columns/
+# POST /score-columns/
 # ---------------------------------------------------------------------------
 
 
@@ -80,7 +80,7 @@ def test_create_score_column(session: Session, client: TestClient):
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        "/score_columns/",
+        "/score-columns/",
         json={"score_table_id": str(score_table.id)},
         headers=headers,
     )
@@ -104,7 +104,7 @@ def test_create_score_column_score_table_not_found(
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
-        "/score_columns/",
+        "/score-columns/",
         json={
             "score_table_id": "00000000-0000-0000-0000-000000000000",
         },
@@ -120,7 +120,7 @@ def test_create_score_column_forbidden(session: Session, client: TestClient):
 
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
     response = client.post(
-        "/score_columns/",
+        "/score-columns/",
         json={"score_table_id": str(score_table.id)},
         headers=headers,
     )
@@ -137,7 +137,7 @@ def test_create_score_column_appends_to_existing_columns(
 
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
     response = client.post(
-        "/score_columns/",
+        "/score-columns/",
         json={"score_table_id": str(score_table.id)},
         headers=headers,
     )
@@ -151,7 +151,7 @@ def test_create_score_column_unauthenticated(session: Session, client: TestClien
     _, _, _, _, score_table = create_editable_score_column_context(session)
 
     response = client.post(
-        "/score_columns/",
+        "/score-columns/",
         json={"score_table_id": str(score_table.id)},
     )
 
@@ -159,7 +159,7 @@ def test_create_score_column_unauthenticated(session: Session, client: TestClien
 
 
 # ---------------------------------------------------------------------------
-# GET /score_columns/{score_column_id}
+# GET /score-columns/{score_column_id}
 # ---------------------------------------------------------------------------
 
 
@@ -167,7 +167,7 @@ def test_get_score_column(session: Session, client: TestClient):
     _, _, _, _, score_table = create_editable_score_column_context(session)
     score_column = create_score_column_in_db(session, score_table, order_index=0)
 
-    response = client.get(f"/score_columns/{score_column.id}")
+    response = client.get(f"/score-columns/{score_column.id}")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -177,13 +177,13 @@ def test_get_score_column(session: Session, client: TestClient):
 
 
 def test_get_score_column_not_found(client: TestClient):
-    response = client.get("/score_columns/00000000-0000-0000-0000-000000000000")
+    response = client.get("/score-columns/00000000-0000-0000-0000-000000000000")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# PATCH /score_columns/{score_column_id}
+# PATCH /score-columns/{score_column_id}
 # ---------------------------------------------------------------------------
 
 
@@ -193,7 +193,7 @@ def test_update_score_column(session: Session, client: TestClient):
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.patch(
-        f"/score_columns/{score_column.id}",
+        f"/score-columns/{score_column.id}",
         json={"description": "Changed description"},
         headers=headers,
     )
@@ -212,7 +212,7 @@ def test_update_score_column_forbidden(session: Session, client: TestClient):
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.patch(
-        f"/score_columns/{score_column.id}",
+        f"/score-columns/{score_column.id}",
         json={"description": "Changed description"},
         headers=headers,
     )
@@ -232,7 +232,7 @@ def test_update_score_column_as_super_admin(session: Session, client: TestClient
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.patch(
-        f"/score_columns/{score_column.id}",
+        f"/score-columns/{score_column.id}",
         json={"description": "Changed description"},
         headers=headers,
     )
@@ -246,7 +246,7 @@ def test_update_score_column_unauthenticated(session: Session, client: TestClien
     score_column = create_score_column_in_db(session, score_table, order_index=0)
 
     response = client.patch(
-        f"/score_columns/{score_column.id}",
+        f"/score-columns/{score_column.id}",
         json={"description": "Changed description"},
     )
 
@@ -254,7 +254,7 @@ def test_update_score_column_unauthenticated(session: Session, client: TestClien
 
 
 # ---------------------------------------------------------------------------
-# DELETE /score_columns/{score_column_id}
+# DELETE /score-columns/{score_column_id}
 # ---------------------------------------------------------------------------
 
 
@@ -265,7 +265,7 @@ def test_delete_score_column(session: Session, client: TestClient):
     column_c = create_score_column_in_db(session, score_table, order_index=2)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    response = client.delete(f"/score_columns/{column_b.id}", headers=headers)
+    response = client.delete(f"/score-columns/{column_b.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
     assert session.get(ScoreColumn, column_b.id) is None
@@ -278,7 +278,7 @@ def test_delete_score_column_not_found(session: Session, client: TestClient):
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.delete(
-        "/score_columns/00000000-0000-0000-0000-000000000000",
+        "/score-columns/00000000-0000-0000-0000-000000000000",
         headers=headers,
     )
 
@@ -291,7 +291,7 @@ def test_delete_score_column_forbidden(session: Session, client: TestClient):
     score_column = create_score_column_in_db(session, score_table, order_index=0)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
-    response = client.delete(f"/score_columns/{score_column.id}", headers=headers)
+    response = client.delete(f"/score-columns/{score_column.id}", headers=headers)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -306,7 +306,7 @@ def test_delete_score_column_forbidden_when_round_finished(
     score_column = create_score_column_in_db(session, score_table, order_index=0)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    response = client.delete(f"/score_columns/{score_column.id}", headers=headers)
+    response = client.delete(f"/score-columns/{score_column.id}", headers=headers)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -324,7 +324,7 @@ def test_delete_score_column_as_super_admin(session: Session, client: TestClient
     score_column = create_score_column_in_db(session, score_table, order_index=0)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
-    response = client.delete(f"/score_columns/{score_column.id}", headers=headers)
+    response = client.delete(f"/score-columns/{score_column.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
     assert session.get(ScoreColumn, score_column.id) is None
@@ -334,6 +334,6 @@ def test_delete_score_column_unauthenticated(session: Session, client: TestClien
     _, _, _, _, score_table = create_editable_score_column_context(session)
     score_column = create_score_column_in_db(session, score_table, order_index=0)
 
-    response = client.delete(f"/score_columns/{score_column.id}")
+    response = client.delete(f"/score-columns/{score_column.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED

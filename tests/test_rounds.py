@@ -544,7 +544,7 @@ def test_delete_event_cascade(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# GET /rounds/{round_id}/score_tables
+# GET /rounds/{round_id}/score-tables
 # ---------------------------------------------------------------------------
 
 
@@ -555,7 +555,7 @@ def test_list_score_tables_in_round(session: Session, client: TestClient):
     score_table_a = create_score_table_in_db(session, round=round)
     score_table_b = create_score_table_in_db(session, round=round)
 
-    response = client.get(f"/rounds/{round.id}/score_tables")
+    response = client.get(f"/rounds/{round.id}/score-tables")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -578,7 +578,7 @@ def test_list_score_tables_in_round_order_changed(session: Session, client: Test
     score_table_b.order_index = 0
     session.commit()
 
-    response = client.get(f"/rounds/{round.id}/score_tables")
+    response = client.get(f"/rounds/{round.id}/score-tables")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -592,20 +592,20 @@ def test_list_score_tables_in_round_empty(session: Session, client: TestClient):
     tournament = create_tournament_in_db(session, event=event)
     round = create_round_in_db(session, tournament=tournament)
 
-    response = client.get(f"/rounds/{round.id}/score_tables")
+    response = client.get(f"/rounds/{round.id}/score-tables")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
 def test_list_score_tables_in_round_not_found(client: TestClient):
-    response = client.get("/rounds/00000000-0000-0000-0000-000000000000/score_tables")
+    response = client.get("/rounds/00000000-0000-0000-0000-000000000000/score-tables")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# PUT /rounds/{round_id}/score_tables/{score_table_id}/order
+# PUT /rounds/{round_id}/score-tables/{score_table_id}/order
 # ---------------------------------------------------------------------------
 
 
@@ -622,7 +622,7 @@ def test_change_score_table_order_in_round(session: Session, client: TestClient)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/score_tables/order",
+        f"/rounds/{round.id}/score-tables/order",
         json=[str(score_table_b.id), str(score_table_a.id)],
         headers=headers,
     )
@@ -657,7 +657,7 @@ def test_change_score_table_order_in_round_as_super_admin(
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/score_tables/order",
+        f"/rounds/{round.id}/score-tables/order",
         json=[str(score_table_b.id), str(score_table_a.id)],
         headers=headers,
     )
@@ -677,7 +677,7 @@ def test_change_score_table_order_in_round_not_found(
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.put(
-        "/rounds/00000000-0000-0000-0000-000000000000/score_tables/order",
+        "/rounds/00000000-0000-0000-0000-000000000000/score-tables/order",
         json=["00000000-0000-0000-0000-000000000000"],
         headers=headers,
     )
@@ -696,7 +696,7 @@ def test_change_score_table_order_in_round_unauthorized(
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/score_tables/order",
+        f"/rounds/{round.id}/score-tables/order",
         json=[str(score_table_a.id)],
         headers=headers,
     )
@@ -713,7 +713,7 @@ def test_change_score_table_order_in_round_unauthenticated(
     score_table_a = create_score_table_in_db(session, round=round)
 
     response = client.put(
-        f"/rounds/{round.id}/score_tables/order",
+        f"/rounds/{round.id}/score-tables/order",
         json=[str(score_table_a.id)],
     )
 
@@ -734,7 +734,7 @@ def test_change_score_table_order_in_round_count_mismatch(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/score_tables/order",
+        f"/rounds/{round.id}/score-tables/order",
         json=[str(score_table_a.id)],
         headers=headers,
     )
@@ -756,7 +756,7 @@ def test_change_score_table_order_in_round_repeated_score_table(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/score_tables/order",
+        f"/rounds/{round.id}/score-tables/order",
         json=[str(score_table_a.id), str(score_table_a.id)],
         headers=headers,
     )
@@ -778,7 +778,7 @@ def test_change_score_table_order_in_round_incorrect_score_table(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/rounds/{round.id}/score_tables/order",
+        f"/rounds/{round.id}/score-tables/order",
         json=[str(score_table_a.id), "00000000-0000-0000-0000-000000000000"],
         headers=headers,
     )

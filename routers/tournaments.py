@@ -138,7 +138,7 @@ async def delete_tournament(
     session.commit()
 
 
-@router.post("/{tournament_id}/guest_players", response_model=PlayerPublic)
+@router.post("/{tournament_id}/guest-players", response_model=PlayerPublic)
 async def create_guest_player(
     tournament_id: uuid.UUID,
     player: PlayerCreate,
@@ -338,7 +338,7 @@ async def decline_tournament_invitation(
 
 
 @router.get(
-    "/{tournament_id}/join_requests", response_model=list[TournamentJoinRequestPublic]
+    "/{tournament_id}/join-requests", response_model=list[TournamentJoinRequestPublic]
 )
 async def list_tournament_join_requests(
     tournament_id: uuid.UUID, session: SessionDep, user: UserDep
@@ -372,7 +372,7 @@ async def list_tournament_join_requests(
     return join_requests
 
 
-@router.post("/{tournament_id}/join_requests", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/{tournament_id}/join-requests", status_code=status.HTTP_204_NO_CONTENT)
 async def request_join_tournament(
     tournament_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
@@ -418,7 +418,7 @@ async def request_join_tournament(
     session.commit()
 
 
-@router.post("/{tournament_id}/join_requests/{player_id}/accept")
+@router.post("/{tournament_id}/join-requests/{player_id}/accept")
 async def accept_tournament_join_request(
     tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
@@ -473,7 +473,7 @@ async def accept_tournament_join_request(
     session.commit()
 
 
-@router.post("/{tournament_id}/join_requests/{player_id}/decline")
+@router.post("/{tournament_id}/join-requests/{player_id}/decline")
 async def decline_tournament_join_request(
     tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):

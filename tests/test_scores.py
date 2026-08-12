@@ -505,7 +505,7 @@ def test_delete_score_column_cascade(session: Session, client: TestClient):
     score = create_score_in_db(session, player=player, score_column=score_column)
 
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
-    response = client.delete(f"/score_columns/{score_column.id}", headers=headers)
+    response = client.delete(f"/score-columns/{score_column.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 

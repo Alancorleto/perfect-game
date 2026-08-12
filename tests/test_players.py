@@ -326,7 +326,7 @@ def test_delete_user_set_null(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# POST /players/{player_id}/profile_picture
+# POST /players/{player_id}/profile-picture
 # ---------------------------------------------------------------------------
 
 
@@ -342,7 +342,7 @@ def test_upload_profile_picture(session: Session, client: TestClient):
         new=AsyncMock(return_value="https://example.com/profile.png"),
     ):
         response = client.post(
-            f"/players/{player.id}/profile_picture",
+            f"/players/{player.id}/profile-picture",
             files={"profile_picture": ("photo.png", b"fake image bytes", "image/png")},
             headers=headers,
         )
@@ -358,7 +358,7 @@ def test_upload_profile_picture_not_found(session: Session, client: TestClient):
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
-        "/players/00000000-0000-0000-0000-000000000000/profile_picture",
+        "/players/00000000-0000-0000-0000-000000000000/profile-picture",
         files={"profile_picture": ("photo.png", b"fake image bytes", "image/png")},
         headers=headers,
     )
@@ -373,7 +373,7 @@ def test_upload_profile_picture_unauthorized(session: Session, client: TestClien
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
-        f"/players/{player.id}/profile_picture",
+        f"/players/{player.id}/profile-picture",
         files={"profile_picture": ("photo.png", b"fake image bytes", "image/png")},
         headers=headers,
     )
@@ -386,7 +386,7 @@ def test_upload_profile_picture_unauthenticated(session: Session, client: TestCl
     player = create_player_in_db(session, user=user, nickname="PicPlayer")
 
     response = client.post(
-        f"/players/{player.id}/profile_picture",
+        f"/players/{player.id}/profile-picture",
         files={"profile_picture": ("photo.png", b"fake image bytes", "image/png")},
     )
 

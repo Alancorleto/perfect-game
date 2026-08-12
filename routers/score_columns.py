@@ -22,7 +22,7 @@ tag_metadata = {
     },
 }
 
-router = APIRouter(prefix="/score_columns", tags=["score_columns"])
+router = APIRouter(prefix="/score-columns", tags=["score_columns"])
 
 
 @router.get("/", response_model=list[ScoreColumnPublic])

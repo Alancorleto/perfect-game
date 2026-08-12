@@ -118,7 +118,7 @@ async def delete_player(
     session.commit()
 
 
-@router.post("/{player_id}/profile_picture", response_model=PlayerPublic)
+@router.post("/{player_id}/profile-picture", response_model=PlayerPublic)
 async def upload_profile_picture(
     player_id: uuid.UUID,
     profile_picture: Annotated[bytes, File()],

@@ -27,7 +27,7 @@ tag_metadata = {
     },
 }
 
-router = APIRouter(prefix="/score_tables", tags=["score_tables"])
+router = APIRouter(prefix="/score-tables", tags=["score_tables"])
 
 GET_SCORE_TABLE_RESULTS_EXAMPLE = [
     {
@@ -218,7 +218,7 @@ async def delete_score_table(
     session.commit()
 
 
-@router.get("/{score_table_id}/score_columns", response_model=list[ScoreColumnPublic])
+@router.get("/{score_table_id}/score-columns", response_model=list[ScoreColumnPublic])
 async def list_score_columns_for_score_table(
     score_table_id: uuid.UUID, session: SessionDep
 ):
@@ -233,7 +233,7 @@ async def list_score_columns_for_score_table(
 
 
 @router.put(
-    "/{score_table_id}/score_columns/order", response_model=list[ScoreColumnPublic]
+    "/{score_table_id}/score-columns/order", response_model=list[ScoreColumnPublic]
 )
 async def update_score_column_order_in_score_table(
     score_table_id: uuid.UUID,

@@ -356,7 +356,7 @@ def test_delete_event_cascade(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
-# POST /tournaments/{tournament_id}/guest_players
+# POST /tournaments/{tournament_id}/guest-players
 # ---------------------------------------------------------------------------
 
 
@@ -369,7 +369,7 @@ def test_create_guest_player(session: Session, client: TestClient):
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/guest_players",
+        f"/tournaments/{tournament.id}/guest-players",
         json={"nickname": "GuestPlayer", "country_code": "AR"},
         headers=headers,
     )
@@ -388,7 +388,7 @@ def test_create_guest_player_tournament_not_found(session: Session, client: Test
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
-        "/tournaments/00000000-0000-0000-0000-000000000000/guest_players",
+        "/tournaments/00000000-0000-0000-0000-000000000000/guest-players",
         json={"nickname": "GuestPlayer", "country_code": "AR"},
         headers=headers,
     )
@@ -403,7 +403,7 @@ def test_create_guest_player_not_organizer(session: Session, client: TestClient)
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
-        f"/tournaments/{tournament.id}/guest_players",
+        f"/tournaments/{tournament.id}/guest-players",
         json={"nickname": "GuestPlayer", "country_code": "AR"},
         headers=headers,
     )
@@ -416,7 +416,7 @@ def test_create_guest_player_unauthenticated(session: Session, client: TestClien
     tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/tournaments/{tournament.id}/guest_players",
+        f"/tournaments/{tournament.id}/guest-players",
         json={"nickname": "GuestPlayer", "country_code": "AR"},
     )
 
@@ -916,7 +916,7 @@ def test_list_tournament_invitations_unauthenticated(
 
 
 # ---------------------------------------------------------------------------
-# GET /tournaments/{tournament_id}/join_requests
+# GET /tournaments/{tournament_id}/join-requests
 # ---------------------------------------------------------------------------
 
 
@@ -940,7 +940,7 @@ def test_list_tournament_join_requests(session: Session, client: TestClient):
     session.commit()
 
     response = client.get(
-        f"/tournaments/{tournament.id}/join_requests",
+        f"/tournaments/{tournament.id}/join-requests",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
     data = response.json()
@@ -961,7 +961,7 @@ def test_list_tournament_join_requests_empty(session: Session, client: TestClien
     tournament = create_tournament_in_db(session, event=event)
 
     response = client.get(
-        f"/tournaments/{tournament.id}/join_requests",
+        f"/tournaments/{tournament.id}/join-requests",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -974,7 +974,7 @@ def test_list_tournament_join_requests_not_found(session: Session, client: TestC
     create_user_in_db(session, email="organizer@example.com", password="mypassword123")
 
     response = client.get(
-        "/tournaments/00000000-0000-0000-0000-000000000000/join_requests",
+        "/tournaments/00000000-0000-0000-0000-000000000000/join-requests",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -993,7 +993,7 @@ def test_list_tournament_join_requests_unauthorized(
     tournament = create_tournament_in_db(session, event=event)
 
     response = client.get(
-        f"/tournaments/{tournament.id}/join_requests",
+        f"/tournaments/{tournament.id}/join-requests",
         headers=get_auth_headers(client, "attacker@example.com", "mypassword123"),
     )
 
@@ -1010,13 +1010,13 @@ def test_list_tournament_join_requests_unauthenticated(
     event = create_event_in_db(session, organizer=organizer)
     tournament = create_tournament_in_db(session, event=event)
 
-    response = client.get(f"/tournaments/{tournament.id}/join_requests")
+    response = client.get(f"/tournaments/{tournament.id}/join-requests")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # ---------------------------------------------------------------------------
-# POST /tournaments/{tournament_id}/join_requests
+# POST /tournaments/{tournament_id}/join-requests
 # ---------------------------------------------------------------------------
 
 
@@ -1030,7 +1030,7 @@ def test_request_join_tournament(session: Session, client: TestClient):
     tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests",
+        f"/tournaments/{tournament.id}/join-requests",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
@@ -1060,7 +1060,7 @@ def test_request_join_tournament_auto_accept(session: Session, client: TestClien
     )
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests",
+        f"/tournaments/{tournament.id}/join-requests",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
@@ -1081,7 +1081,7 @@ def test_request_join_tournament_tournament_not_found(
     create_player_in_db(session, user=user)
 
     response = client.post(
-        "/tournaments/00000000-0000-0000-0000-000000000000/join_requests",
+        "/tournaments/00000000-0000-0000-0000-000000000000/join-requests",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
@@ -1106,7 +1106,7 @@ def test_request_join_tournament_player_already_in_tournament(
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests",
+        f"/tournaments/{tournament.id}/join-requests",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
@@ -1135,7 +1135,7 @@ def test_request_join_tournament_existing_request_reopens(
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests",
+        f"/tournaments/{tournament.id}/join-requests",
         headers=get_auth_headers(client, "user@example.com", "mypassword123"),
     )
 
@@ -1146,7 +1146,7 @@ def test_request_join_tournament_existing_request_reopens(
 
 
 # ---------------------------------------------------------------------------
-# POST /tournaments/{tournament_id}/join_requests/{player_id}/accept
+# POST /tournaments/{tournament_id}/join-requests/{player_id}/accept
 # ---------------------------------------------------------------------------
 
 
@@ -1168,7 +1168,7 @@ def test_accept_tournament_join_request(session: Session, client: TestClient):
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1203,7 +1203,7 @@ def test_accept_tournament_join_request_unauthorized(
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/accept",
         headers=get_auth_headers(client, str(attacker.email), "mypassword123"),
     )
 
@@ -1226,7 +1226,7 @@ def test_accept_tournament_join_request_tournament_not_found(
     create_event_in_db(session, organizer=organizer)
 
     response = client.post(
-        f"/tournaments/00000000-0000-0000-0000-000000000000/join_requests/{player.id}/accept",
+        f"/tournaments/00000000-0000-0000-0000-000000000000/join-requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1244,7 +1244,7 @@ def test_accept_tournament_join_request_player_not_found(
     tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/00000000-0000-0000-0000-000000000000/accept",
+        f"/tournaments/{tournament.id}/join-requests/00000000-0000-0000-0000-000000000000/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1274,7 +1274,7 @@ def test_accept_tournament_join_request_player_already_in_tournament(
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1294,7 +1294,7 @@ def test_accept_tournament_join_request_not_found(session: Session, client: Test
     tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1321,7 +1321,7 @@ def test_accept_tournament_join_request_not_pending_accepted(
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1348,7 +1348,7 @@ def test_accept_tournament_join_request_not_pending_declined(
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/accept",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/accept",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1356,7 +1356,7 @@ def test_accept_tournament_join_request_not_pending_declined(
 
 
 # ---------------------------------------------------------------------------
-# POST /tournaments/{tournament_id}/join_requests/{player_id}/decline
+# POST /tournaments/{tournament_id}/join-requests/{player_id}/decline
 # ---------------------------------------------------------------------------
 
 
@@ -1378,7 +1378,7 @@ def test_decline_tournament_join_request(session: Session, client: TestClient):
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1413,7 +1413,7 @@ def test_decline_tournament_join_request_unauthorized(
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/decline",
         headers=get_auth_headers(client, str(attacker.email), "mypassword123"),
     )
 
@@ -1436,7 +1436,7 @@ def test_decline_tournament_join_request_tournament_not_found(
     create_event_in_db(session, organizer=organizer)
 
     response = client.post(
-        f"/tournaments/00000000-0000-0000-0000-000000000000/join_requests/{player.id}/decline",
+        f"/tournaments/00000000-0000-0000-0000-000000000000/join-requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1454,7 +1454,7 @@ def test_decline_tournament_join_request_player_not_found(
     tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/00000000-0000-0000-0000-000000000000/decline",
+        f"/tournaments/{tournament.id}/join-requests/00000000-0000-0000-0000-000000000000/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1484,7 +1484,7 @@ def test_decline_tournament_join_request_player_already_in_tournament(
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1506,7 +1506,7 @@ def test_decline_tournament_join_request_not_found(
     tournament = create_tournament_in_db(session, event=event)
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1533,7 +1533,7 @@ def test_decline_tournament_join_request_not_pending_accepted(
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 
@@ -1560,7 +1560,7 @@ def test_decline_tournament_join_request_not_pending_declined(
     session.commit()
 
     response = client.post(
-        f"/tournaments/{tournament.id}/join_requests/{player.id}/decline",
+        f"/tournaments/{tournament.id}/join-requests/{player.id}/decline",
         headers=get_auth_headers(client, "organizer@example.com", "mypassword123"),
     )
 

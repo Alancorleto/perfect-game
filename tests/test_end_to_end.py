@@ -65,7 +65,7 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
 
     # Create a score-sum score table inside the round.
     score_table_response = client.post(
-        "/score_tables/",
+        "/score-tables/",
         json={
             "round_id": round_id,
             "levels": "S15",
@@ -79,7 +79,7 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
 
     # Add the chart to the score table as the first score column.
     score_column_response = client.post(
-        "/score_columns/",
+        "/score-columns/",
         json={"score_table_id": score_table_id},
         headers=headers,
     )
@@ -105,7 +105,7 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
 
     # Add the organizer's player to the score table.
     add_player_response = client.post(
-        f"/score_tables/{score_table_id}/players/bulk",
+        f"/score-tables/{score_table_id}/players/bulk",
         json=[player_id],
         headers=headers,
     )
@@ -144,7 +144,7 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
     score_id = score_response.json()["id"]
 
     # Fetch the calculated score table results.
-    results_response = client.get(f"/score_tables/{score_table_id}/results")
+    results_response = client.get(f"/score-tables/{score_table_id}/results")
     assert results_response.status_code == status.HTTP_200_OK
     results = results_response.json()
 
@@ -244,7 +244,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     round_id = round_response.json()["id"]
 
     score_table_response = client.post(
-        "/score_tables/",
+        "/score-tables/",
         json={
             "round_id": round_id,
             "levels": "S15 & S16",
@@ -257,7 +257,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     score_table_id = score_table_response.json()["id"]
 
     score_column_s15_response = client.post(
-        "/score_columns/",
+        "/score-columns/",
         json={"score_table_id": score_table_id},
         headers=headers,
     )
@@ -265,7 +265,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     score_column_15_id = score_column_s15_response.json()["id"]
 
     score_column_s16_response = client.post(
-        "/score_columns/",
+        "/score-columns/",
         json={"score_table_id": score_table_id},
         headers=headers,
     )
@@ -280,7 +280,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     player_ids = []
     for index in range(1, 9):
         player_response = client.post(
-            f"/tournaments/{tournament_id}/guest_players",
+            f"/tournaments/{tournament_id}/guest-players",
             json={"nickname": f"Player {index}", "country_code": "AR"},
             headers=headers,
         )
@@ -288,7 +288,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
         player_ids.append(player_response.json()["id"])
 
     add_score_table_players_response = client.post(
-        f"/score_tables/{score_table_id}/players/bulk",
+        f"/score-tables/{score_table_id}/players/bulk",
         json=player_ids,
         headers=headers,
     )
@@ -330,7 +330,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
 
     # After player 4 has both scores, add a new player and move them to order index 4.
     late_player_response = client.post(
-        f"/tournaments/{tournament_id}/guest_players",
+        f"/tournaments/{tournament_id}/guest-players",
         json={"nickname": "Late Player", "country_code": "AR"},
         headers=headers,
     )
@@ -338,7 +338,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     late_player_id = late_player_response.json()["id"]
 
     add_late_score_table_player_response = client.post(
-        f"/score_tables/{score_table_id}/players/bulk",
+        f"/score-tables/{score_table_id}/players/bulk",
         json=[late_player_id],
         headers=headers,
     )
@@ -356,7 +356,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
         player_ids[7],
     ]
     update_score_table_player_order_response = client.put(
-        f"/score_tables/{score_table_id}/players/order",
+        f"/score-tables/{score_table_id}/players/order",
         json=ordered_player_ids,
         headers=headers,
     )
@@ -399,7 +399,7 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     assert finish_round_response.json()["state"] == "finished"
 
     # Fetch and verify final score-sum results are mixed by total score, not input order.
-    results_response = client.get(f"/score_tables/{score_table_id}/results")
+    results_response = client.get(f"/score-tables/{score_table_id}/results")
     assert results_response.status_code == status.HTTP_200_OK
     results = results_response.json()
 

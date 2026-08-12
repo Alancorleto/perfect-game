@@ -33,7 +33,7 @@ def create_editable_score_table(
 
 
 # ---------------------------------------------------------------------------
-# GET /score_tables/
+# GET /score-tables/
 # ---------------------------------------------------------------------------
 
 
@@ -47,7 +47,7 @@ def test_create_score_table(session: Session, client: TestClient):
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        "/score_tables/",
+        "/score-tables/",
         json={
             "round_id": str(round.id),
             "qualifiers_count": 4,
@@ -67,7 +67,7 @@ def test_create_score_table_round_not_found(session: Session, client: TestClient
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
-        "/score_tables/",
+        "/score-tables/",
         json={"round_id": "00000000-0000-0000-0000-000000000000"},
         headers=headers,
     )
@@ -83,7 +83,7 @@ def test_create_score_table_unauthorized(session: Session, client: TestClient):
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
-        "/score_tables/",
+        "/score-tables/",
         json={"round_id": str(round.id)},
         headers=headers,
     )
@@ -104,7 +104,7 @@ def test_create_score_table_as_super_admin(session: Session, client: TestClient)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.post(
-        "/score_tables/",
+        "/score-tables/",
         json={"round_id": str(round.id)},
         headers=headers,
     )
@@ -118,7 +118,7 @@ def test_create_score_table_unauthenticated(session: Session, client: TestClient
     tournament = create_tournament_in_db(session, event=event)
     round = create_round_in_db(session, tournament=tournament)
 
-    response = client.post("/score_tables/", json={"round_id": str(round.id)})
+    response = client.post("/score-tables/", json={"round_id": str(round.id)})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -134,7 +134,7 @@ def test_create_score_table_invalid_qualifiers_count(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        "/score_tables/",
+        "/score-tables/",
         json={"round_id": str(round.id), "qualifiers_count": 0},
         headers=headers,
     )
@@ -143,7 +143,7 @@ def test_create_score_table_invalid_qualifiers_count(
 
 
 # ---------------------------------------------------------------------------
-# GET /score_tables/
+# GET /score-tables/
 # ---------------------------------------------------------------------------
 
 
@@ -154,7 +154,7 @@ def test_list_score_tables(session: Session, client: TestClient):
     score_table_a = create_score_table_in_db(session, round=round)
     score_table_b = create_score_table_in_db(session, round=round)
 
-    response = client.get("/score_tables/")
+    response = client.get("/score-tables/")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -165,14 +165,14 @@ def test_list_score_tables(session: Session, client: TestClient):
 
 
 def test_list_score_tables_empty(client: TestClient):
-    response = client.get("/score_tables/")
+    response = client.get("/score-tables/")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
 # ---------------------------------------------------------------------------
-# GET /score_tables/{score_table_id}
+# GET /score-tables/{score_table_id}
 # ---------------------------------------------------------------------------
 
 
@@ -182,7 +182,7 @@ def test_get_score_table(session: Session, client: TestClient):
     round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
 
-    response = client.get(f"/score_tables/{score_table.id}")
+    response = client.get(f"/score-tables/{score_table.id}")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -191,13 +191,13 @@ def test_get_score_table(session: Session, client: TestClient):
 
 
 def test_get_score_table_not_found(client: TestClient):
-    response = client.get("/score_tables/00000000-0000-0000-0000-000000000000")
+    response = client.get("/score-tables/00000000-0000-0000-0000-000000000000")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# PATCH /score_tables/{score_table_id}
+# PATCH /score-tables/{score_table_id}
 # ---------------------------------------------------------------------------
 
 
@@ -210,7 +210,7 @@ def test_update_score_table(session: Session, client: TestClient):
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.patch(
-        f"/score_tables/{score_table.id}",
+        f"/score-tables/{score_table.id}",
         json={"qualifiers_count": 2, "format": "custom_set"},
         headers=headers,
     )
@@ -224,7 +224,7 @@ def test_update_score_table_not_found(session: Session, client: TestClient):
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.patch(
-        "/score_tables/00000000-0000-0000-0000-000000000000",
+        "/score-tables/00000000-0000-0000-0000-000000000000",
         json={"qualifiers_count": 2, "format": "custom_set"},
         headers=headers,
     )
@@ -241,7 +241,7 @@ def test_update_score_table_unauthorized(session: Session, client: TestClient):
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.patch(
-        f"/score_tables/{score_table.id}",
+        f"/score-tables/{score_table.id}",
         json={"qualifiers_count": 2, "format": "custom_set"},
         headers=headers,
     )
@@ -263,7 +263,7 @@ def test_update_score_table_as_super_admin(session: Session, client: TestClient)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.patch(
-        f"/score_tables/{score_table.id}",
+        f"/score-tables/{score_table.id}",
         json={"qualifiers_count": 2, "format": "custom_set"},
         headers=headers,
     )
@@ -278,7 +278,7 @@ def test_update_score_table_unauthenticated(session: Session, client: TestClient
     score_table = create_score_table_in_db(session, round=round)
 
     response = client.patch(
-        f"/score_tables/{score_table.id}",
+        f"/score-tables/{score_table.id}",
         json={"qualifiers_count": 2, "format": "custom_set"},
     )
 
@@ -294,7 +294,7 @@ def test_update_score_table_invalid_format(session: Session, client: TestClient)
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.patch(
-        f"/score_tables/{score_table.id}",
+        f"/score-tables/{score_table.id}",
         json={"format": "invalid"},
         headers=headers,
     )
@@ -303,7 +303,7 @@ def test_update_score_table_invalid_format(session: Session, client: TestClient)
 
 
 # ---------------------------------------------------------------------------
-# DELETE /score_tables/{score_table_id}
+# DELETE /score-tables/{score_table_id}
 # ---------------------------------------------------------------------------
 
 
@@ -315,11 +315,11 @@ def test_delete_score_table_empty(session: Session, client: TestClient):
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
-    response = client.delete(f"/score_tables/{score_table.id}", headers=headers)
+    response = client.delete(f"/score-tables/{score_table.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    get_response = client.get(f"/score_tables/{score_table.id}", headers=headers)
+    get_response = client.get(f"/score-tables/{score_table.id}", headers=headers)
     assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -350,7 +350,7 @@ def test_delete_score_table_with_score(session: Session, client: TestClient):
         value=1_000_000,
     )
 
-    response = client.delete(f"/score_tables/{score_table.id}", headers=headers)
+    response = client.delete(f"/score-tables/{score_table.id}", headers=headers)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -360,7 +360,7 @@ def test_delete_score_table_not_found(session: Session, client: TestClient):
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.delete(
-        "/score_tables/00000000-0000-0000-0000-000000000000",
+        "/score-tables/00000000-0000-0000-0000-000000000000",
         headers=headers,
     )
 
@@ -375,7 +375,7 @@ def test_delete_score_table_unauthorized(session: Session, client: TestClient):
     score_table = create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
-    response = client.delete(f"/score_tables/{score_table.id}", headers=headers)
+    response = client.delete(f"/score-tables/{score_table.id}", headers=headers)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -393,7 +393,7 @@ def test_delete_score_table_as_super_admin(session: Session, client: TestClient)
     score_table = create_score_table_in_db(session, round=round)
     headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
-    response = client.delete(f"/score_tables/{score_table.id}", headers=headers)
+    response = client.delete(f"/score-tables/{score_table.id}", headers=headers)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
@@ -404,7 +404,7 @@ def test_delete_score_table_unauthenticated(session: Session, client: TestClient
     round = create_round_in_db(session, tournament=tournament)
     score_table = create_score_table_in_db(session, round=round)
 
-    response = client.delete(f"/score_tables/{score_table.id}")
+    response = client.delete(f"/score-tables/{score_table.id}")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -425,7 +425,7 @@ def test_delete_round_cascade(session: Session, client: TestClient):
     response = client.delete(f"/rounds/{round.id}", headers=headers)
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    response = client.get(f"/score_tables/{score_table.id}")
+    response = client.get(f"/score-tables/{score_table.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -445,12 +445,12 @@ def test_delete_event_cascade(session: Session, client: TestClient):
     response = client.delete(f"/events/{event.id}", headers=headers)
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    response = client.get(f"/score_tables/{score_table.id}")
+    response = client.get(f"/score-tables/{score_table.id}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# GET /score_tables/{score_table_id}/score_columns
+# GET /score-tables/{score_table_id}/score-columns
 # ---------------------------------------------------------------------------
 
 
@@ -465,7 +465,7 @@ def test_list_score_columns_for_score_table(session: Session, client: TestClient
     score_column_b = create_score_column_in_db(session, score_table, order_index=1)
     create_chart_in_db(session, score_column=score_column_b, song_name="Song B")
 
-    response = client.get(f"/score_tables/{score_table.id}/score_columns")
+    response = client.get(f"/score-tables/{score_table.id}/score-columns")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -482,7 +482,7 @@ def test_list_score_columns_for_score_table_empty(session: Session, client: Test
         organizer_password="mypassword123",
     )
 
-    response = client.get(f"/score_tables/{score_table.id}/score_columns")
+    response = client.get(f"/score-tables/{score_table.id}/score-columns")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
@@ -490,14 +490,14 @@ def test_list_score_columns_for_score_table_empty(session: Session, client: Test
 
 def test_list_score_columns_for_score_table_not_found(client: TestClient):
     response = client.get(
-        "/score_tables/00000000-0000-0000-0000-000000000000/score_columns"
+        "/score-tables/00000000-0000-0000-0000-000000000000/score-columns"
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# PUT /score_tables/{score_table_id}/score_columns/order
+# PUT /score-tables/{score_table_id}/score-columns/order
 # ---------------------------------------------------------------------------
 
 
@@ -514,7 +514,7 @@ def test_update_score_column_order_in_score_table(session: Session, client: Test
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/score_tables/{score_table.id}/score_columns/order",
+        f"/score-tables/{score_table.id}/score-columns/order",
         json=[str(score_column_b.id), str(score_column_a.id)],
         headers=headers,
     )
@@ -541,7 +541,7 @@ def test_update_score_column_order_in_score_table_with_three_columns(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/score_tables/{score_table.id}/score_columns/order",
+        f"/score-tables/{score_table.id}/score-columns/order",
         json=[str(score_column_c.id), str(score_column_a.id), str(score_column_b.id)],
         headers=headers,
     )
@@ -564,7 +564,7 @@ def test_update_score_column_order_in_score_table_wrong_count(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/score_tables/{score_table.id}/score_columns/order",
+        f"/score-tables/{score_table.id}/score-columns/order",
         json=[str(score_column.id), str(score_column.id)],
         headers=headers,
     )
@@ -588,7 +588,7 @@ def test_update_score_column_order_in_score_table_fewer_score_columns(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/score_tables/{score_table.id}/score_columns/order",
+        f"/score-tables/{score_table.id}/score-columns/order",
         json=[str(score_column_a.id)],
         headers=headers,
     )
@@ -597,7 +597,7 @@ def test_update_score_column_order_in_score_table_fewer_score_columns(
 
 
 # ---------------------------------------------------------------------------
-# POST /score_tables/{score_table_id}/players/bulk
+# POST /score-tables/{score_table_id}/players/bulk
 # ---------------------------------------------------------------------------
 
 
@@ -612,7 +612,7 @@ def test_bulk_add_players_to_score_table(session: Session, client: TestClient):
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/score_tables/{score_table.id}/players/bulk",
+        f"/score-tables/{score_table.id}/players/bulk",
         json=[str(player_a.id), str(player_b.id)],
         headers=headers,
     )
@@ -644,7 +644,7 @@ def test_bulk_add_players_to_score_table_skips_existing(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/score_tables/{score_table.id}/players/bulk",
+        f"/score-tables/{score_table.id}/players/bulk",
         json=[str(player_a.id), str(player_b.id)],
         headers=headers,
     )
@@ -665,7 +665,7 @@ def test_bulk_add_players_to_score_table_player_not_found(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.post(
-        f"/score_tables/{score_table.id}/players/bulk",
+        f"/score-tables/{score_table.id}/players/bulk",
         json=["00000000-0000-0000-0000-000000000000"],
         headers=headers,
     )
@@ -685,7 +685,7 @@ def test_bulk_add_players_to_score_table_unauthorized(
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.post(
-        f"/score_tables/{score_table.id}/players/bulk",
+        f"/score-tables/{score_table.id}/players/bulk",
         json=[str(player.id)],
         headers=headers,
     )
@@ -694,7 +694,7 @@ def test_bulk_add_players_to_score_table_unauthorized(
 
 
 # ---------------------------------------------------------------------------
-# GET /score_tables/{score_table_id}/players
+# GET /score-tables/{score_table_id}/players
 # ---------------------------------------------------------------------------
 
 
@@ -713,7 +713,7 @@ def test_list_players_in_score_table(session: Session, client: TestClient):
         session, score_table, player=player_b, order_index=1
     )
 
-    response = client.get(f"/score_tables/{score_table.id}/players")
+    response = client.get(f"/score-tables/{score_table.id}/players")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -727,20 +727,20 @@ def test_list_players_in_score_table_empty(session: Session, client: TestClient)
         organizer_password="mypassword123",
     )
 
-    response = client.get(f"/score_tables/{score_table.id}/players")
+    response = client.get(f"/score-tables/{score_table.id}/players")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
 
 def test_list_players_in_score_table_not_found(client: TestClient):
-    response = client.get("/score_tables/00000000-0000-0000-0000-000000000000/players")
+    response = client.get("/score-tables/00000000-0000-0000-0000-000000000000/players")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# PUT /score_tables/{score_table_id}/players/order
+# PUT /score-tables/{score_table_id}/players/order
 # ---------------------------------------------------------------------------
 
 
@@ -761,7 +761,7 @@ def test_update_player_order_in_score_table(session: Session, client: TestClient
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/score_tables/{score_table.id}/players/order",
+        f"/score-tables/{score_table.id}/players/order",
         json=[str(player_b.id), str(player_a.id)],
         headers=headers,
     )
@@ -790,7 +790,7 @@ def test_update_player_order_in_score_table_wrong_count(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/score_tables/{score_table.id}/players/order",
+        f"/score-tables/{score_table.id}/players/order",
         json=[str(player_a.id)],
         headers=headers,
     )
@@ -811,7 +811,7 @@ def test_update_player_order_in_score_table_player_not_found(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/score_tables/{score_table.id}/players/order",
+        f"/score-tables/{score_table.id}/players/order",
         json=["00000000-0000-0000-0000-000000000000"],
         headers=headers,
     )
@@ -835,7 +835,7 @@ def test_update_player_order_in_score_table_player_not_in_score_table(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.put(
-        f"/score_tables/{score_table.id}/players/order",
+        f"/score-tables/{score_table.id}/players/order",
         json=[str(player_b.id)],
         headers=headers,
     )
@@ -844,7 +844,7 @@ def test_update_player_order_in_score_table_player_not_in_score_table(
 
 
 # ---------------------------------------------------------------------------
-# DELETE /score_tables/{score_table_id}/players/{player_id}
+# DELETE /score-tables/{score_table_id}/players/{player_id}
 # ---------------------------------------------------------------------------
 
 
@@ -865,7 +865,7 @@ def test_remove_player_from_score_table(session: Session, client: TestClient):
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(
-        f"/score_tables/{score_table.id}/players/{player_a.id}",
+        f"/score-tables/{score_table.id}/players/{player_a.id}",
         headers=headers,
     )
     data = response.json()
@@ -886,7 +886,7 @@ def test_remove_player_from_score_table_player_not_in_score_table(
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
 
     response = client.delete(
-        f"/score_tables/{score_table.id}/players/{player.id}",
+        f"/score-tables/{score_table.id}/players/{player.id}",
         headers=headers,
     )
 
@@ -906,14 +906,14 @@ def test_remove_player_from_score_table_unauthorized(
     headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
 
     response = client.delete(
-        f"/score_tables/{score_table.id}/players/{player.id}", headers=headers
+        f"/score-tables/{score_table.id}/players/{player.id}", headers=headers
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 # ---------------------------------------------------------------------------
-# GET /score_tables/{score_table_id}/results
+# GET /score-tables/{score_table_id}/results
 # ---------------------------------------------------------------------------
 
 
@@ -946,7 +946,7 @@ def test_get_score_table_results_score_sum(session: Session, client: TestClient)
     create_score_in_db(session, player=player_a, value=800000, score_column=column_b)
     create_score_in_db(session, player=player_b, value=850000, score_column=column_a)
 
-    response = client.get(f"/score_tables/{score_table.id}/results")
+    response = client.get(f"/score-tables/{score_table.id}/results")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -983,7 +983,7 @@ def test_get_score_table_results_battle(session: Session, client: TestClient):
     create_score_in_db(session, player=player_a, value=900000, score_column=column)
     create_score_in_db(session, player=player_b, value=850000, score_column=column)
 
-    response = client.get(f"/score_tables/{score_table.id}/results")
+    response = client.get(f"/score-tables/{score_table.id}/results")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -1020,7 +1020,7 @@ def test_get_score_table_results_battle_tie_scores_no_points(
     create_score_in_db(session, player=player_a, value=900000, score_column=column)
     create_score_in_db(session, player=player_b, value=900000, score_column=column)
 
-    response = client.get(f"/score_tables/{score_table.id}/results")
+    response = client.get(f"/score-tables/{score_table.id}/results")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -1055,7 +1055,7 @@ def test_get_score_table_results_player_without_scores_has_a_zero(session: Sessi
 
     create_score_in_db(session, player=player_a, value=1700000, score_column=column_a)
 
-    response = client.get(f"/score_tables/{score_table.id}/results")
+    response = client.get(f"/score-tables/{score_table.id}/results")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -1072,19 +1072,19 @@ def test_get_score_table_results_player_without_scores_has_a_zero(session: Sessi
 
 
 def test_get_score_table_results_not_found(client: TestClient):
-    response = client.get("/score_tables/00000000-0000-0000-0000-000000000000/results")
+    response = client.get("/score-tables/00000000-0000-0000-0000-000000000000/results")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
-# GET /score_tables/{score_table_id}/candidate-players
+# GET /score-tables/{score_table_id}/candidate-players
 # ---------------------------------------------------------------------------
 
 
 def test_list_possible_players_for_score_table_not_found(client: TestClient):
     response = client.get(
-        "/score_tables/00000000-0000-0000-0000-000000000000/candidate-players"
+        "/score-tables/00000000-0000-0000-0000-000000000000/candidate-players"
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -1114,7 +1114,7 @@ def test_list_possible_players_for_score_table_first_round_excludes_current_play
         session, score_table, player=player_b, order_index=0
     )
 
-    response = client.get(f"/score_tables/{score_table.id}/candidate-players")
+    response = client.get(f"/score-tables/{score_table.id}/candidate-players")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -1146,7 +1146,7 @@ def test_list_possible_players_for_score_table_first_round_empty_when_all_are_in
         session, score_table, player=player_b, order_index=1
     )
 
-    response = client.get(f"/score_tables/{score_table.id}/candidate-players")
+    response = client.get(f"/score-tables/{score_table.id}/candidate-players")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
@@ -1192,7 +1192,7 @@ def test_list_possible_players_for_score_table_second_round_uses_previous_qualif
         session, player=player_b, score_column=score_column, value=800000
     )
 
-    response = client.get(f"/score_tables/{second_score_table.id}/candidate-players")
+    response = client.get(f"/score-tables/{second_score_table.id}/candidate-players")
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -1240,7 +1240,7 @@ def test_list_possible_players_for_score_table_second_round_excludes_players_alr
         session, player=player_b, score_column=score_column, value=800000
     )
 
-    response = client.get(f"/score_tables/{second_score_table.id}/candidate-players")
+    response = client.get(f"/score-tables/{second_score_table.id}/candidate-players")
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []

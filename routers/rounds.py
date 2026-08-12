@@ -123,7 +123,7 @@ async def delete_round(round_id: uuid.UUID, session: SessionDep, user: UserDep):
     session.commit()
 
 
-@router.get("/{round_id}/score_tables", response_model=list[ScoreTablePublic])
+@router.get("/{round_id}/score-tables", response_model=list[ScoreTablePublic])
 async def list_score_tables_in_round(round_id: uuid.UUID, session: SessionDep):
     """Get the score tables associated with a round by order."""
     db_round = session.get(Round, round_id)
@@ -135,7 +135,7 @@ async def list_score_tables_in_round(round_id: uuid.UUID, session: SessionDep):
 
 
 @router.put(
-    "/{round_id}/score_tables/order",
+    "/{round_id}/score-tables/order",
     response_model=list[ScoreTablePublic],
 )
 async def change_score_table_order_in_round(
