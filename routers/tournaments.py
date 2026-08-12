@@ -5,7 +5,7 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.event import Event
-from models.player import PlayerCreate
+from models.player import GuestPlayerCreate
 from models.tournament import (
     Tournament,
     TournamentCreate,
@@ -141,7 +141,7 @@ async def delete_tournament(
 @router.post("/{tournament_id}/guest-players", response_model=PlayerPublic)
 async def create_guest_player(
     tournament_id: uuid.UUID,
-    player: PlayerCreate,
+    player: GuestPlayerCreate,
     session: SessionDep,
     user: UserDep,
 ):

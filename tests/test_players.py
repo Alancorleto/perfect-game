@@ -93,16 +93,21 @@ def test_get_player_not_found(client: TestClient):
 
 # ---------------------------------------------------------------------------
 # POST /players/
+# `user_id` must match the logged-in user unless the caller is a super admin.
 # ---------------------------------------------------------------------------
 
 
 def test_create_player(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
+    user = create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.post(
         "/players/",
-        json={"nickname": "NewPlayer", "country_code": "AR"},
+        json={
+            "nickname": "NewPlayer",
+            "country_code": "AR",
+            "user_id": str(user.id),
+        },
         headers=headers,
     )
     data = response.json()
@@ -111,30 +116,49 @@ def test_create_player(session: Session, client: TestClient):
     assert data["nickname"] == "NewPlayer"
     assert data["id"] is not None
     assert data["country_code"] == "AR"
+    assert data["user_id"] == str(user.id)
 
 
-def test_create_player_unauthenticated(client: TestClient):
+def test_create_player_unauthenticated(session: Session, client: TestClient):
+    temp_user = create_user_in_db(session, email="temp@example.com")
     response = client.post(
-        "/players/", json={"nickname": "NewPlayer", "country_code": "AR"}
+        "/players/",
+        json={
+            "nickname": "NewPlayer",
+            "country_code": "AR",
+            "user_id": str(temp_user.id),
+        },
     )
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_create_player_already_has_player(session: Session, client: TestClient):
-    user = create_user_in_db(
-        session, email="user@example.com", password="mypassword123"
+def test_create_player_as_super_admin_can_set_other_user_id(
+    session: Session, client: TestClient
+):
+    create_user_in_db(
+        session,
+        email="admin@example.com",
+        password="mypassword123",
+        is_super_admin=True,
     )
-    create_player_in_db(session, user=user, nickname="ExistingPlayer")
-    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+    other_user = create_user_in_db(session, email="other@example.com")
+    headers = get_auth_headers(client, "admin@example.com", "mypassword123")
 
     response = client.post(
         "/players/",
-        json={"nickname": "AnotherPlayer", "country_code": "AR"},
+        json={
+            "nickname": "AdminPlayer",
+            "country_code": "AR",
+            "user_id": str(other_user.id),
+        },
         headers=headers,
     )
+    data = response.json()
 
-    assert response.status_code == status.HTTP_409_CONFLICT
+    assert response.status_code == status.HTTP_200_OK
+    assert data["nickname"] == "AdminPlayer"
+    assert data["user_id"] == str(other_user.id)
 
 
 # ---------------------------------------------------------------------------

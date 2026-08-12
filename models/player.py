@@ -73,6 +73,10 @@ class Player(PlayerBase, table=True):
 
 
 class PlayerCreate(PlayerBase):
+    user_id: uuid.UUID
+
+
+class GuestPlayerCreate(PlayerBase):
     pass
 
 

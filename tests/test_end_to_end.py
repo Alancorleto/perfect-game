@@ -23,7 +23,7 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
     # Create the organizer's player profile.
     player_response = client.post(
         "/players/",
-        json={"nickname": "E2EPlayer", "country_code": "AR"},
+        json={"nickname": "E2EPlayer", "country_code": "AR", "user_id": str(user_response.json()["id"])},
         headers=headers,
     )
     assert player_response.status_code == status.HTTP_200_OK

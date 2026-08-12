@@ -55,16 +55,22 @@ async def get_player(player_id: uuid.UUID, session: SessionDep):
 async def create_player(player: PlayerCreate, session: SessionDep, user: UserDep):
     """Create a new player profile for the currently logged-in user.
 
-    user_id is not provided, as it is automatically set to the logged-in user's ID."""
+    user_id must match the logged-in user's ID."""
+    if player.user_id != user.id and not user.is_super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="user_id must match the logged-in user's ID",
+        )
+
     all_players = session.exec(select(Player)).all()
-    if any(p.user_id == user.id for p in all_players):
+    if any(p.user_id == player.user_id for p in all_players):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="You already have a player associated with this account",
+            detail="A player is already associated with this user",
         )
 
     db_player = Player.model_validate(player)
-    db_player.user_id = user.id
+    db_player.user_id = player.user_id
 
     session.add(db_player)
     session.commit()
