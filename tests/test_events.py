@@ -28,8 +28,10 @@ def test_list_events(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 2
-    names = [t["name"] for t in data]
+    assert data["offset"] == 0
+    assert data["size"] == 2
+    assert data["total_count"] == 2
+    names = [event["name"] for event in data["events"]]
     assert "Event A" in names
     assert "Event B" in names
 
@@ -42,9 +44,12 @@ def test_list_events_filtered_by_country(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 1
-    assert data[0]["name"] == "Event A"
-    assert data[0]["country_code"] == "AR"
+    assert data["offset"] == 0
+    assert data["size"] == 1
+    assert data["total_count"] == 1
+    assert len(data["events"]) == 1
+    assert data["events"][0]["name"] == "Event A"
+    assert data["events"][0]["country_code"] == "AR"
 
 
 def test_list_events_filtered_by_country_with_no_matches(
@@ -56,14 +61,37 @@ def test_list_events_filtered_by_country_with_no_matches(
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert data == []
+    assert data["events"] == []
+    assert data["offset"] == 0
+    assert data["size"] == 0
+    assert data["total_count"] == 0
 
 
 def test_list_events_empty(client: TestClient):
     response = client.get("/events/")
+    data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    assert data["events"] == []
+    assert data["offset"] == 0
+    assert data["size"] == 0
+    assert data["total_count"] == 0
+
+
+def test_list_events_with_pagination(session: Session, client: TestClient):
+    create_event_in_db(session, name="Event A", country_code="AR")
+    create_event_in_db(session, name="Event B", country_code="BR")
+    create_event_in_db(session, name="Event C", country_code="CL")
+
+    response = client.get("/events/?offset=1&size=1")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["offset"] == 1
+    assert data["size"] == 1
+    assert data["total_count"] == 3
+    assert len(data["events"]) == 1
+    assert data["events"][0]["name"] == "Event B"
 
 
 # ---------------------------------------------------------------------------

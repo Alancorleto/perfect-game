@@ -2,6 +2,7 @@ import uuid
 from datetime import date, time
 from typing import TYPE_CHECKING
 
+from pydantic.main import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.event_organizer import EventOrganizer
@@ -65,3 +66,10 @@ class EventUpdate(SQLModel):
     location: str | None = Field(default=None)
     start_date: date | None = Field(default=None)
     start_time: time | None = Field(default=None)
+
+
+class ListEventsResponse(BaseModel):
+    events: list[EventPublic]
+    offset: int
+    size: int
+    total_count: int

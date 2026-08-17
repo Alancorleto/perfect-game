@@ -6,7 +6,7 @@ from sqlmodel import select
 
 from database import SessionDep
 from image_storage import upload_image
-from models.event import Event, EventCreate, EventPublic, EventUpdate
+from models.event import Event, EventCreate, EventPublic, EventUpdate, ListEventsResponse
 from models.player import Player, PlayerPublic
 from models.tournament import TournamentPublic
 from routers.users import UserDep
@@ -23,10 +23,12 @@ tag_metadata = {
 router = APIRouter(prefix="/events", tags=["events"])
 
 
-@router.get("/", response_model=list[EventPublic])
+@router.get("/", response_model=ListEventsResponse)
 async def list_events(
     session: SessionDep,
     country_code: str | None = Query(default=None, min_length=2, max_length=2),
+    offset: int = 0,
+    size: int = 20,
 ):
     """List events, optionally filtered by country code."""
     query = select(Event)
@@ -35,7 +37,20 @@ async def list_events(
         query = query.where(Event.country_code == country_code.upper())
 
     events = session.exec(query).all()
-    return events
+
+    total_count = len(events)
+
+    if size > 0:
+        events = events[offset : offset + size]
+
+    events_public = [EventPublic.model_validate(event) for event in events]
+
+    return ListEventsResponse(
+        events=events_public,
+        offset=offset,
+        size=len(events_public),
+        total_count=total_count,
+    )
 
 
 @router.get("/{event_id}", response_model=EventPublic)
