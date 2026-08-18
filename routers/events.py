@@ -34,9 +34,9 @@ router = APIRouter(prefix="/events", tags=["events"])
 @router.get("/", response_model=ListEventsResponse)
 async def list_events(
     session: SessionDep,
-    country_code: str | None = Query(default=None, min_length=2, max_length=2),
     offset: int = 0,
     size: int = 20,
+    country_code: str | None = Query(default=None, min_length=2, max_length=2),
     organized_by: uuid.UUID | None = None,
     include_upcoming: bool = True,
 ):
