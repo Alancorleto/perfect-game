@@ -1,8 +1,9 @@
 import uuid
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, Query, status
-from sqlmodel import select
+from sqlmodel import case, select
 
 from database import SessionDep
 from image_storage import upload_image
@@ -15,6 +16,7 @@ from models.event import (
 )
 from models.player import Player, PlayerPublic
 from models.tournament import TournamentPublic
+from models.user import User
 from routers.users import UserDep
 
 tag_metadata = {
@@ -35,20 +37,52 @@ async def list_events(
     country_code: str | None = Query(default=None, min_length=2, max_length=2),
     offset: int = 0,
     size: int = 20,
+    organized_by: uuid.UUID | None = None,
+    include_upcoming: bool = True,
 ):
     """List events, optionally filtered by country code."""
-    query = select(Event)
+    if offset < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Offset must be non-negative"
+        )
 
+    # Order events: None start dates first, then by start date descending
+    query = select(Event).order_by(
+        case((Event.start_date.is_(None), 0), else_=1),
+        Event.start_date.desc(),
+    )
+
+    # Filter by country code if provided
     if country_code is not None:
         query = query.where(Event.country_code == country_code.upper())
 
+    # Filter by upcoming if requested
+    if not include_upcoming:
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        query = query.where(Event.start_date.is_not(None), Event.start_date <= now)
+
     events = session.exec(query).all()
+
+    # If organized_by is None, filter out events with no start date
+    if organized_by is None:
+        events = [event for event in events if event.start_date is not None]
+    else:
+        user = session.get(User, organized_by)
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Organizer user not found"
+            )
+        events = [event for event in events if event.can_be_edited_by(user)]
 
     total_count = len(events)
 
+    # Apply size and offset if provided
     if size > 0:
         events = events[offset : offset + size]
 
+    # Convert events to public model
     events_public = [EventPublic.model_validate(event) for event in events]
 
     return ListEventsResponse(
