@@ -83,17 +83,40 @@ def test_list_rounds(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 2
-    names = [r["name"] for r in data]
+    assert data["offset"] == 0
+    assert data["size"] == 2
+    assert data["total_count"] == 2
+    names = [r["name"] for r in data["rounds"]]
     assert "Round A" in names
     assert "Round B" in names
 
 
 def test_list_rounds_empty(client: TestClient):
     response = client.get("/rounds/")
+    data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    assert data["rounds"] == []
+    assert data["offset"] == 0
+    assert data["size"] == 0
+    assert data["total_count"] == 0
+
+
+def test_list_rounds_with_pagination(session: Session, client: TestClient):
+    event = create_event_in_db(session)
+    tournament = create_tournament_in_db(session, event=event)
+    create_round_in_db(session, tournament=tournament, name="Round A")
+    create_round_in_db(session, tournament=tournament, name="Round B")
+    create_round_in_db(session, tournament=tournament, name="Round C")
+
+    response = client.get("/rounds/?offset=1&size=1")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["offset"] == 1
+    assert data["size"] == 1
+    assert data["total_count"] == 3
+    assert len(data["rounds"]) == 1
 
 
 # ---------------------------------------------------------------------------

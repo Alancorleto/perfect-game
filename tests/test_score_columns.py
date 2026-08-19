@@ -53,11 +53,17 @@ def test_list_score_columns(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 2
-    assert {item["id"] for item in data} == {str(column_a.id), str(column_b.id)}
-    assert sorted(item["order_index"] for item in data) == [0, 1]
-    assert data[0]["description"] is None
-    assert data[1]["description"] == "Chart B description"
+    assert data["offset"] == 0
+    assert data["size"] == 2
+    assert data["total_count"] == 2
+    assert len(data["score_columns"]) == 2
+    assert {item["id"] for item in data["score_columns"]} == {
+        str(column_a.id),
+        str(column_b.id),
+    }
+    assert sorted(item["order_index"] for item in data["score_columns"]) == [0, 1]
+    assert data["score_columns"][0]["description"] is None
+    assert data["score_columns"][1]["description"] == "Chart B description"
 
 
 def test_list_score_columns_empty(session: Session, client: TestClient):
@@ -66,8 +72,30 @@ def test_list_score_columns_empty(session: Session, client: TestClient):
 
     response = client.get("/score-columns/", headers=headers)
 
+    data = response.json()
+
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    assert data["score_columns"] == []
+    assert data["offset"] == 0
+    assert data["size"] == 0
+    assert data["total_count"] == 0
+
+
+def test_list_score_columns_with_pagination(session: Session, client: TestClient):
+    _, _, _, _, score_table = create_editable_score_column_context(session)
+    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
+    create_score_column_in_db(session, score_table=score_table, description="A")
+    create_score_column_in_db(session, score_table=score_table, description="B")
+    create_score_column_in_db(session, score_table=score_table, description="C")
+
+    response = client.get("/score-columns/?offset=1&size=1", headers=headers)
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["offset"] == 1
+    assert data["size"] == 1
+    assert data["total_count"] == 3
+    assert len(data["score_columns"]) == 1
 
 
 # ---------------------------------------------------------------------------

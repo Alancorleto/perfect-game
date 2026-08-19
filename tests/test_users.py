@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from tests.helpers import create_user_in_db, get_auth_headers
 
+
 # ---------------------------------------------------------------------------
 # POST /users
 # ---------------------------------------------------------------------------
@@ -224,8 +225,11 @@ def test_list_users(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 2
-    emails = [u["email"] for u in data]
+    assert data["offset"] == 0
+    assert data["size"] == 2
+    assert data["total_count"] == 2
+    assert len(data["users"]) == 2
+    emails = [u["email"] for u in data["users"]]
     assert "alice@example.com" in emails
     assert "bob@example.com" in emails
 
@@ -233,8 +237,28 @@ def test_list_users(session: Session, client: TestClient):
 def test_list_users_empty(client: TestClient):
     response = client.get("/users")
 
+    data = response.json()
+
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    assert data["users"] == []
+    assert data["offset"] == 0
+    assert data["size"] == 0
+    assert data["total_count"] == 0
+
+
+def test_list_users_with_pagination(session: Session, client: TestClient):
+    create_user_in_db(session, email="a@example.com")
+    create_user_in_db(session, email="b@example.com")
+    create_user_in_db(session, email="c@example.com")
+
+    response = client.get("/users")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["offset"] == 0
+    assert data["size"] == 3
+    assert data["total_count"] == 3
+    assert len(data["users"]) == 3
 
 
 # ---------------------------------------------------------------------------

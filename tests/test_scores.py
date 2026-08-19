@@ -80,9 +80,12 @@ def test_list_scores(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 2
-    values = [s["value"] for s in data]
-    player_names = [s["player"]["nickname"] for s in data]
+    assert data["offset"] == 0
+    assert data["size"] == 2
+    assert data["total_count"] == 2
+    assert len(data["scores"]) == 2
+    values = [s["value"] for s in data["scores"]]
+    player_names = [s["player"]["nickname"] for s in data["scores"]]
     assert 900000 in values
     assert 850000 in values
     assert "PlayerA" in player_names
@@ -92,8 +95,37 @@ def test_list_scores(session: Session, client: TestClient):
 def test_list_scores_empty(client: TestClient):
     response = client.get("/scores/")
 
+    data = response.json()
+
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    assert data["scores"] == []
+    assert data["offset"] == 0
+    assert data["size"] == 0
+    assert data["total_count"] == 0
+
+
+def test_list_scores_with_pagination(session: Session, client: TestClient):
+    user = create_user_in_db(session, email="user@example.com")
+    event = create_event_in_db(session, organizer=user)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
+    score_table = create_score_table_in_db(session, round=round)
+    score_column = create_score_column_in_db(session, score_table=score_table)
+    player_a = create_player_in_db(session, user=user, nickname="PlayerA")
+    player_b = create_player_in_db(session, user=create_user_in_db(session, email="b@example.com"), nickname="PlayerB")
+    player_c = create_player_in_db(session, user=create_user_in_db(session, email="c@example.com"), nickname="PlayerC")
+    create_score_in_db(session, player=player_a, score_column=score_column)
+    create_score_in_db(session, player=player_b, score_column=score_column)
+    create_score_in_db(session, player=player_c, score_column=score_column)
+
+    response = client.get("/scores/?offset=1&size=1")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["offset"] == 1
+    assert data["size"] == 1
+    assert data["total_count"] == 3
+    assert len(data["scores"]) == 1
 
 
 # ---------------------------------------------------------------------------

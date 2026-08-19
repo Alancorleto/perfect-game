@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 from fastapi import status
@@ -21,8 +22,14 @@ from tests.helpers import (
 
 
 def test_list_events(session: Session, client: TestClient):
-    create_event_in_db(session, name="Event A", country_code="AR")
-    create_event_in_db(session, name="Event B", country_code="BR")
+    event_a = create_event_in_db(session, name="Event A", country_code="AR")
+    event_b = create_event_in_db(session, name="Event B", country_code="BR")
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    event_a.start_date = now
+    event_b.start_date = now
+    session.add(event_a)
+    session.add(event_b)
+    session.commit()
 
     response = client.get("/events/")
     data = response.json()
@@ -37,8 +44,14 @@ def test_list_events(session: Session, client: TestClient):
 
 
 def test_list_events_filtered_by_country(session: Session, client: TestClient):
-    create_event_in_db(session, name="Event A", country_code="AR")
-    create_event_in_db(session, name="Event B", country_code="BR")
+    event_a = create_event_in_db(session, name="Event A", country_code="AR")
+    event_b = create_event_in_db(session, name="Event B", country_code="BR")
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    event_a.start_date = now
+    event_b.start_date = now
+    session.add(event_a)
+    session.add(event_b)
+    session.commit()
 
     response = client.get("/events/?country_code=ar")
     data = response.json()
@@ -55,7 +68,10 @@ def test_list_events_filtered_by_country(session: Session, client: TestClient):
 def test_list_events_filtered_by_country_with_no_matches(
     session: Session, client: TestClient
 ):
-    create_event_in_db(session, name="Event A", country_code="AR")
+    event_a = create_event_in_db(session, name="Event A", country_code="AR")
+    event_a.start_date = datetime.now(timezone.utc).replace(tzinfo=None)
+    session.add(event_a)
+    session.commit()
 
     response = client.get("/events/?country_code=br")
     data = response.json()
@@ -79,9 +95,17 @@ def test_list_events_empty(client: TestClient):
 
 
 def test_list_events_with_pagination(session: Session, client: TestClient):
-    create_event_in_db(session, name="Event A", country_code="AR")
-    create_event_in_db(session, name="Event B", country_code="BR")
-    create_event_in_db(session, name="Event C", country_code="CL")
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    event_a = create_event_in_db(session, name="Event A", country_code="AR")
+    event_b = create_event_in_db(session, name="Event B", country_code="BR")
+    event_c = create_event_in_db(session, name="Event C", country_code="CL")
+    event_a.start_date = now
+    event_b.start_date = now
+    event_c.start_date = now
+    session.add(event_a)
+    session.add(event_b)
+    session.add(event_c)
+    session.commit()
 
     response = client.get("/events/?offset=1&size=1")
     data = response.json()

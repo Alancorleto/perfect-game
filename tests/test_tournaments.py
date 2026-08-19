@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -32,17 +34,42 @@ def test_list_tournaments(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 2
-    names = [c["name"] for c in data]
+    assert data["offset"] == 0
+    assert data["size"] == 2
+    assert data["total_count"] == 2
+    names = [t["name"] for t in data["tournaments"]]
     assert "Tournament A" in names
     assert "Tournament B" in names
 
 
 def test_list_tournaments_empty(client: TestClient):
     response = client.get("/tournaments/")
+    data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    assert data["tournaments"] == []
+    assert data["offset"] == 0
+    assert data["size"] == 0
+    assert data["total_count"] == 0
+
+
+def test_list_tournaments_with_pagination(session: Session, client: TestClient):
+    event = create_event_in_db(session)
+    event.start_date = datetime.now(timezone.utc).replace(tzinfo=None)
+    session.add(event)
+    session.commit()
+    create_tournament_in_db(session, event=event, name="Tournament A")
+    create_tournament_in_db(session, event=event, name="Tournament B")
+    create_tournament_in_db(session, event=event, name="Tournament C")
+
+    response = client.get("/tournaments/?offset=1&size=1")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["offset"] == 1
+    assert data["size"] == 1
+    assert data["total_count"] == 3
+    assert len(data["tournaments"]) == 1
 
 
 # ---------------------------------------------------------------------------

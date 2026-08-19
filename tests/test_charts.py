@@ -7,11 +7,18 @@ from sqlmodel import Session
 from models.chart import Mode
 from models.score_column import ScoreColumn
 from models.user import User
-from tests.helpers import (create_chart_in_db, create_event_in_db,
-                           create_player_in_db, create_round_in_db,
-                           create_score_column_in_db, create_score_in_db,
-                           create_score_table_in_db, create_tournament_in_db,
-                           create_user_in_db, get_auth_headers)
+from tests.helpers import (
+    create_chart_in_db,
+    create_event_in_db,
+    create_player_in_db,
+    create_round_in_db,
+    create_score_column_in_db,
+    create_score_in_db,
+    create_score_table_in_db,
+    create_tournament_in_db,
+    create_user_in_db,
+    get_auth_headers,
+)
 
 
 def create_chart_context_in_db(session: Session, organizer: User) -> ScoreColumn:
@@ -53,9 +60,11 @@ def test_list_charts(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 2
-    levels = [c["level"] for c in data]
-    song_names = [c["song_name"] for c in data]
+    assert data["offset"] == 0
+    assert data["size"] == 2
+    assert data["total_count"] == 2
+    levels = [c["level"] for c in data["charts"]]
+    song_names = [c["song_name"] for c in data["charts"]]
     assert 10 in levels
     assert 15 in levels
     assert "Song A" in song_names
@@ -67,9 +76,33 @@ def test_list_charts_empty(session: Session, client: TestClient):
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.get("/charts/", headers=headers)
+    data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    assert data["charts"] == []
+    assert data["offset"] == 0
+    assert data["size"] == 0
+    assert data["total_count"] == 0
+
+
+def test_list_charts_with_pagination(session: Session, client: TestClient):
+    user = create_user_in_db(
+        session, email="user@example.com", password="mypassword123"
+    )
+    score_column = create_chart_context_in_db(session, user)
+    create_chart_in_db(session, song_name="Song A", score_column=score_column)
+    create_chart_in_db(session, song_name="Song B", score_column=score_column)
+    create_chart_in_db(session, song_name="Song C", score_column=score_column)
+
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+    response = client.get("/charts/?offset=1&size=1", headers=headers)
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["offset"] == 1
+    assert data["size"] == 1
+    assert data["total_count"] == 3
+    assert len(data["charts"]) == 1
 
 
 # ---------------------------------------------------------------------------

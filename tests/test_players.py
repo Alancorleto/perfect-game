@@ -27,8 +27,10 @@ def test_list_players(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 2
-    nicknames = [p["nickname"] for p in data]
+    assert data["offset"] == 0
+    assert data["size"] == 2
+    assert data["total_count"] == 2
+    nicknames = [p["nickname"] for p in data["players"]]
     assert "PlayerA" in nicknames
     assert "PlayerB" in nicknames
 
@@ -43,9 +45,12 @@ def test_list_players_filtered_by_country(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 1
-    assert data[0]["nickname"] == "PlayerA"
-    assert data[0]["country_code"] == "AR"
+    assert data["offset"] == 0
+    assert data["size"] == 1
+    assert data["total_count"] == 1
+    assert len(data["players"]) == 1
+    assert data["players"][0]["nickname"] == "PlayerA"
+    assert data["players"][0]["country_code"] == "AR"
 
 
 def test_list_players_filtered_by_country_with_no_matches(
@@ -58,14 +63,40 @@ def test_list_players_filtered_by_country_with_no_matches(
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert data == []
+    assert data["players"] == []
+    assert data["offset"] == 0
+    assert data["size"] == 0
+    assert data["total_count"] == 0
 
 
 def test_list_players_empty(client: TestClient):
     response = client.get("/players/")
 
+    data = response.json()
+
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    assert data["players"] == []
+    assert data["offset"] == 0
+    assert data["size"] == 0
+    assert data["total_count"] == 0
+
+
+def test_list_players_with_pagination(session: Session, client: TestClient):
+    user_a = create_user_in_db(session, email="a@example.com")
+    user_b = create_user_in_db(session, email="b@example.com")
+    user_c = create_user_in_db(session, email="c@example.com")
+    create_player_in_db(session, user=user_a, nickname="PlayerA", country_code="AR")
+    create_player_in_db(session, user=user_b, nickname="PlayerB", country_code="BR")
+    create_player_in_db(session, user=user_c, nickname="PlayerC", country_code="CL")
+
+    response = client.get("/players/?offset=1&size=1")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["offset"] == 1
+    assert data["size"] == 1
+    assert data["total_count"] == 3
+    assert len(data["players"]) == 1
 
 
 # ---------------------------------------------------------------------------

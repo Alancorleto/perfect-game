@@ -158,17 +158,41 @@ def test_list_score_tables(session: Session, client: TestClient):
     data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(data) == 2
-    ids = [s["id"] for s in data]
+    assert data["offset"] == 0
+    assert data["size"] == 2
+    assert data["total_count"] == 2
+    ids = [s["id"] for s in data["score_tables"]]
     assert str(score_table_a.id) in ids
     assert str(score_table_b.id) in ids
 
 
 def test_list_score_tables_empty(client: TestClient):
     response = client.get("/score-tables/")
+    data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    assert data["score_tables"] == []
+    assert data["offset"] == 0
+    assert data["size"] == 0
+    assert data["total_count"] == 0
+
+
+def test_list_score_tables_with_pagination(session: Session, client: TestClient):
+    event = create_event_in_db(session)
+    tournament = create_tournament_in_db(session, event=event)
+    round = create_round_in_db(session, tournament=tournament)
+    create_score_table_in_db(session, round=round)
+    create_score_table_in_db(session, round=round)
+    create_score_table_in_db(session, round=round)
+
+    response = client.get("/score-tables/?offset=1&size=1")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["offset"] == 1
+    assert data["size"] == 1
+    assert data["total_count"] == 3
+    assert len(data["score_tables"]) == 1
 
 
 # ---------------------------------------------------------------------------
