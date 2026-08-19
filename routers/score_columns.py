@@ -5,6 +5,7 @@ from sqlmodel import select
 
 from database import SessionDep
 from models.score_column import (
+    ListScoreColumnsResponse,
     ScoreColumn,
     ScoreColumnCreate,
     ScoreColumnPublic,
@@ -25,11 +26,22 @@ tag_metadata = {
 router = APIRouter(prefix="/score-columns", tags=["score_columns"])
 
 
-@router.get("/", response_model=list[ScoreColumnPublic])
-async def list_score_columns(session: SessionDep):
-    """List all score columns."""
+@router.get("/", response_model=ListScoreColumnsResponse)
+async def list_score_columns(session: SessionDep, offset: int = 0, size: int = 20):
+    """List all score columns.\n
+    Offset and size parameters are used for pagination."""
     score_columns = session.exec(select(ScoreColumn)).all()
-    return score_columns
+
+    total_count = len(score_columns)
+    if size > 0:
+        score_columns = score_columns[offset : offset + size]
+
+    return ListScoreColumnsResponse(
+        score_columns=score_columns,
+        offset=offset,
+        size=len(score_columns),
+        total_count=total_count,
+    )
 
 
 @router.post("/", response_model=ScoreColumnPublic)

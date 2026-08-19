@@ -6,6 +6,7 @@ from sqlmodel import select
 from database import SessionDep
 from models.player import PlayerPublic
 from models.round import (
+    ListRoundsResponse,
     Round,
     RoundCreate,
     RoundPublic,
@@ -28,11 +29,22 @@ tag_metadata = {
 router = APIRouter(prefix="/rounds", tags=["rounds"])
 
 
-@router.get("/", response_model=list[RoundPublic])
-async def list_rounds(session: SessionDep):
-    """List all rounds."""
+@router.get("/", response_model=ListRoundsResponse)
+async def list_rounds(session: SessionDep, offset: int = 0, size: int = 20):
+    """List all rounds.\n
+    Offset and size parameters are used for pagination."""
     rounds = session.exec(select(Round)).all()
-    return rounds
+
+    total_count = len(rounds)
+    if size > 0:
+        rounds = rounds[offset : offset + size]
+
+    return ListRoundsResponse(
+        rounds=rounds,
+        offset=offset,
+        size=len(rounds),
+        total_count=total_count,
+    )
 
 
 @router.get("/{round_id}", response_model=RoundPublic)

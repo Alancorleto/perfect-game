@@ -8,7 +8,13 @@ from sqlmodel import select
 
 from database import SessionDep
 from image_storage import upload_image
-from models.chart import Chart, ChartCreate, ChartPublic, ChartUpdate
+from models.chart import (
+    Chart,
+    ChartCreate,
+    ChartPublic,
+    ChartUpdate,
+    ListChartsResponse,
+)
 from models.score import Score
 from models.score_column import ScoreColumn
 from routers.users import UserDep
@@ -25,11 +31,22 @@ tag_metadata = {
 router = APIRouter(prefix="/charts", tags=["charts"])
 
 
-@router.get("/", response_model=list[ChartPublic])
-async def list_charts(session: SessionDep):
-    """List all charts."""
+@router.get("/", response_model=ListChartsResponse)
+async def list_charts(session: SessionDep, offset: int = 0, size: int = 20):
+    """List all charts.\n
+    Offset and size parameters are used for pagination."""
     charts = session.exec(select(Chart)).all()
-    return charts
+
+    total_count = len(charts)
+    if size > 0:
+        charts = charts[offset : offset + size]
+
+    return ListChartsResponse(
+        charts=charts,
+        offset=offset,
+        size=len(charts),
+        total_count=total_count,
+    )
 
 
 @router.get("/titles", response_model=list[str])

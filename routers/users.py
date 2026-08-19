@@ -16,6 +16,7 @@ from database import SessionDep
 from models.password_reset_token import PasswordResetToken
 from models.refresh_token import RefreshToken
 from models.user import (
+    ListUsersResponse,
     PasswordResetConfirm,
     PasswordResetRequest,
     PasswordResetVerify,
@@ -134,11 +135,22 @@ async def get_current_user(
 UserDep = Annotated[User, Depends(get_current_user)]
 
 
-@router.get("/users", response_model=list[UserPublic])
-async def list_users(session: SessionDep):
-    """List all users."""
+@router.get("/users", response_model=ListUsersResponse)
+async def list_users(session: SessionDep, offset: int = 0, size: int = 20):
+    """List all users.\n
+    Offset and size parameters are used for pagination."""
     users = session.exec(select(User)).all()
-    return users
+
+    total_count = len(users)
+    if size > 0:
+        users = users[offset : offset + size]
+
+    return ListUsersResponse(
+        users=users,
+        offset=offset,
+        size=len(users),
+        total_count=total_count,
+    )
 
 
 @router.post("/users", response_model=UserPublic)

@@ -9,6 +9,7 @@ from models.player_row import PlayerRow
 from models.round import Round, RoundState
 from models.score_column import ScoreColumnPublic
 from models.score_table import (
+    ListScoreTablesResponse,
     Results,
     ScoreTable,
     ScoreTableCreate,
@@ -141,11 +142,22 @@ async def create_score_table(
     return db_score_table
 
 
-@router.get("/", response_model=list[ScoreTablePublic])
-async def list_score_tables(session: SessionDep):
-    """List all score tables."""
+@router.get("/", response_model=ListScoreTablesResponse)
+async def list_score_tables(session: SessionDep, offset: int = 0, size: int = 20):
+    """List all score tables.\n
+    Offset and size parameters are used for pagination."""
     score_tables = session.exec(select(ScoreTable)).all()
-    return score_tables
+
+    total_count = len(score_tables)
+    if size > 0:
+        score_tables = score_tables[offset : offset + size]
+
+    return ListScoreTablesResponse(
+        score_tables=score_tables,
+        offset=offset,
+        size=len(score_tables),
+        total_count=total_count,
+    )
 
 
 @router.get("/{score_table_id}", response_model=ScoreTablePublic)

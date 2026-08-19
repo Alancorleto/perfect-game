@@ -40,9 +40,9 @@ async def list_events(
     organized_by: uuid.UUID | None = None,
     include_upcoming: bool = True,
 ):
-    """List events.
-    It is possible to filter by country code, organizer and upcoming status.
-    offset and size parameters are used for pagination."""
+    """List events.\n
+    It is possible to filter by country code, organizer and upcoming status.\n
+    Offset and size parameters are used for pagination."""
     if offset < 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

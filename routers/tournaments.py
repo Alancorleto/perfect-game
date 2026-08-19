@@ -7,6 +7,7 @@ from database import SessionDep
 from models.event import Event
 from models.player import GuestPlayerCreate
 from models.tournament import (
+    ListTournamentsResponse,
     Tournament,
     TournamentCreate,
     TournamentPublic,
@@ -40,11 +41,22 @@ tag_metadata = {
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 
-@router.get("/", response_model=list[TournamentPublic])
-async def list_tournaments(session: SessionDep):
-    """List all tournaments."""
+@router.get("/", response_model=ListTournamentsResponse)
+async def list_tournaments(session: SessionDep, offset: int = 0, size: int = 20):
+    """List all tournaments.\n
+    Offset and size parameters are used for pagination."""
     tournaments = session.exec(select(Tournament)).all()
-    return tournaments
+
+    total_count = len(tournaments)
+    if size > 0:
+        tournaments = tournaments[offset : offset + size]
+
+    return ListTournamentsResponse(
+        tournaments=tournaments,
+        offset=offset,
+        size=len(tournaments),
+        total_count=total_count,
+    )
 
 
 @router.get("/{tournament_id}", response_model=TournamentPublic)

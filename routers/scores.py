@@ -6,7 +6,13 @@ from sqlmodel import select
 from database import SessionDep
 from models.player import Player
 from models.round import RoundState
-from models.score import Score, ScoreCreate, ScorePublic, ScoreUpdate
+from models.score import (
+    ListScoresResponse,
+    Score,
+    ScoreCreate,
+    ScorePublic,
+    ScoreUpdate,
+)
 from models.score_column import ScoreColumn
 from routers.users import UserDep
 
@@ -22,11 +28,22 @@ tag_metadata = {
 router = APIRouter(prefix="/scores", tags=["scores"])
 
 
-@router.get("/", response_model=list[ScorePublic])
-async def list_scores(session: SessionDep):
-    """List all scores."""
+@router.get("/", response_model=ListScoresResponse)
+async def list_scores(session: SessionDep, offset: int = 0, size: int = 20):
+    """List all scores.\n
+    Offset and size parameters are used for pagination."""
     scores = session.exec(select(Score)).all()
-    return scores
+
+    total_count = len(scores)
+    if size > 0:
+        scores = scores[offset : offset + size]
+
+    return ListScoresResponse(
+        scores=scores,
+        offset=offset,
+        size=len(scores),
+        total_count=total_count,
+    )
 
 
 @router.get("/{score_id}", response_model=ScorePublic)

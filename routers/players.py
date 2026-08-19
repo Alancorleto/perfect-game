@@ -6,7 +6,13 @@ from sqlmodel import select
 
 from database import SessionDep
 from image_storage import upload_image
-from models.player import Player, PlayerCreate, PlayerPublic, PlayerUpdate
+from models.player import (
+    ListPlayersResponse,
+    Player,
+    PlayerCreate,
+    PlayerPublic,
+    PlayerUpdate,
+)
 from routers.users import UserDep
 
 tag_metadata = {
@@ -21,12 +27,15 @@ tag_metadata = {
 router = APIRouter(prefix="/players", tags=["players"])
 
 
-@router.get("/", response_model=list[PlayerPublic])
+@router.get("/", response_model=ListPlayersResponse)
 async def list_players(
     session: SessionDep,
+    offset: int = 0,
+    size: int = 20,
     country_code: str | None = Query(default=None, min_length=2, max_length=2),
 ):
-    """List registered players, optionally filtered by country code."""
+    """List registered players, optionally filtered by country code.\n
+    Offset and size parameters are used for pagination."""
     query = select(Player)
 
     if country_code is not None:
@@ -37,7 +46,17 @@ async def list_players(
         query = query.where(Player.user is not None)
 
     players = session.exec(query).all()
-    return players
+
+    total_count = len(players)
+    if size > 0:
+        players = players[offset : offset + size]
+
+    return ListPlayersResponse(
+        players=players,
+        offset=offset,
+        size=len(players),
+        total_count=total_count,
+    )
 
 
 @router.get("/{player_id}", response_model=PlayerPublic)
