@@ -1,6 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
+from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.event import Event
@@ -90,3 +91,10 @@ class TournamentPublic(TournamentBase):
 
 class TournamentUpdate(SQLModel):
     name: str | None = None
+
+
+class ListTournamentsResponse(BaseModel):
+    tournaments: list[TournamentPublic]
+    offset: int
+    size: int
+    total_count: int

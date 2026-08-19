@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Optional
 
-from pydantic import EmailStr
+from pydantic import BaseModel, EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.event_organizer import EventOrganizer
@@ -65,3 +65,10 @@ class PasswordResetConfirm(SQLModel):
     email: EmailStr
     code: str
     new_password: str = Field(min_length=8, max_length=100)
+
+
+class ListUsersResponse(BaseModel):
+    users: list[UserPublic]
+    offset: int
+    size: int
+    total_count: int

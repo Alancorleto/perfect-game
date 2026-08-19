@@ -1,6 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Optional
 
+from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.chart import Chart, ChartPublic
@@ -51,3 +52,10 @@ class ScoreColumnPublic(SQLModel):
     description: str | None
 
     chart: ChartPublic | None = None
+
+
+class ListScoreColumnsResponse(BaseModel):
+    score_columns: list[ScoreColumnPublic]
+    offset: int
+    size: int
+    total_count: int

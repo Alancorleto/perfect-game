@@ -2,6 +2,7 @@ import uuid
 from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
+from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.user import User
@@ -62,3 +63,10 @@ class ChartUpdate(SQLModel):
     level: int | None = Field(ge=1, default=None)
     player_count: int | None = Field(ge=1, default=None)
     title_url: str | None = Field(default=None)
+
+
+class ListChartsResponse(BaseModel):
+    charts: list[ChartPublic]
+    offset: int
+    size: int
+    total_count: int

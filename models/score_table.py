@@ -259,6 +259,13 @@ class ScoreTableCreate(ScoreTableBase):
     round_id: uuid.UUID
 
 
+class ListScoreTablesResponse(BaseModel):
+    score_tables: list["ScoreTablePublic"]
+    offset: int
+    size: int
+    total_count: int
+
+
 class ScoreTableUpdate(ScoreTableBase):
     levels: str | None = None
     qualifiers_count: int | None = Field(ge=1, default=1)

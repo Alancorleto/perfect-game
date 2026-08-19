@@ -1,5 +1,6 @@
 import uuid
 
+from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.chart import Chart
@@ -71,3 +72,10 @@ class ScoreUpdate(SQLModel):
     grade: ScoreGrade | None = None
     stage_pass: bool | None = None
     video_url: str | None = None
+
+
+class ListScoresResponse(BaseModel):
+    scores: list[ScorePublic]
+    offset: int
+    size: int
+    total_count: int

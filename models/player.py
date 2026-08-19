@@ -2,6 +2,7 @@ import uuid
 from datetime import date
 from typing import TYPE_CHECKING, Optional
 
+from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.user import User
@@ -93,3 +94,10 @@ class PlayerUpdate(SQLModel):
     team_name: str | None = Field(default=None, max_length=TEAM_NAME_MAX_LENGTH)
     birth_date: date | None = Field(default=None)
     city: str | None = Field(default=None, max_length=CITY_MAX_LENGTH)
+
+
+class ListPlayersResponse(BaseModel):
+    players: list[PlayerPublic]
+    offset: int
+    size: int
+    total_count: int

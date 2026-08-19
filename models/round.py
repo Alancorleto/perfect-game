@@ -2,6 +2,7 @@ import uuid
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.player import Player
@@ -75,3 +76,10 @@ class RoundPublic(RoundBase):
 class RoundUpdate(SQLModel):
     name: str | None = None
     state: RoundState | None = None
+
+
+class ListRoundsResponse(BaseModel):
+    rounds: list[RoundPublic]
+    offset: int
+    size: int
+    total_count: int
