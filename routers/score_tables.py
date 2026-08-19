@@ -30,86 +30,97 @@ tag_metadata = {
 
 router = APIRouter(prefix="/score-tables", tags=["score_tables"])
 
-GET_SCORE_TABLE_RESULTS_EXAMPLE = [
-    {
-        "player_id": "2f4f3f92-55b2-4c7a-9c3a-8d2d2f6b8c11",
-        "player": {
+GET_SCORE_TABLE_RESULTS_EXAMPLE = {
+    "player_standings": [
+        {
             "id": "2f4f3f92-55b2-4c7a-9c3a-8d2d2f6b8c11",
             "nickname": "Player 1",
             "country_code": "AR",
-            "name": "",
-            "team_name": "",
-            "birth_date": None,
-            "city": "",
-            "profile_picture_url": "",
-            "user_id": None,
-            "guest_tournament_id": "d8d40987-6fcb-40b2-b514-3653feffe278",
+            "order_index": 0,
         },
-        "order_index": 0,
-        "results": [
-            {
-                "player_id": "2f4f3f92-55b2-4c7a-9c3a-8d2d2f6b8c11",
-                "player_order_index": 0,
-                "score_column_id": "7a8e1c0d-9f6e-4f51-a6aa-7e4a1a0b9c22",
-                "score_id": "7a8e1c0d-9f6e-4f51-a6aa-7e4a1a0b9c22",
-                "score_value": 998000,
-                "place": 1,
-                "is_tie": False,
-            },
-            {
-                "player_id": "2f4f3f92-55b2-4c7a-9c3a-8d2d2f6b8c11",
-                "player_order_index": 0,
-                "score_column_id": "b2b1d4f7-3e8d-4f0f-86dd-1f0d7d6e4c33",
-                "score_id": "b2b1d4f7-3e8d-4f0f-86dd-1f0d7d6e4c33",
-                "score_value": 997000,
-                "place": 2,
-                "is_tie": False,
-            },
-        ],
-        "total_score": 1995000,
-        "place": 1,
-        "is_tie": False,
-    },
-    {
-        "player_id": "8d2f1a0b-6f44-4dbe-9a3c-2d8d9b7c1f02",
-        "player": {
+        {
             "id": "8d2f1a0b-6f44-4dbe-9a3c-2d8d9b7c1f02",
             "nickname": "Player 2",
             "country_code": "AR",
-            "name": "",
-            "team_name": "",
-            "birth_date": None,
-            "city": "",
-            "profile_picture_url": "",
-            "user_id": None,
-            "guest_tournament_id": "d8d40987-6fcb-40b2-b514-3653feffe278",
+            "order_index": 1,
         },
-        "order_index": 1,
-        "results": [
-            {
-                "player_id": "8d2f1a0b-6f44-4dbe-9a3c-2d8d9b7c1f02",
-                "player_order_index": 1,
-                "score_column_id": "7a8e1c0d-9f6e-4f51-a6aa-7e4a1a0b9c22",
-                "score_id": "7a8e1c0d-9f6e-4f51-a6aa-7e4a1a0b9c22",
-                "score_value": 995000,
-                "place": 2,
-                "is_tie": False,
+    ],
+    "columns_results": [
+        {
+            "score_column_id": "7a8e1c0d-9f6e-4f51-a6aa-7e4a1a0b9c22",
+            "description": "S10",
+            "chart": {
+                "id": "c4f3f92a-55b2-4c7a-9c3a-8d2d2f6b8c11",
+                "song_name": "Song A",
+                "mode": "single",
+                "level": 10,
+                "player_count": 1,
+                "title_url": None,
             },
-            {
-                "player_id": "8d2f1a0b-6f44-4dbe-9a3c-2d8d9b7c1f02",
-                "player_order_index": 1,
-                "score_column_id": "b2b1d4f7-3e8d-4f0f-86dd-1f0d7d6e4c33",
-                "score_id": "b2b1d4f7-3e8d-4f0f-86dd-1f0d7d6e4c33",
-                "score_value": 999000,
-                "place": 1,
-                "is_tie": False,
-            },
-        ],
-        "total_score": 1994000,
-        "place": 2,
-        "is_tie": False,
-    },
-]
+            "results": [
+                {
+                    "player_order_index": 0,
+                    "score": {
+                        "id": "1a2b3c4d-5e6f-4789-8abc-1a2b3c4d5e6f",
+                        "value": 998000,
+                        "grade": "S",
+                        "stage_pass": True,
+                    },
+                    "place": 1,
+                },
+                {
+                    "player_order_index": 1,
+                    "score": {
+                        "id": "2b3c4d5e-6f7a-4890-9bcd-2b3c4d5e6f7a",
+                        "value": 995000,
+                        "grade": "S",
+                        "stage_pass": True,
+                    },
+                    "place": 2,
+                },
+            ],
+        },
+        {
+            "score_column_id": "b2b1d4f7-3e8d-4f0f-86dd-1f0d7d6e4c33",
+            "description": "Second column",
+            "chart": None,
+            "results": [
+                {
+                    "player_order_index": 1,
+                    "score": {
+                        "id": "4d5e6f7a-8b9c-4a12-bcde-4d5e6f7a8b9c",
+                        "value": 999000,
+                        "grade": "S",
+                        "stage_pass": True,
+                    },
+                    "place": 1,
+                },
+                {
+                    "player_order_index": 0,
+                    "score": {
+                        "id": "3c4d5e6f-7a8b-4901-abcd-3c4d5e6f7a8b",
+                        "value": 997000,
+                        "grade": "S",
+                        "stage_pass": True,
+                    },
+                    "place": 2,
+                },
+            ],
+        },
+    ],
+    "total_results": [
+        {
+            "player_order_index": 0,
+            "score": 1995000,
+            "place": 1,
+        },
+        {
+            "player_order_index": 1,
+            "score": 1994000,
+            "place": 2,
+        },
+    ],
+}
 
 
 @router.post("/", response_model=ScoreTablePublic)
@@ -487,11 +498,14 @@ async def remove_player_from_score_table(
 async def get_score_table_results(score_table_id: uuid.UUID, session: SessionDep):
     """Get the results for a specific score table.
 
-    It returns a list of results for each player in the score table, ordered by their calculated placing.
+    It returns a dictionary with 3 keys:
+    - `player_standings`: a list of player standings, ordered by their order_index.
+    - `columns_results`: a list of score columns with their results. Each column has their results ordered by score (descending).
+    - `total_results`: a list of total results, ordered by score (descending).
 
-    Players with the same final score will have the same placing.
+    In columns_results, as well as total_results, each player is referenced not by their id, but their order_index.
 
-    Each element in the results list inside a player's results, represents a score column and that player's performance in that column.
+    See the example value below.
     """
 
     score_table = session.get(ScoreTable, score_table_id)
