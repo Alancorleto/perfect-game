@@ -1,10 +1,8 @@
-import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from tests.helpers import create_user_in_db, get_auth_headers
-
 
 # ---------------------------------------------------------------------------
 # POST /users
@@ -326,9 +324,7 @@ def test_update_user_password(session: Session, client: TestClient):
 
 def test_update_user_not_found(session: Session, client: TestClient):
     # The 404 is returned before the authorization check, so any logged-in user works
-    user = create_user_in_db(
-        session, email="user@example.com", password="mypassword123"
-    )
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.patch(
@@ -411,9 +407,7 @@ def test_delete_user(session: Session, client: TestClient):
 
 def test_delete_user_not_found(session: Session, client: TestClient):
     # The 404 is returned before the authorization check, so any logged-in user works
-    user = create_user_in_db(
-        session, email="user@example.com", password="mypassword123"
-    )
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
     headers = get_auth_headers(client, "user@example.com", "mypassword123")
 
     response = client.delete(

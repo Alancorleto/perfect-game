@@ -6,10 +6,16 @@ from sqlmodel import Session
 
 from models.round import RoundState
 from models.score_column import ScoreColumn
-from tests.helpers import (create_chart_in_db, create_event_in_db,
-                           create_round_in_db, create_score_column_in_db,
-                           create_score_table_in_db, create_tournament_in_db,
-                           create_user_in_db, get_auth_headers)
+from tests.helpers import (
+    create_chart_in_db,
+    create_event_in_db,
+    create_round_in_db,
+    create_score_column_in_db,
+    create_score_table_in_db,
+    create_tournament_in_db,
+    create_user_in_db,
+    get_auth_headers,
+)
 
 
 def create_editable_score_column_context(

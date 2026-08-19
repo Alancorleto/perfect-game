@@ -4,12 +4,19 @@ from sqlmodel import Session
 
 from models.round import RoundState
 from models.score_table import ScoreTableFormat
-from tests.helpers import (add_player_to_score_table_in_db, create_chart_in_db,
-                           create_event_in_db, create_player_in_db,
-                           create_round_in_db, create_score_column_in_db,
-                           create_score_in_db, create_score_table_in_db,
-                           create_tournament_in_db, create_user_in_db,
-                           get_auth_headers)
+from tests.helpers import (
+    add_player_to_score_table_in_db,
+    create_chart_in_db,
+    create_event_in_db,
+    create_player_in_db,
+    create_round_in_db,
+    create_score_column_in_db,
+    create_score_in_db,
+    create_score_table_in_db,
+    create_tournament_in_db,
+    create_user_in_db,
+    get_auth_headers,
+)
 
 
 def create_editable_round(
@@ -1190,7 +1197,7 @@ def test_get_qualifying_players_in_round(session: Session, client: TestClient):
     tournament = create_tournament_in_db(session, event=event)
     round = create_round_in_db(session, tournament=tournament)
 
-    score_table_a, _, _, score_table_a_players = create_score_table_with_players(
+    _, _, _, score_table_a_players = create_score_table_with_players(
         session,
         round,
         qualifiers_count=1,
@@ -1200,7 +1207,7 @@ def test_get_qualifying_players_in_round(session: Session, client: TestClient):
         ],
     )
 
-    score_table_b, _, _, score_table_b_players = create_score_table_with_players(
+    _, _, _, score_table_b_players = create_score_table_with_players(
         session,
         round,
         qualifiers_count=2,
@@ -1238,7 +1245,7 @@ def test_get_qualifying_players_in_round_two_battles(
     tournament = create_tournament_in_db(session, event=event)
     round = create_round_in_db(session, tournament=tournament)
 
-    score_table_a, _, _, score_table_a_players = create_score_table_with_players(
+    _, _, _, score_table_a_players = create_score_table_with_players(
         session,
         round,
         format=ScoreTableFormat.BATTLE,
@@ -1249,7 +1256,7 @@ def test_get_qualifying_players_in_round_two_battles(
         ],
     )
 
-    score_table_b, _, _, score_table_b_players = create_score_table_with_players(
+    _, _, _, score_table_b_players = create_score_table_with_players(
         session,
         round,
         format=ScoreTableFormat.BATTLE,
