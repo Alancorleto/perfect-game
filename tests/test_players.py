@@ -100,6 +100,45 @@ def test_list_players_with_pagination(session: Session, client: TestClient):
 
 
 # ---------------------------------------------------------------------------
+# GET /players/me
+# ---------------------------------------------------------------------------
+
+
+def test_get_currently_logged_player(session: Session, client: TestClient):
+    user = create_user_in_db(session, email="user@example.com", password="mypassword123")
+    player = create_player_in_db(session, user=user, nickname="NickTest")
+
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.get("/players/me", headers=headers)
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data["nickname"] == "NickTest"
+    assert data["id"] == str(player.id)
+
+
+def test_get_currently_logged_player_not_authenticated(client: TestClient):
+    response = client.get("/players/me")
+    data = response.json()
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert data["detail"] == "Not authenticated"
+
+
+def test_get_currently_logged_player_without_player(session: Session, client: TestClient):
+    create_user_in_db(session, email="user@example.com", password="mypassword123")
+
+    headers = get_auth_headers(client, "user@example.com", "mypassword123")
+
+    response = client.get("/players/me", headers=headers)
+    data = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+    assert data == None
+
+
+# ---------------------------------------------------------------------------
 # GET /players/{player_id}
 # ---------------------------------------------------------------------------
 

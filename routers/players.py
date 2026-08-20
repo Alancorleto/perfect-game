@@ -59,6 +59,12 @@ async def list_players(
     )
 
 
+@router.get("/me", response_model=PlayerPublic | None)
+async def get_currently_logged_player(session: SessionDep, user: UserDep):
+    """Get the currently logged-in user's player profile."""
+    return user.player
+
+
 @router.get("/{player_id}", response_model=PlayerPublic)
 async def get_player(player_id: uuid.UUID, session: SessionDep):
     """Get a specific player."""
