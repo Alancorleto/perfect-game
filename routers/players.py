@@ -27,7 +27,7 @@ tag_metadata = {
 router = APIRouter(prefix="/players", tags=["players"])
 
 
-@router.get("/", response_model=ListPlayersResponse)
+@router.get("", response_model=ListPlayersResponse)
 async def list_players(
     session: SessionDep,
     offset: int = 0,
@@ -76,7 +76,7 @@ async def get_player(player_id: uuid.UUID, session: SessionDep):
     return db_player
 
 
-@router.post("/", response_model=PlayerPublic)
+@router.post("", response_model=PlayerPublic)
 async def create_player(player: PlayerCreate, session: SessionDep, user: UserDep):
     """Create a new player profile for the currently logged-in user.
 

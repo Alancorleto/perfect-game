@@ -31,7 +31,7 @@ tag_metadata = {
 router = APIRouter(prefix="/events", tags=["events"])
 
 
-@router.get("/", response_model=ListEventsResponse)
+@router.get("", response_model=ListEventsResponse)
 async def list_events(
     session: SessionDep,
     offset: int = 0,
@@ -106,7 +106,7 @@ async def get_event(event_id: uuid.UUID, session: SessionDep):
     return db_event
 
 
-@router.post("/", response_model=EventPublic)
+@router.post("", response_model=EventPublic)
 async def create_event(event: EventCreate, session: SessionDep, user: UserDep):
     """Create a new event. The organizer will be the currently logged-in user."""
     db_event = Event.model_validate(event)

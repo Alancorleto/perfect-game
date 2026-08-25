@@ -41,7 +41,7 @@ tag_metadata = {
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 
-@router.get("/", response_model=ListTournamentsResponse)
+@router.get("", response_model=ListTournamentsResponse)
 async def list_tournaments(session: SessionDep, offset: int = 0, size: int = 20):
     """List all tournaments.\n
     Offset and size parameters are used for pagination."""
@@ -70,7 +70,7 @@ async def get_tournament(tournament_id: uuid.UUID, session: SessionDep):
     return db_tournament
 
 
-@router.post("/", response_model=TournamentPublic)
+@router.post("", response_model=TournamentPublic)
 async def create_tournament(
     tournament: TournamentCreate, session: SessionDep, user: UserDep
 ):
@@ -215,7 +215,7 @@ async def list_tournament_invitations(
 
 
 @router.post(
-    "/{tournament_id}/invitations/{player_id}/", status_code=status.HTTP_204_NO_CONTENT
+    "/{tournament_id}/invitations/{player_id}", status_code=status.HTTP_204_NO_CONTENT
 )
 async def invite_player_to_tournament(
     tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep

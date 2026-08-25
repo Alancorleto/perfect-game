@@ -31,7 +31,7 @@ tag_metadata = {
 router = APIRouter(prefix="/charts", tags=["charts"])
 
 
-@router.get("/", response_model=ListChartsResponse)
+@router.get("", response_model=ListChartsResponse)
 async def list_charts(session: SessionDep, offset: int = 0, size: int = 20):
     """List all charts.\n
     Offset and size parameters are used for pagination."""
@@ -87,7 +87,7 @@ async def get_chart(chart_id: uuid.UUID, session: SessionDep):
     return chart
 
 
-@router.post("/", response_model=ChartPublic)
+@router.post("", response_model=ChartPublic)
 async def create_chart(
     chart: ChartCreate,
     session: SessionDep,

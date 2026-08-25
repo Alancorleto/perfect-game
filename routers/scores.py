@@ -28,7 +28,7 @@ tag_metadata = {
 router = APIRouter(prefix="/scores", tags=["scores"])
 
 
-@router.get("/", response_model=ListScoresResponse)
+@router.get("", response_model=ListScoresResponse)
 async def list_scores(session: SessionDep, offset: int = 0, size: int = 20):
     """List all scores.\n
     Offset and size parameters are used for pagination."""
@@ -57,7 +57,7 @@ async def get_score(score_id: uuid.UUID, session: SessionDep):
     return score
 
 
-@router.post("/", response_model=ScorePublic)
+@router.post("", response_model=ScorePublic)
 async def create_score(score: ScoreCreate, session: SessionDep, user: UserDep):
     """Create a new score for a player and score column."""
     db_player = session.get(Player, score.player_id)

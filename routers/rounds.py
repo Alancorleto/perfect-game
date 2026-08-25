@@ -29,7 +29,7 @@ tag_metadata = {
 router = APIRouter(prefix="/rounds", tags=["rounds"])
 
 
-@router.get("/", response_model=ListRoundsResponse)
+@router.get("", response_model=ListRoundsResponse)
 async def list_rounds(session: SessionDep, offset: int = 0, size: int = 20):
     """List all rounds.\n
     Offset and size parameters are used for pagination."""
@@ -58,7 +58,7 @@ async def get_round(round_id: uuid.UUID, session: SessionDep):
     return round
 
 
-@router.post("/", response_model=RoundPublic)
+@router.post("", response_model=RoundPublic)
 async def create_round(round: RoundCreate, session: SessionDep, user: UserDep):
     """Create a new round for a tournament."""
     tournament = session.get(Tournament, round.tournament_id)

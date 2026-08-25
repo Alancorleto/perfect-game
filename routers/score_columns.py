@@ -26,7 +26,7 @@ tag_metadata = {
 router = APIRouter(prefix="/score-columns", tags=["score_columns"])
 
 
-@router.get("/", response_model=ListScoreColumnsResponse)
+@router.get("", response_model=ListScoreColumnsResponse)
 async def list_score_columns(session: SessionDep, offset: int = 0, size: int = 20):
     """List all score columns.\n
     Offset and size parameters are used for pagination."""
@@ -44,7 +44,7 @@ async def list_score_columns(session: SessionDep, offset: int = 0, size: int = 2
     )
 
 
-@router.post("/", response_model=ScoreColumnPublic)
+@router.post("", response_model=ScoreColumnPublic)
 async def create_score_column(
     score_column: ScoreColumnCreate, session: SessionDep, user: UserDep
 ):

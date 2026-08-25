@@ -123,7 +123,7 @@ GET_SCORE_TABLE_RESULTS_EXAMPLE = {
 }
 
 
-@router.post("/", response_model=ScoreTablePublic)
+@router.post("", response_model=ScoreTablePublic)
 async def create_score_table(
     score_table: ScoreTableCreate, session: SessionDep, user: UserDep
 ):
@@ -153,7 +153,7 @@ async def create_score_table(
     return db_score_table
 
 
-@router.get("/", response_model=ListScoreTablesResponse)
+@router.get("", response_model=ListScoreTablesResponse)
 async def list_score_tables(session: SessionDep, offset: int = 0, size: int = 20):
     """List all score tables.\n
     Offset and size parameters are used for pagination."""
