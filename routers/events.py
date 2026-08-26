@@ -1,8 +1,8 @@
+import os
 import uuid
 from datetime import datetime, timezone
-from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, UploadFile, status
 from sqlmodel import case, select
 
 from database import SessionDep
@@ -291,7 +291,7 @@ async def remove_organizer_from_event(
 @router.post("/{event_id}/logo", response_model=EventPublic)
 async def upload_event_logo(
     event_id: uuid.UUID,
-    logo: Annotated[bytes, File()],
+    logo: UploadFile,
     session: SessionDep,
     user: UserDep,
 ):
@@ -307,8 +307,11 @@ async def upload_event_logo(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
         )
 
-    file_name = f"{db_event.id}.png"
-    db_event.logo_url = await upload_image(logo, file_name, "event_logos")
+    file_extension = os.path.splitext(logo.filename)[-1][1:]
+    file_name = f"{db_event.id}.{file_extension}"
+    file_bytes = await logo.read()
+
+    db_event.logo_url = await upload_image(file_bytes, file_name, "event_logos")
 
     session.add(db_event)
     session.commit()
