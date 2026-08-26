@@ -1,7 +1,13 @@
+import os
 import uuid
-from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, Query, status
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from sqlmodel import select
 
 from database import SessionDep
@@ -152,7 +158,7 @@ async def delete_player(
 @router.post("/{player_id}/profile-picture", response_model=PlayerPublic)
 async def upload_profile_picture(
     player_id: uuid.UUID,
-    profile_picture: Annotated[bytes, File()],
+    profile_picture: UploadFile,
     session: SessionDep,
     user: UserDep,
 ):
@@ -168,9 +174,12 @@ async def upload_profile_picture(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
         )
 
-    file_name = f"{db_player.id}.png"
+    file_extension = os.path.splitext(profile_picture.filename)[-1][1:]
+    file_name = f"{db_player.id}.{file_extension}"
+    file_bytes = await profile_picture.read()
+
     db_player.profile_picture_url = await upload_image(
-        profile_picture, file_name, "profile_pictures"
+        file_bytes, file_name, "profile_pictures"
     )
 
     session.add(db_player)
