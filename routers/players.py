@@ -57,6 +57,8 @@ async def list_players(
     if size > 0:
         players = players[offset : offset + size]
 
+    players.sort(key=lambda p: p.nickname)
+
     return ListPlayersResponse(
         players=players,
         offset=offset,
