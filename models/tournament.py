@@ -91,6 +91,7 @@ class TournamentPublic(TournamentBase):
 
 class TournamentUpdate(SQLModel):
     name: str | None = None
+    auto_accept_join_requests: bool = True
 
 
 class ListTournamentsResponse(BaseModel):
