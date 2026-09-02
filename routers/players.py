@@ -20,6 +20,7 @@ from models.player import (
     PlayerUpdate,
 )
 from routers.users import UserDep
+from string_similarity import check_string_similarity
 
 tag_metadata = {
     "name": "players",
@@ -39,6 +40,7 @@ async def list_players(
     offset: int = 0,
     size: int = 20,
     country_code: str | None = Query(default=None, min_length=2, max_length=2),
+    nickname_filter: str | None = Query(default=None),
 ):
     """List registered players, optionally filtered by country code.\n
     Offset and size parameters are used for pagination."""
@@ -52,6 +54,9 @@ async def list_players(
         query = query.where(Player.user is not None)
 
     players = session.exec(query).all()
+
+    if nickname_filter is not None:
+        players = [p for p in players if check_string_similarity(p.nickname, nickname_filter)]
 
     total_count = len(players)
     if size > 0:
