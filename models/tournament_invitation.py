@@ -58,4 +58,5 @@ class TournamentJoinRequest(TournamentRequestBase, table=True):
 class TournamentJoinRequestPublic(TournamentRequestBase):
     player_id: uuid.UUID
     tournament: Tournament
+    player: Player
     status: RequestStatus = Field(default=RequestStatus.PENDING)

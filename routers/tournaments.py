@@ -379,11 +379,32 @@ async def list_tournament_join_requests(
             TournamentJoinRequestPublic(
                 player_id=request.player_id,
                 tournament=request.tournament,
+                player=request.player,
                 status=request.status,
             )
         )
 
     return join_requests
+
+
+@router.get("/{tournament_id}/join-requests/{player_id}", response_model=list[TournamentJoinRequestPublic])
+async def get_tournament_join_request_for_player(
+    tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
+):
+    """Get the join request for a player in a tournament as a list of one element.
+
+    If no request is found, an empty list is returned."""
+    db_tournament = session.get(Tournament, tournament_id)
+    if not db_tournament:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tournament not found",
+        )
+
+    return [
+        request for request in db_tournament.join_requests
+        if request.player_id == player_id
+    ]
 
 
 @router.post("/{tournament_id}/join-requests", status_code=status.HTTP_204_NO_CONTENT)
@@ -631,6 +652,12 @@ async def remove_player_from_tournament(
         )
 
     session.delete(db_tournament_player_link)
+
+    # Remove the join request for the player
+    db_tournament.join_requests = [
+        request for request in db_tournament.join_requests if request.player_id != player_id
+    ]
+
     session.commit()
     session.refresh(db_tournament)
 
