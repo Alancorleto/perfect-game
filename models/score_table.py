@@ -235,7 +235,7 @@ class ScoreTable(ScoreTableBase, table=True):
 
         return results
 
-    def get_qualifying_players(self) -> list[Player]:
+    def get_top_players(self, n: int | None) -> list[Player]:
         if self.qualifiers_count is None:
             return self.get_players_by_order()
 
@@ -243,7 +243,7 @@ class ScoreTable(ScoreTableBase, table=True):
         qualifying_players_order_indexes = [
             total_result.player_order_index
             for total_result in results.total_results
-            if total_result.place <= self.qualifiers_count
+            if n is None or total_result.place <= n
         ]
 
         players_by_order = self.get_players_by_order()

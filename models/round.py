@@ -25,10 +25,18 @@ class RoundFormat(Enum):
     BATTLE = "battle"
 
 
+class RoundFormBase(SQLModel):
+    name: str | None = Field(default=None, max_length=50)
+    levels: str | None = Field(default=None, max_length=30)
+    format: RoundFormat = Field(default=RoundFormat.SCORE_SUM)
+    qualifiers_count: int | None = Field(default=None)
+
+
 class RoundBase(SQLModel):
     name: str | None = Field(default=None, max_length=50)
     levels: str | None = Field(default=None, max_length=30)
     format: RoundFormat = Field(default=RoundFormat.SCORE_SUM)
+    qualifiers_count: int | None = Field(default=None)
     state: RoundState = Field(default=RoundState.NOT_STARTED)
     order_index: int = Field(default=0)
 
@@ -56,7 +64,7 @@ class Round(RoundBase, table=True):
         qualifying_players = []
 
         for score_table in self.get_score_tables_by_order():
-            qualifying_players.extend(score_table.get_qualifying_players())
+            qualifying_players.extend(score_table.get_top_players(n=self.qualifiers_count))
 
         return qualifying_players
 
@@ -64,18 +72,17 @@ class Round(RoundBase, table=True):
         return sorted(self.score_tables, key=lambda s: s.order_index)
 
 
-class RoundCreate(RoundBase):
-    tournament_id: uuid.UUID
-
-
 class RoundPublic(RoundBase):
     id: uuid.UUID
     tournament_id: uuid.UUID
 
 
-class RoundUpdate(SQLModel):
-    name: str | None = None
-    state: RoundState | None = None
+class RoundCreate(RoundFormBase):
+    tournament_id: uuid.UUID
+
+
+class RoundUpdate(RoundFormBase):
+    pass
 
 
 class ListRoundsResponse(BaseModel):
