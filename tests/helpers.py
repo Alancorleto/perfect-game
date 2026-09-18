@@ -108,6 +108,7 @@ def create_round_in_db(
     tournament: Tournament,
     name: str | None = "Test Round",
     state: RoundState = RoundState.NOT_STARTED,
+    qualifiers_count: int | None = None,
 ) -> Round:
     """Creates a round directly in the test database."""
     round = Round(
@@ -115,6 +116,7 @@ def create_round_in_db(
         state=state,
         tournament_id=tournament.id,
         order_index=len(tournament.rounds),
+        qualifiers_count=qualifiers_count,
     )
     session.add(round)
     session.commit()

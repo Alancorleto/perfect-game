@@ -236,7 +236,7 @@ class ScoreTable(ScoreTableBase, table=True):
         return results
 
     def get_top_players(self, n: int | None) -> list[Player]:
-        if self.qualifiers_count is None:
+        if self.round.qualifiers_count is None:
             return self.get_players_by_order()
 
         results = self.get_results()

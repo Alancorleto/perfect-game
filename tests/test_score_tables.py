@@ -1181,11 +1181,11 @@ def test_list_possible_players_for_score_table_second_round_uses_previous_qualif
 ):
     event = create_event_in_db(session)
     tournament = create_tournament_in_db(session, event=event)
-    first_round = create_round_in_db(session, tournament=tournament)
+    first_round = create_round_in_db(session, tournament=tournament, qualifiers_count=1)
     second_round = create_round_in_db(session, tournament=tournament)
 
     first_score_table = create_score_table_in_db(
-        session, round=first_round, qualifiers_count=1
+        session, round=first_round
     )
     second_score_table = create_score_table_in_db(session, round=second_round)
 
@@ -1228,11 +1228,11 @@ def test_list_possible_players_for_score_table_second_round_excludes_players_alr
 ):
     event = create_event_in_db(session)
     tournament = create_tournament_in_db(session, event=event)
-    first_round = create_round_in_db(session, tournament=tournament)
+    first_round = create_round_in_db(session, tournament=tournament, qualifiers_count=1)
     second_round = create_round_in_db(session, tournament=tournament)
 
     first_score_table = create_score_table_in_db(
-        session, round=first_round, qualifiers_count=1
+        session, round=first_round
     )
     second_score_table = create_score_table_in_db(session, round=second_round)
 

@@ -615,9 +615,7 @@ async def update_player_in_tournament(
 async def remove_player_from_tournament(
     tournament_id: uuid.UUID, player_id: uuid.UUID, session: SessionDep, user: UserDep
 ):
-    """Remove a player from a tournament.
-
-    A player can only be removed from a tournament if no rounds have started inside it."""
+    """Remove a player from a tournament."""
     db_tournament = session.get(Tournament, tournament_id)
     if not db_tournament:
         raise HTTPException(
@@ -643,12 +641,6 @@ async def remove_player_from_tournament(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Player not found in tournament",
-        )
-
-    if any(round.state != RoundState.NOT_STARTED for round in db_tournament.rounds):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tournament has already started",
         )
 
     session.delete(db_tournament_player_link)
@@ -717,16 +709,6 @@ async def change_round_order_in_tournament(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Round order must have the same rounds as the tournament",
-        )
-
-    if any(
-        round.state != RoundState.NOT_STARTED
-        and new_round_order[round.order_index] != round_id
-        for round_id, round in existing_rounds.items()
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot change round order for a round that has already started",
         )
 
     for new_index, round_id in enumerate(new_round_order):

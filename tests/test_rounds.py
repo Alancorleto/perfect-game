@@ -39,14 +39,12 @@ def create_score_table_with_players(
     round,
     *,
     format: ScoreTableFormat = ScoreTableFormat.SCORE_SUM,
-    qualifiers_count: int | None,
     players_scores: list[tuple[str, int]],
     score_table_order_index: int | None = None,
 ):
     score_table = create_score_table_in_db(
         session,
         round=round,
-        qualifiers_count=qualifiers_count,
         format=format,
     )
 
@@ -833,7 +831,6 @@ def test_delete_all_scores_in_round(session: Session, client: TestClient):
         session=session,
         round=round,
         format=ScoreTableFormat.SCORE_SUM,
-        qualifiers_count=1,
         players_scores=[
             ("player1", 100),
             ("player2", 200),
@@ -863,7 +860,6 @@ def test_delete_all_scores_in_round_empty_score_table(
         session=session,
         round=round,
         format=ScoreTableFormat.SCORE_SUM,
-        qualifiers_count=1,
         players_scores=[],
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
