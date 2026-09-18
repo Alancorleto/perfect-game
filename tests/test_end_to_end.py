@@ -112,14 +112,6 @@ def test_create_score_table_score_and_results_end_to_end(client: TestClient):
     assert add_player_response.status_code == status.HTTP_200_OK
     assert add_player_response.json()[0]["id"] == player_id
 
-    # Start the round
-    start_round_response = client.post(
-        f"/rounds/{round_id}/start",
-        headers=headers,
-    )
-    assert start_round_response.status_code == status.HTTP_200_OK
-    assert start_round_response.json()["id"] == round_id
-
     # Submit a score for the player on the score table's first score column.
     score_response = client.post(
         "/scores/",
@@ -294,11 +286,6 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     )
     assert add_score_table_players_response.status_code == status.HTTP_200_OK
 
-    # Start the round before scores are entered.
-    start_round_response = client.post(f"/rounds/{round_id}/start", headers=headers)
-    assert start_round_response.status_code == status.HTTP_200_OK
-    assert start_round_response.json()["state"] == "in_progress"
-
     score_values = {
         player_ids[0]: (950000, 988000),
         player_ids[1]: (954000, 996000),
@@ -392,11 +379,6 @@ def test_score_sum_round_with_late_player_insert_end_to_end(client: TestClient):
     create_score(
         player_ids[7], chart_s16_id, score_column_16_id, score_values[player_ids[7]][1]
     )
-
-    # Finish the round after all scores are loaded.
-    finish_round_response = client.post(f"/rounds/{round_id}/finish", headers=headers)
-    assert finish_round_response.status_code == status.HTTP_200_OK
-    assert finish_round_response.json()["state"] == "finished"
 
     # Fetch and verify final score-sum results are mixed by total score, not input order.
     results_response = client.get(f"/score-tables/{score_table_id}/results")

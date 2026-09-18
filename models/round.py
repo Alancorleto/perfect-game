@@ -25,25 +25,19 @@ class RoundFormat(Enum):
     BATTLE = "battle"
 
 
-class RoundFormBase(SQLModel):
-    name: str | None = Field(default=None, max_length=50)
-    levels: str | None = Field(default=None, max_length=30)
-    format: RoundFormat = Field(default=RoundFormat.SCORE_SUM)
-    qualifiers_count: int | None = Field(default=None)
-
-
 class RoundBase(SQLModel):
     name: str | None = Field(default=None, max_length=50)
     levels: str | None = Field(default=None, max_length=30)
     format: RoundFormat = Field(default=RoundFormat.SCORE_SUM)
     qualifiers_count: int | None = Field(default=None)
     state: RoundState = Field(default=RoundState.NOT_STARTED)
-    order_index: int = Field(default=0)
 
 
 class Round(RoundBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tournament_id: uuid.UUID = Field(foreign_key="tournament.id", ondelete="CASCADE")
+
+    order_index: int = Field(default=0)
 
     tournament: Tournament = Relationship(back_populates="rounds")
 
@@ -75,13 +69,14 @@ class Round(RoundBase, table=True):
 class RoundPublic(RoundBase):
     id: uuid.UUID
     tournament_id: uuid.UUID
+    order_index: int = Field(default=0)
 
 
-class RoundCreate(RoundFormBase):
+class RoundCreate(RoundBase):
     tournament_id: uuid.UUID
 
 
-class RoundUpdate(RoundFormBase):
+class RoundUpdate(RoundBase):
     pass
 
 

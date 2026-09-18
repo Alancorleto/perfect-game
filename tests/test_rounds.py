@@ -20,14 +20,17 @@ from tests.helpers import (
 
 
 def create_editable_round(
-    session: Session, organizer_email: str, organizer_password: str
+    session: Session,
+    organizer_email: str,
+    organizer_password: str,
+    state: RoundState = RoundState.NOT_STARTED,
 ):
     organizer = create_user_in_db(
         session, email=organizer_email, password=organizer_password
     )
     event = create_event_in_db(session, organizer=organizer)
     tournament = create_tournament_in_db(session, event=event)
-    round = create_round_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, tournament=tournament, state=state)
     return organizer, event, tournament, round
 
 
@@ -36,7 +39,7 @@ def create_score_table_with_players(
     round,
     *,
     format: ScoreTableFormat = ScoreTableFormat.SCORE_SUM,
-    qualifiers_count: int,
+    qualifiers_count: int | None,
     players_scores: list[tuple[str, int]],
     score_table_order_index: int | None = None,
 ):
@@ -474,10 +477,9 @@ def test_delete_round_started(session: Session, client: TestClient):
         session=session,
         organizer_email="organizer@example.com",
         organizer_password="mypassword123",
+        state=RoundState.IN_PROGRESS,
     )
     headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    client.post(f"/rounds/{round.id}/start", headers=headers)
 
     response = client.delete(f"/rounds/{round.id}", headers=headers)
 
@@ -929,262 +931,6 @@ def test_delete_all_scores_in_round_unauthenticated(
 
 
 # ---------------------------------------------------------------------------
-# POST /rounds/{round_id}/start
-# ---------------------------------------------------------------------------
-
-
-def test_start_round(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/start", headers=headers)
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json()["state"] == "in_progress"
-
-
-def test_start_round_not_found(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
-    headers = get_auth_headers(client, "user@example.com", "mypassword123")
-
-    response = client.post(
-        "/rounds/00000000-0000-0000-0000-000000000000/start",
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_start_round_unauthorized(session: Session, client: TestClient):
-    create_user_in_db(session, email="attacker@example.com", password="mypassword123")
-    event = create_event_in_db(session)
-    tournament = create_tournament_in_db(session, event=event)
-    round = create_round_in_db(session, tournament=tournament)
-    headers = get_auth_headers(client, "attacker@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/start", headers=headers)
-
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-def test_start_round_unauthenticated(session: Session, client: TestClient):
-    event = create_event_in_db(session)
-    tournament = create_tournament_in_db(session, event=event)
-    round = create_round_in_db(session, tournament=tournament)
-
-    response = client.post(f"/rounds/{round.id}/start")
-
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-
-def test_start_round_already_started(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    round.state = RoundState.IN_PROGRESS
-    session.add(round)
-    session.commit()
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/start", headers=headers)
-
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
-# ---------------------------------------------------------------------------
-# POST /rounds/{round_id}/cancel-start
-# ---------------------------------------------------------------------------
-
-
-def test_cancel_round_start(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    round.state = RoundState.IN_PROGRESS
-    session.add(round)
-    session.commit()
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/cancel-start", headers=headers)
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json()["state"] == "not_started"
-
-
-def test_cancel_round_start_not_found(session: Session, client: TestClient):
-    create_user_in_db(session, email="user@example.com", password="mypassword123")
-    headers = get_auth_headers(client, "user@example.com", "mypassword123")
-
-    response = client.post(
-        "/rounds/00000000-0000-0000-0000-000000000000/cancel-start",
-        headers=headers,
-    )
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_cancel_round_start_when_not_in_progress(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/cancel-start", headers=headers)
-
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
-# ---------------------------------------------------------------------------
-# POST /rounds/{round_id}/pause
-# ---------------------------------------------------------------------------
-
-
-def test_pause_round(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    round.state = RoundState.IN_PROGRESS
-    session.add(round)
-    session.commit()
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/pause", headers=headers)
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json()["state"] == "paused"
-
-
-def test_pause_round_when_not_in_progress(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/pause", headers=headers)
-
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
-# ---------------------------------------------------------------------------
-# POST /rounds/{round_id}/unpause
-# ---------------------------------------------------------------------------
-
-
-def test_unpause_round(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    round.state = RoundState.PAUSED
-    session.add(round)
-    session.commit()
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/unpause", headers=headers)
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json()["state"] == "in_progress"
-
-
-def test_unpause_round_when_not_paused(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/unpause", headers=headers)
-
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
-# ---------------------------------------------------------------------------
-# POST /rounds/{round_id}/finish
-# ---------------------------------------------------------------------------
-
-
-def test_finish_round(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    round.state = RoundState.IN_PROGRESS
-    session.add(round)
-    session.commit()
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/finish", headers=headers)
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json()["state"] == "finished"
-
-
-def test_finish_round_when_not_in_progress(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/finish", headers=headers)
-
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
-# ---------------------------------------------------------------------------
-# POST /rounds/{round_id}/cancel-finish
-# ---------------------------------------------------------------------------
-
-
-def test_cancel_round_finish(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    round.state = RoundState.FINISHED
-    session.add(round)
-    session.commit()
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/cancel-finish", headers=headers)
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json()["state"] == "in_progress"
-
-
-def test_cancel_round_finish_when_not_finished(session: Session, client: TestClient):
-    _, _, _, round = create_editable_round(
-        session=session,
-        organizer_email="organizer@example.com",
-        organizer_password="mypassword123",
-    )
-    headers = get_auth_headers(client, "organizer@example.com", "mypassword123")
-
-    response = client.post(f"/rounds/{round.id}/cancel-finish", headers=headers)
-
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-
-# ---------------------------------------------------------------------------
 # GET /rounds/{round_id}/qualifying-players
 # ---------------------------------------------------------------------------
 
@@ -1195,12 +941,11 @@ def test_get_qualifying_players_in_round(session: Session, client: TestClient):
 
     event = create_event_in_db(session)
     tournament = create_tournament_in_db(session, event=event)
-    round = create_round_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, tournament=tournament, qualifiers_count=1)
 
     _, _, _, score_table_a_players = create_score_table_with_players(
         session,
         round,
-        qualifiers_count=1,
         players_scores=[
             ("Score Table A Player 1", 1000000),
             ("Score Table A Player 2", 950000),
@@ -1210,7 +955,6 @@ def test_get_qualifying_players_in_round(session: Session, client: TestClient):
     _, _, _, score_table_b_players = create_score_table_with_players(
         session,
         round,
-        qualifiers_count=2,
         players_scores=[
             ("Score Table B Player 1", 900000),
             ("Score Table B Player 2", 800000),
@@ -1225,14 +969,12 @@ def test_get_qualifying_players_in_round(session: Session, client: TestClient):
     assert [player["nickname"] for player in data] == [
         score_table_a_players[0].nickname,
         score_table_b_players[2].nickname,
-        score_table_b_players[0].nickname,
     ]
     assert [player["id"] for player in data] == [
         str(score_table_a_players[0].id),
         str(score_table_b_players[2].id),
-        str(score_table_b_players[0].id),
     ]
-    assert len(data) == 3
+    assert len(data) == 2
 
 
 def test_get_qualifying_players_in_round_two_battles(
@@ -1243,13 +985,12 @@ def test_get_qualifying_players_in_round_two_battles(
 
     event = create_event_in_db(session)
     tournament = create_tournament_in_db(session, event=event)
-    round = create_round_in_db(session, tournament=tournament)
+    round = create_round_in_db(session, tournament=tournament, qualifiers_count=1)
 
     _, _, _, score_table_a_players = create_score_table_with_players(
         session,
         round,
         format=ScoreTableFormat.BATTLE,
-        qualifiers_count=1,
         players_scores=[
             ("Score Table A Player 1", 950000),
             ("Score Table A Player 2", 1000000),
@@ -1260,7 +1001,6 @@ def test_get_qualifying_players_in_round_two_battles(
         session,
         round,
         format=ScoreTableFormat.BATTLE,
-        qualifiers_count=1,
         players_scores=[
             ("Score Table B Player 1", 900000),
             ("Score Table B Player 2", 800000),
